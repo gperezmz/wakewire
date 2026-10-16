@@ -77,8 +77,10 @@ to it; a session takes it when it next starts.
 
 The mod is a Claude Code plugin whose hooks module runs inside the session;
 it needs function hooks enabled, and the `wakewire` binary on `PATH`. In a
-session, the footer shows `● wakewire` while the session holds a watch, and
-`/wakewire status` shows its details.
+session, the footer shows `↯` while the session holds a watch, with a few
+words beside it when something needs you, and `/wakewire status` shows its
+details. [The mod](docs/reference/claude-code-mod.md) says what each looks
+like.
 
 ## Set up an account
 
