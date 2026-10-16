@@ -9,6 +9,7 @@ import (
 	"github.com/gperezmz/wakewire/internal/adapters/httpread"
 	"github.com/gperezmz/wakewire/internal/watch/adapters/accounts"
 	"github.com/gperezmz/wakewire/internal/watch/adapters/github"
+	"github.com/gperezmz/wakewire/internal/watch/adapters/jira"
 	"github.com/gperezmz/wakewire/internal/watch/application"
 	"github.com/gperezmz/wakewire/internal/watch/domain"
 )
@@ -43,5 +44,19 @@ func (s Sources) For(_ context.Context, w application.Watch) ([]application.Boun
 	}
 	out := []application.BoundSource{{Name: application.SourceForge, Source: forge, Rules: forgeRules,
 		IncludeIssues: w.Tracker.Kind != domain.TrackerJira}}
+	if w.Tracker.Kind == domain.TrackerJira {
+		tc, err := s.Accounts.Credential(w.TrackerAccount)
+		if err != nil {
+			return nil, err
+		}
+		base := "https://" + w.Tracker.Site
+		if s.Endpoints.Origin != nil {
+			base = s.Endpoints.Origin(w.Tracker.Site)
+		}
+		out = append(out, application.BoundSource{Name: application.SourceTracker,
+			Source: &jira.Source{HTTP: s.HTTP, Base: base, Site: w.Tracker.Site, Project: w.Tracker.Project,
+				Email: tc.Email, Token: tc.Token, Name: tc.Account},
+			Rules: domain.Rules{Identity: w.TrackerIdentity, Labels: w.Labels, Marker: w.Marker}})
+	}
 	return out, nil
 }
