@@ -199,6 +199,46 @@ func Run(t *testing.T, open func(t *testing.T) application.Store) {
 		}))
 	})
 
+	t.Run("a deleted watch's id is never given to another watch", func(t *testing.T) {
+		s := open(t)
+		first := newWatch(t, s)
+		must(t, s.Tx(ctx, func(tx application.Tx) error {
+			_, err := tx.AddChange(application.StoredChange{WatchID: first.ID, Source: application.SourceForge,
+				Change: domain.Change{Item: "#1", Kind: domain.KindClosed, At: t0, Status: domain.StatusDelivered}, FoundAt: t0})
+			if err != nil {
+				return err
+			}
+			return tx.DeleteWatch(first.ID)
+		}))
+		second := application.Watch{Repo: repo, Identity: "alice", CreatedAt: t0}
+		must(t, s.Tx(ctx, func(tx application.Tx) error { return tx.SaveWatch(&second) }))
+		if second.ID == first.ID {
+			t.Fatalf("watch id %d was given out twice", second.ID)
+		}
+		must(t, s.Tx(ctx, func(tx application.Tx) error {
+			cs, err := tx.Changes(application.ChangeQuery{WatchID: second.ID})
+			if len(cs) != 0 {
+				t.Fatalf("a new watch inherited %d change(s) of a deleted one", len(cs))
+			}
+			return err
+		}))
+	})
+
+	t.Run("a pruned batch's id is never given to another batch", func(t *testing.T) {
+		s := open(t)
+		w := newWatch(t, s)
+		old := t0.Add(-40 * 24 * time.Hour)
+		b := &application.Batch{WatchID: w.ID, OfferedAt: old, AckedAt: &old}
+		must(t, s.Tx(ctx, func(tx application.Tx) error { return tx.AddBatch(b) }))
+		plan := application.PrunePlan{Now: t0, Before: t0.Add(-domain.KeepFor), Dormant: func(application.Registration) bool { return false }}
+		must(t, s.Tx(ctx, func(tx application.Tx) error { _, err := tx.Prune(plan, false); return err }))
+		next := &application.Batch{WatchID: w.ID, OfferedAt: t0}
+		must(t, s.Tx(ctx, func(tx application.Tx) error { return tx.AddBatch(next) }))
+		if next.ID == b.ID {
+			t.Fatalf("batch id %d was given out twice", next.ID)
+		}
+	})
+
 	t.Run("prune removes what aged out and records when", func(t *testing.T) {
 		s := open(t)
 		w := newWatch(t, s)

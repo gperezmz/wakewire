@@ -1,7 +1,7 @@
 package sqlitestore
 
 // schemaVersion is meta's schema_version once migrate has run.
-const schemaVersion = 2
+const schemaVersion = 3
 
 // migrations[i] takes the schema from version i to i+1.
 var migrations = []string{`
@@ -109,4 +109,21 @@ CREATE TABLE leases (
 `,
 	// 2: a problem keeps the command or setting that fixes it.
 	`ALTER TABLE problems ADD COLUMN hint TEXT NOT NULL DEFAULT '';`,
+	// 3: watch and batch ids are never reused. A table without AUTOINCREMENT
+	// hands out max(id)+1, so a new watch took the id of a deleted one and
+	// inherited the ledger rows that kept it, and a pruned batch's id could
+	// name a later batch. meta keeps the highest id given out; it starts at
+	// the highest id anything refers to. The tables are not recreated:
+	// dropping watches would cascade over every table that names it.
+	`INSERT INTO meta(key, value) SELECT 'watch_id_max', CAST(max(m) AS TEXT) FROM (
+  SELECT coalesce(max(id), 0) AS m FROM watches
+  UNION ALL SELECT coalesce(max(watch_id), 0) FROM changes
+  UNION ALL SELECT coalesce(max(watch_id), 0) FROM batches
+  UNION ALL SELECT coalesce(max(watch_id), 0) FROM problems
+);
+INSERT INTO meta(key, value) SELECT 'batch_id_max', CAST(max(m) AS TEXT) FROM (
+  SELECT coalesce(max(id), 0) AS m FROM batches
+  UNION ALL SELECT coalesce(max(batch_id), 0) FROM changes
+  UNION ALL SELECT coalesce(max(batch_id), 0) FROM batch_changes
+);`,
 }

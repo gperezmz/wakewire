@@ -18,7 +18,7 @@ timeout, so several sessions' binaries can read and write it at once.
 | `problems` | Problem | Watch, source, code, text, the fix, `since`, `delivered_at`, `cleared_at` |
 | `source_state` | Watch and source | The source's own state between polls (ETags, the items each list held, pull request heads), unreachable polls in a row, the rate-limit budget, `skip_until` |
 | `leases` | Watch being polled | The polling binary's process id and start time, `expires_at` |
-| `meta` | — | Schema version, `pruned_at` |
+| `meta` | — | Schema version, `pruned_at`, and the highest watch and batch id given out, so a deleted watch's id or a pruned batch's is never given again |
 
 A poll writes a source's changes and its snapshots in one transaction, so a
 change is stored exactly when its snapshot moves past it. A test kills a real

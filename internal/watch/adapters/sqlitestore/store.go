@@ -132,6 +132,26 @@ func parseTSP(s sql.NullString) *time.Time {
 	return &t
 }
 
+// nextID hands out an id for table that was never given out before, even
+// when the row that held it is gone: meta keeps the highest, as an
+// AUTOINCREMENT column would.
+func (x *tx) nextID(name, table string) (int64, error) {
+	key := name + "_id_max"
+	var last, top int64
+	var s string
+	if err := x.t.QueryRow(`SELECT value FROM meta WHERE key=?`, key).Scan(&s); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	last, _ = strconv.ParseInt(s, 10, 64)
+	if err := x.t.QueryRow(`SELECT coalesce(max(id), 0) FROM ` + table).Scan(&top); err != nil {
+		return 0, err
+	}
+	id := max(last, top) + 1
+	_, err := x.t.Exec(`INSERT INTO meta(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`,
+		key, strconv.FormatInt(id, 10))
+	return id, err
+}
+
 // ---- watches
 
 const watchCols = `id, repo, identity, forge_account, tracker, tracker_identity, tracker_account,
@@ -210,12 +230,14 @@ func (x *tx) SaveWatch(w *application.Watch) error {
 	args := []any{w.Repo.String(), w.Identity, w.ForgeAccount, trackerText(w.Tracker), w.TrackerIdentity, w.TrackerAccount,
 		string(labels), w.Marker, w.Interval.Milliseconds(), tsp(w.PausedSince), tsp(w.PausedUntil), polled, ts(w.CreatedAt)}
 	if w.ID == 0 {
-		res, err := x.t.Exec(`INSERT INTO watches(repo, identity, forge_account, tracker, tracker_identity, tracker_account,
-			labels, marker, interval_ms, paused_since, paused_until, polled_at, created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
+		id, err := x.nextID("watch", "watches")
 		if err != nil {
 			return err
 		}
-		w.ID, err = res.LastInsertId()
+		_, err = x.t.Exec(`INSERT INTO watches(id, repo, identity, forge_account, tracker, tracker_identity, tracker_account,
+			labels, marker, interval_ms, paused_since, paused_until, polled_at, created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			append([]any{id}, args...)...)
+		w.ID = id
 		return err
 	}
 	_, err = x.t.Exec(`UPDATE watches SET repo=?, identity=?, forge_account=?, tracker=?, tracker_identity=?, tracker_account=?,
@@ -493,13 +515,15 @@ func (x *tx) Batch(id int64) (*application.Batch, error) {
 }
 
 func (x *tx) AddBatch(b *application.Batch) error {
-	res, err := x.t.Exec(`INSERT INTO batches(watch_id, offered_at, acked_at) VALUES(?,?,?)`, b.WatchID, ts(b.OfferedAt), tsp(b.AckedAt))
+	id, err := x.nextID("batch", "batches")
 	if err != nil {
 		return err
 	}
-	if b.ID, err = res.LastInsertId(); err != nil {
+	if _, err := x.t.Exec(`INSERT INTO batches(id, watch_id, offered_at, acked_at) VALUES(?,?,?,?)`,
+		id, b.WatchID, ts(b.OfferedAt), tsp(b.AckedAt)); err != nil {
 		return err
 	}
+	b.ID = id
 	for _, c := range b.Changes {
 		if _, err := x.t.Exec(`INSERT INTO batch_changes(batch_id, change_id) VALUES(?,?)`, b.ID, c); err != nil {
 			return err
