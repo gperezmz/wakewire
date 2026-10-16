@@ -192,6 +192,7 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 
 	if unused, err := acc.UnusedStored(); err != nil {
 		c.fail("stored tokens", err)
+		failed(err)
 	} else if len(unused) > 0 {
 		c.warn("stored tokens", "credentials.toml holds tokens no account names: "+strings.Join(unused, ", "),
 			"wakewire account remove "+unused[0])

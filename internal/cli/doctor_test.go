@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	accountapp "github.com/gperezmz/wakewire/internal/account/application"
 	"github.com/gperezmz/wakewire/internal/watch/application"
 )
 
@@ -32,5 +33,20 @@ func TestDoctorWarnsOfTheBudgetExactlyWhereAPollStopsReading(t *testing.T) {
 		if got := strings.Contains(out, "warn budget"); got != c.warns {
 			t.Errorf("%d of 5000 left: warned %v\n%s", c.remaining, got, out)
 		}
+	}
+}
+
+func TestDoctorExitsNotSetUpWhenCredentialsDoNotParse(t *testing.T) {
+	w := newFakeWorld()
+	w.acc.unusedErr = accountapp.NewError(accountapp.CodeConfigInvalid, "credentials.toml does not parse", "fix line 3")
+	code, out, errOut := w.run(t, "doctor", "--json")
+	if errOut != "" {
+		t.Fatalf("stderr must stay empty under --json: %s", errOut)
+	}
+	if code != exitNotSetUp {
+		t.Fatalf("exit %d, want %d:\n%s", code, exitNotSetUp, out)
+	}
+	if got := object(t, out); got["ok"] != false {
+		t.Fatalf("ok must be false:\n%s", out)
 	}
 }

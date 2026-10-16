@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -178,4 +179,14 @@ func (w *fakeWorld) run(t *testing.T, args ...string) (int, string, string) {
 	var out, errOut bytes.Buffer
 	code := RunWith(context.Background(), append([]string{"wakewire"}, args...), w.deps(), strings.NewReader(""), &out, &errOut)
 	return code, out.String(), errOut.String()
+}
+
+// object parses stdout as the one JSON object --json promises.
+func object(t *testing.T, out string) map[string]any {
+	t.Helper()
+	var m map[string]any
+	if err := json.Unmarshal([]byte(out), &m); err != nil {
+		t.Fatalf("stdout is not one JSON object: %v\n%s", err, out)
+	}
+	return m
 }
