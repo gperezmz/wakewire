@@ -177,6 +177,22 @@ linters:
             - pkg: "github.com/gperezmz/wakewire/internal/account/adapters"
               desc: the transport mounts what the composition root built
 
+  exclusions:
+    rules:
+      # Debt, owed knowingly: the record, verify and wiring tests of a source
+      # read the stored token through the account service, which only the
+      # composition root builds. They run as external test packages, so no
+      # production code imports the root; clearing this needs a test kit
+      # that builds the account service outside internal/wiring.
+      - path: internal/watch/adapters/.*_test\.go
+        linters: [depguard]
+        text: internal/wiring
+      # The record tests write recordings to fixed testdata paths and edit
+      # files in the sandbox clone they were pointed at.
+      - path: _test\.go
+        linters: [gosec]
+        text: G703
+
 formatters:
   enable:
     - gofmt

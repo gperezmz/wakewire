@@ -86,13 +86,12 @@ func TestRecordScenario(t *testing.T) {
 	rec := &contract.Recorder{Next: http.DefaultTransport, Scrub: scrubber(t)}
 	r := newRunner(t, realRepo, "gperezmz", API, rec, token)
 	var steps []step
-	poll := func(what string) string {
+	poll := func(what string) {
 		time.Sleep(4 * time.Second) // GitHub's lists catch up within seconds
 		rec.Name = what
 		w := r.poll()
 		t.Logf("%s:\n%s", what, w)
 		steps = append(steps, step{Name: what, Wake: w})
-		return w
 	}
 	repo := "gperezmz/wakewire-sandbox"
 	poll("first poll: what is there is no change")

@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/gperezmz/wakewire/internal/adapters/home"
-	"github.com/gperezmz/wakewire/internal/wiring" //nolint:depguard // test only: the recording helper reads the stored token through the account service, which only the composition root builds
+	"github.com/gperezmz/wakewire/internal/wiring"
 )
 
 // The real sandbox: the KAN project of example.atlassian.net, which the

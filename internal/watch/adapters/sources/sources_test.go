@@ -12,7 +12,7 @@ import (
 	"github.com/gperezmz/wakewire/internal/watch/adapters/sources"
 	"github.com/gperezmz/wakewire/internal/watch/application"
 	"github.com/gperezmz/wakewire/internal/watch/domain"
-	"github.com/gperezmz/wakewire/internal/wiring" //nolint:depguard // test only: the account service is built by the composition root
+	"github.com/gperezmz/wakewire/internal/wiring"
 )
 
 const config = `

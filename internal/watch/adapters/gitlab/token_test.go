@@ -8,7 +8,7 @@ import (
 
 	"github.com/gperezmz/wakewire/internal/adapters/home"
 	"github.com/gperezmz/wakewire/internal/watch/domain"
-	"github.com/gperezmz/wakewire/internal/wiring" //nolint:depguard // a test that reads with the stored account is the only reader of the root
+	"github.com/gperezmz/wakewire/internal/wiring"
 )
 
 // realSandbox is the real project the record and contract tests use, named
