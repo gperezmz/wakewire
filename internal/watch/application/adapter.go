@@ -56,6 +56,9 @@ func (s *Service) Hello(ctx context.Context, session string, proc, protocol int)
 		if err := tx.SaveAdapter(Adapter{Session: session, Process: Process{proc, start}, HelloAt: now, HeardAt: now, Protocol: protocol}); err != nil {
 			return err
 		}
+		if err := s.revive(tx, session, Process{proc, start}, now); err != nil {
+			return err
+		}
 		w, _, err := s.held(tx, session)
 		if err != nil || w == nil {
 			return err
@@ -65,6 +68,29 @@ func (s *Service) Hello(ctx context.Context, session string, proc, protocol int)
 		return err
 	})
 	return res, err
+}
+
+// revive gives a session its registration back when it comes back under
+// the same id, as `claude --resume` brings it, in a new process: the
+// registration had gone dormant only because that session ended, and no
+// other session has taken the watch over since.
+func (s *Service) revive(tx Tx, session string, p Process, now time.Time) error {
+	r, err := tx.RegistrationBySession(session)
+	if err != nil || r == nil {
+		return err
+	}
+	cur, err := tx.Registration(r.WatchID)
+	if err != nil || cur == nil || cur.Session != session {
+		return err
+	}
+	if cur.EndedAt == nil && cur.Process == p {
+		return nil
+	}
+	if cur.EndedAt != nil && cur.EndReason == "clear" {
+		return nil // a cleared session does not come back
+	}
+	cur.EndedAt, cur.EndReason, cur.Process, cur.HeardAt = nil, "", p, now
+	return tx.SaveRegistration(*cur)
 }
 
 // held answers the watch a session holds, if its registration is current.

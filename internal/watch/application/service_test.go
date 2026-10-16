@@ -374,3 +374,41 @@ func TestIntervalAndUnregister(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestAResumedSessionTakesItsRegistrationBack(t *testing.T) {
+	h := newHarness(t)
+	h.mustRegister("s1", 100)
+	if _, err := h.svc.Ended(h.ctx, "s1", "prompt_input_exit"); err != nil {
+		t.Fatal(err)
+	}
+	h.procs.Kill(100)
+	h.procs.Start(150, "s150") // claude --resume s1, in a new process
+	h.clock.Advance(time.Minute)
+	hello, err := h.svc.Hello(h.ctx, "s1", 150, 1)
+	if err != nil || !hello.Holds {
+		t.Fatalf("%+v %v", hello, err)
+	}
+	st, _ := h.svc.Status(h.ctx, nil)
+	if st[0].Holder.State != "held" || st[0].Holder.PID != 150 {
+		t.Fatalf("%+v", st[0].Holder)
+	}
+}
+
+func TestATakenOverOrClearedSessionDoesNotComeBack(t *testing.T) {
+	h := newHarness(t)
+	h.mustRegister("s1", 100)
+	h.procs.Kill(100)
+	h.mustRegister("s2", 200)
+	h.procs.Start(150, "s150")
+	if hello, _ := h.svc.Hello(h.ctx, "s1", 150, 1); hello.Holds {
+		t.Fatal("a session taken over took the watch back")
+	}
+	h2 := newHarness(t)
+	h2.mustRegister("s1", 100)
+	if _, err := h2.svc.Ended(h2.ctx, "s1", "clear"); err != nil {
+		t.Fatal(err)
+	}
+	if hello, _ := h2.svc.Hello(h2.ctx, "s1", 100, 1); hello.Holds {
+		t.Fatal("a cleared session took the watch back")
+	}
+}

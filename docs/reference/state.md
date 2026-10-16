@@ -59,6 +59,12 @@ watch over; `register --take-over` does so whatever the answer.
 | `kill -9`, a crash, a reboot | Rule 1 | At the next check |
 | The mod uninstalled or disabled, process alive | Rule 4 | After 3 intervals |
 
+A session that comes back under the same id, as `claude --resume` brings it
+in a new process, takes its registration back at the adapter's `hello`:
+the registration takes the new process and is held again. It does not where
+another session took the watch over meanwhile, or where the session was
+cleared.
+
 ## Leases
 
 `adapter next` takes the watch's lease before polling and releases it after.
