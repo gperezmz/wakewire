@@ -25,7 +25,7 @@ and the [design decisions](explanation/design-decisions.md), which also list
 what only running it will prove. The words are in the
 [glossary](../GLOSSARY.md).
 
-Status: designed, not built. Every page describes v1 as planned.
+Every page describes v1 as built.
 
 ## Map
 
@@ -43,4 +43,5 @@ Status: designed, not built. Every page describes v1 as planned.
 - [State](reference/state.md): what `state.db` holds, who holds a watch, leases and pruning
 - [The Claude Code mod](reference/claude-code-mod.md): the adapter's lifecycle and what it adds to a session
 
-**How-to** and **tutorials**: none yet; they follow the build.
+**How-to** and **tutorials**: none yet. Installing, setting up an account and
+registering are in the [README](../README.md).
