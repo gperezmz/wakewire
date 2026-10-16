@@ -30,8 +30,11 @@ type Sources struct {
 
 // For answers the forge source, and the Jira source where the tracker is
 // Jira.
+// Each half reads through the account that covers it now, found as register
+// finds it, by host and owner or by Jira site, so a renamed account keeps
+// its watches.
 func (s Sources) For(_ context.Context, w application.Watch) ([]application.BoundSource, error) {
-	cred, err := s.Accounts.Credential(w.ForgeAccount)
+	cred, err := s.Accounts.Service.ForRepo(w.Repo.Host, w.Repo.Owner())
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +55,7 @@ func (s Sources) For(_ context.Context, w application.Watch) ([]application.Boun
 	out := []application.BoundSource{{Name: application.SourceForge, Source: forge, Rules: forgeRules,
 		IncludeIssues: w.Tracker.Kind != domain.TrackerJira}}
 	if w.Tracker.Kind == domain.TrackerJira {
-		tc, err := s.Accounts.Credential(w.TrackerAccount)
+		tc, err := s.Accounts.Service.ForSite(w.Tracker.Site)
 		if err != nil {
 			return nil, err
 		}
