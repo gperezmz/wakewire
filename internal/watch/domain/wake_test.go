@@ -49,8 +49,8 @@ func TestWakeOfManyChangesIsCountedPerItemThenCut(t *testing.T) {
 
 func TestProblemWakeNamesTheFix(t *testing.T) {
 	got := Wake(9, []Change{{Kind: KindProblem, Code: "token_refused",
-		Text: "not watching GitHub: GitHub refused the token (401).", At: at(0)}}, ReaderTool)
-	want := "[wakewire] Not watching GitHub: GitHub refused the token (401). Run `wakewire status` for the fix."
+		Text: "not watching GitHub — GitHub refused the token (401).", At: at(0)}}, ReaderTool)
+	want := "[wakewire] Not watching GitHub — GitHub refused the token (401). Run `wakewire status` for the fix."
 	if got != want {
 		t.Fatal(got)
 	}

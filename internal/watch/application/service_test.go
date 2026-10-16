@@ -240,7 +240,7 @@ func TestAProblemIsDeliveredOnceAndClears(t *testing.T) {
 	h.mustRegister("s1", 100)
 	h.fail("token_refused", "GitHub refused the token (401)")
 	n := h.next("s1", 100)
-	if n.Batch == nil || !strings.Contains(n.Batch.Wake, "Not watching GitHub: GitHub refused the token (401).") {
+	if n.Batch == nil || !strings.Contains(n.Batch.Wake, "Not watching GitHub — GitHub refused the token (401).") {
 		t.Fatalf("%+v", n.Batch)
 	}
 	if _, err := h.svc.Ack(h.ctx, n.Batch.ID); err != nil {

@@ -22,7 +22,7 @@ func (s *Service) poll(ctx context.Context, w Watch) error {
 	if err != nil {
 		var c interface{ Code() string }
 		if errors.As(err, &c) {
-			return s.recordFailure(ctx, w, SourceForge, "the forge", err)
+			return s.recordFailure(ctx, w, SourceForge, forgeService(w), err)
 		}
 		return err
 	}
@@ -126,7 +126,7 @@ func (s *Service) pollOne(ctx context.Context, w Watch, src BoundSource, firstPo
 		if domain.NearlySpent(out.Rate.Remaining, out.Rate.Limit) {
 			state.SkipUntil = out.Rate.ResetAt
 			if err := s.raise(tx, w, src.Name, "rate_limited", fmt.Sprintf(
-				"not watching %s until %s: its rate limit is nearly spent (%d of %d left).",
+				"not watching %s until %s — its rate limit is nearly spent, %d of %d left.",
 				src.Source.Service(), out.Rate.ResetAt.Local().Format("15:04"), out.Rate.Remaining, out.Rate.Limit),
 				"wait for the reset, or lengthen the interval: `wakewire interval 5m`", paused); err != nil {
 				return err
@@ -186,7 +186,7 @@ func (s *Service) recordFailure(ctx context.Context, w Watch, name SourceName, s
 			}
 		}
 		if raise {
-			text := fmt.Sprintf("not watching %s: %s.", service, trimDot(c.Error()))
+			text := fmt.Sprintf("not watching %s — %s.", service, trimDot(c.Error()))
 			if err := s.raise(tx, *cur, name, c.Code(), text, c.Hint(), cur.PausedSince != nil); err != nil {
 				return err
 			}

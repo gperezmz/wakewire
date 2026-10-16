@@ -83,7 +83,7 @@ Read batch 193 with mcp__wakewire__changes before acting on it. If none of it ne
   shows its fix:
 
 ```text
-[wakewire] Not watching GitHub: GitHub refused the token (401). Run `wakewire status` for the fix.
+[wakewire] Not watching GitHub — GitHub refused the token (401). Run `wakewire status` for the fix.
 ```
 
 ## The batch
