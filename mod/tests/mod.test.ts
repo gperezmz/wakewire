@@ -8,8 +8,8 @@ function binary(
   opts: { protocol?: number; holds?: boolean; batch?: { id: number; wake: string; count?: number } | null; gate?: Promise<void> } = {},
 ) {
   const calls: string[][] = []
-  const state = { holds: opts.holds ?? true, batch: opts.batch ?? null, acked: [] as number[], problems: [] as { code: string; text: string }[] }
-  const status = () => ({ watch: 'github.com/o/x', polledAt: null, pausedSince: null, held: 0, pending: 0, problems: state.problems })
+  const state = { holds: opts.holds ?? true, batch: opts.batch ?? null, acked: [] as number[], problems: [] as { code: string; text: string }[], pausedSince: null as string | null, held: 0 }
+  const status = () => ({ watch: 'github.com/o/x', polledAt: null, pausedSince: state.pausedSince, held: state.held, pending: 0, problems: state.problems })
   on('process.run', ($: any, e: any) => {
     const argv = [...e.argv] as string[]
     calls.push(argv)
@@ -298,6 +298,24 @@ describe('wakewire mod', () => {
     await $.prompt.submit({ text: 'thanks', origin: { kind: 'composer' } } as any)
     expect((await footer.find({ type: 'Text', text: / 2 new/ })) === undefined).toBe(true)
     expect(bin.state.acked).toEqual([5])
+    await footer.unmount()
+  })
+
+  test('a pause shows on the footer over a wake not yet seen', async ($, on) => {
+    const clock = mock.clock(on)
+    world(on)
+    const bin = binary(on, { batch: { id: 5, wake: '[wakewire] New activity:', count: 2 } })
+    submits(on)
+    await $.session.start(start)
+    const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: [] } })
+    await clock.advance(30_000)
+    expect((await footer.find({ type: 'Text', text: / 2 new/ })) !== undefined).toBe(true)
+    bin.state.pausedSince = '2026-10-17T12:00:00Z'
+    bin.state.held = 3
+    await clock.advance(30_000)
+    expect((await footer.find({ type: 'Text', text: / paused · 3 held/ })) !== undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: / 2 new/ })) === undefined).toBe(true)
+    expect(((await footer.find({ type: 'Text', text: '↯' })) as any)?.props?.color).toBe('warning')
     await footer.unmount()
   })
 

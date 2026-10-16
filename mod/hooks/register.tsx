@@ -323,8 +323,6 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // The footer label: a colored dot and the watch, beside Claude Code's own
-  // mode labels, drawn as they are, dim.
   // The footer label: ↯ for wakewire. While all is well it stands alone,
   // its color cooling from the accent to green as the last change ages;
   // otherwise a few words say what needs the person.
@@ -334,11 +332,13 @@ export const register: Register = on => {
     const { Box, Text } = $.ui.resolve(e)
     const [color, words] = l.trouble
       ? ['error', l.trouble]
-      : l.woke > 0
-        ? ['claude', `${l.woke} new`]
-        : l.paused
-          ? ['warning', `paused · ${l.held} held`]
+      : l.paused
+        ? ['warning', `paused · ${l.held} held`]
+        : l.woke > 0
+          ? ['claude', `${l.woke} new`]
           : [glow(l.lastChangeAt, Date.now()), null]
+    // Trouble and a wake are colored words; the pause's are dim.
+    const loud = l.trouble !== null || (!l.paused && l.woke > 0)
     return (
       <Box>
         {e.props.modes.length > 0 && <Text dimColor>{e.props.modes.join(' & ')} · </Text>}
@@ -346,7 +346,7 @@ export const register: Register = on => {
           ↯
         </Text>
         {words !== null && (
-          <Text color={l.trouble || l.woke > 0 ? color : undefined} dimColor={!l.trouble && l.woke === 0}>
+          <Text color={loud ? color : undefined} dimColor={!loud}>
             {' '}
             {words}
           </Text>
