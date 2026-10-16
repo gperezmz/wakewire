@@ -12,7 +12,12 @@ import (
 // poll reads each of the watch's sources and records what it found. Each
 // source's changes and snapshots are written in one transaction, so a
 // change is stored exactly when its snapshot moves past it.
+//
+// The poll is dated by when it began, not when it ended: whatever happens
+// on a service while the poll reads it may be missed by that poll, and the
+// next one must look back to its start for an item it finds new.
 func (s *Service) poll(ctx context.Context, w Watch) error {
+	started := s.clock.Now()
 	sources, err := s.sources.For(ctx, w)
 	if err != nil {
 		var c interface{ Code() string }
@@ -23,7 +28,7 @@ func (s *Service) poll(ctx context.Context, w Watch) error {
 	}
 	firstPoll := w.PolledAt.IsZero()
 	for _, src := range sources {
-		if err := s.pollOne(ctx, w, src, firstPoll); err != nil {
+		if err := s.pollOne(ctx, w, src, firstPoll, started); err != nil {
 			return err
 		}
 	}
@@ -32,12 +37,12 @@ func (s *Service) poll(ctx context.Context, w Watch) error {
 		if err != nil || cur == nil {
 			return err
 		}
-		cur.PolledAt = s.clock.Now()
+		cur.PolledAt = started
 		return tx.SaveWatch(cur)
 	})
 }
 
-func (s *Service) pollOne(ctx context.Context, w Watch, src BoundSource, firstPoll bool) error {
+func (s *Service) pollOne(ctx context.Context, w Watch, src BoundSource, firstPoll bool, started time.Time) error {
 	var state SourceState
 	var snaps map[string]domain.Snapshot
 	err := s.store.Tx(ctx, func(tx Tx) error {
@@ -68,7 +73,13 @@ func (s *Service) pollOne(ctx context.Context, w Watch, src BoundSource, firstPo
 			return err
 		}
 		paused := cur.PausedSince != nil
+		// An item new to the watch reports what happened since this source
+		// was last read, which is before the watch's last poll where the
+		// source failed or was skipped meanwhile.
 		since := w.PolledAt
+		if !state.OKAt.IsZero() && state.OKAt.Before(since) {
+			since = state.OKAt
+		}
 		if firstPoll {
 			since = time.Time{}
 		}
@@ -111,7 +122,7 @@ func (s *Service) pollOne(ctx context.Context, w Watch, src BoundSource, firstPo
 			}
 		}
 		state.WatchID, state.Source = w.ID, src.Name
-		state.Data, state.Rate, state.Failures, state.OKAt = out.State, out.Rate, 0, s.clock.Now()
+		state.Data, state.Rate, state.Failures, state.OKAt = out.State, out.Rate, 0, started
 		if out.Rate.Limit > 0 && out.Rate.Remaining*20 < out.Rate.Limit {
 			state.SkipUntil = out.Rate.ResetAt
 			if err := s.raise(tx, w, src.Name, "rate_limited", fmt.Sprintf(
