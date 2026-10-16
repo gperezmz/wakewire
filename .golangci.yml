@@ -57,11 +57,9 @@ linters:
         watch-application:
           files: ["**/internal/watch/application/**"]
           allow: ["$gostd", "github.com/gperezmz/wakewire/internal/watch/domain", "github.com/gperezmz/wakewire/internal/watch/application"]
+          # The allow list is the contract for the module and for vendors: a deny
+          # on github.com/ would also refuse the context's own domain.
           deny:
-            - pkg: "github.com/gperezmz/wakewire/internal"
-              desc: application imports only its own context's domain
-            - pkg: "github.com/"
-              desc: application names no vendor package
             - pkg: "golang.org/x/"
               desc: application names no vendor package
             - pkg: "modernc.org/"
