@@ -1,0 +1,13 @@
+# Local agent tooling (APM manifest, its dependencies and what it deploys)
+apm.yml
+apm.lock.yaml
+apm_modules/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/driving-wakewire/
+.claude/skills/*
+!.claude/skills/driving-wakewire
+.claude/hooks/
+.claude/apm-hooks.json
+.claude/settings.json
