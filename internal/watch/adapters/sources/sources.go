@@ -9,6 +9,7 @@ import (
 	"github.com/gperezmz/wakewire/internal/adapters/httpread"
 	"github.com/gperezmz/wakewire/internal/watch/adapters/accounts"
 	"github.com/gperezmz/wakewire/internal/watch/adapters/github"
+	"github.com/gperezmz/wakewire/internal/watch/adapters/gitlab"
 	"github.com/gperezmz/wakewire/internal/watch/adapters/jira"
 	"github.com/gperezmz/wakewire/internal/watch/application"
 	"github.com/gperezmz/wakewire/internal/watch/domain"
@@ -39,6 +40,12 @@ func (s Sources) For(_ context.Context, w application.Watch) ([]application.Boun
 	switch accounts.ServiceName(cred.Service) {
 	case "GitHub":
 		forge = &github.Source{HTTP: s.HTTP, Base: s.Endpoints.GitHub, Token: cred.Token, Repo: w.Repo, Name: cred.Account}
+	case "GitLab":
+		origin := "https://" + w.Repo.Host
+		if s.Endpoints.Origin != nil {
+			origin = s.Endpoints.Origin(w.Repo.Host)
+		}
+		forge = &gitlab.Source{HTTP: s.HTTP, Base: origin, Token: cred.Token, Repo: w.Repo, Name: cred.Account}
 	default:
 		return nil, domain.Invalid(fmt.Sprintf("%s has no source yet", accounts.ServiceName(cred.Service)), "see docs/reference/sources.md")
 	}

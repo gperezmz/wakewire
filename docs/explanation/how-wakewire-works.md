@@ -94,8 +94,8 @@ in, which leaves no trace; the next poll diffs the same items again.
 ## Why it diffs contents, not timestamps
 
 None of the three services documents which edits move an item's
-`updated_at`. A GitLab label change may not; a GitHub push may not; Jira's
-search index can lag by minutes. A poll therefore reads each item's current
+`updated_at`. A GitLab comment or push does not, and a label change may not;
+a GitHub push may not; Jira's search index can lag by minutes. A poll therefore reads each item's current
 labels, state, assignees, title, description and head commit, and compares
 them with its snapshot; a timestamp only decides whether to also fetch the
 item's comments and reviews. Per source, what a poll reads and costs is in

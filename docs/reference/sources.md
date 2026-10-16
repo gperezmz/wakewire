@@ -68,43 +68,76 @@ reviews already recorded are skipped by their ids.
 
 | # | Request | Why |
 |---|---|---|
+| 0 | `GET /users?username=<identity>` | The numeric id the list filters take; asked once, then kept in the source's state |
 | 1 | `GET /projects/:id/issues?assignee_id=<id>&state=all&order_by=updated_at&sort=desc&per_page=100` | Issues assigned to the identity |
 | 2 | `GET /projects/:id/issues?author_id=<id>&assignee_id=None&state=all&order_by=updated_at&sort=desc&per_page=100` | Issues the identity filed that nobody is assigned to |
-| 3 | `GET /projects/:id/merge_requests?author_id=<id>&state=all&order_by=updated_at&sort=desc&per_page=100` | The identity's merge requests, with `sha`, `merged_at` and `user_notes_count` |
+| 3 | `GET /projects/:id/merge_requests?author_id=<id>&state=all&order_by=updated_at&sort=desc&per_page=100` | The identity's merge requests |
+| 4 | `GET /projects/:id/merge_requests/:iid` for each open one | Its current `sha` and `user_notes_count` |
+| 5 | `GET /projects/:id/merge_requests/:iid/approvals` for each open one | Who approved |
 
-No `updated_after` filter: a label-only change may not move `updated_at`, so
-filtering by it could hide the change. Diffed fields: `state`, `labels`,
-`assignees`, `title`, `description`, `user_notes_count`, `sha`, `merged_at`,
-`updated_at`. About 3 requests per idle poll, against 2,000 a minute on
-gitlab.com.
+`:id` is the project's path with its slashes escaped, `group%2Fproject`. With
+a Jira tracker, requests 1 and 2 are left out.
+
+Requests 1 to 3 carry `If-None-Match` with the last ETag. GitLab sends a weak
+ETag on them, it changes when the list's body does, and it answers `304` to
+its own tag. Requests 4 and 5 carry none, since each is a single read.
+
+Request 4 exists because the project's merge request list is cached: GitLab
+17.11 keeps each merge request's entry until its `updated_at` moves, and a
+push, a comment or an approval does not move it. The list went on showing
+the old `sha` and a `user_notes_count` of 0 more than ten minutes after a
+push and four comments, while a read of the merge request alone showed both.
+Its `labels`, `title`, `description` and `state` follow the list's entry. The
+issue lists were current. Request 5 exists because no field of the merge
+request or the list shows an approval.
+
+No `updated_after` filter: a comment, a push and an approval left
+`updated_at` where it was every time they were tried, and a label change moved
+it once in four, so filtering by it would hide them. Diffed
+fields: `state` (`opened` is open; `closed`, `locked` and `merged` are
+closed), `labels`, `assignees`, `title`, `description`, `user_notes_count`,
+`sha`, `merged_at`, `updated_at`. An idle poll costs 3 requests plus 2 for
+each open merge request, against 2,000 a minute on gitlab.com.
 
 ### Per item that moved
 
 | Request | Gives |
 |---|---|
 | `GET .../issues/:iid/resource_label_events` (or `merge_requests`) | Who added or removed a label, and when |
-| `GET .../resource_state_events` | Who closed or reopened |
-| `GET .../notes?order_by=updated_at&sort=desc` | Comments; system notes are skipped |
-| `GET .../merge_requests/:iid/discussions` | Inline comments (`DiffNote`), with `position` |
-| `GET .../merge_requests/:iid/approvals` | Who approved, with `approved_at` |
-| `GET .../merge_requests/:iid/commits` | New commits and their authors, when `sha` moved |
+| `GET .../resource_state_events` | Who closed, reopened or merged |
+| `GET .../notes?order_by=updated_at&sort=desc&per_page=100` | Comments, and for a merge request the inline ones, which carry their `position`; system notes say who edited or reassigned and when an approval happened |
+| `GET .../merge_requests/:iid/commits` | New commits and their authors, newest first, when `sha` moved |
+| `GET /user` | The token owner's emails, to read the identity's own commits as the identity |
+
+Lists follow `Link: rel="next"`. Activities are told apart by id: `le:`
+label events, `se:` state events, `n:` notes, `ap:<username>` an approval,
+`commit:<sha>`.
 
 ### Identity, limits
 
-- Identity: `GET /user` gives `id` and `username`; lists filter on `id`.
+- Identity: a username. The lists filter on the numeric `id`; items are
+  compared on `username`.
 - A `read_api` token is enough.
 - gitlab.com allows 2,000 authenticated requests a minute; self-managed
   defaults to 7,200 an hour when an administrator enables limits. Headers:
-  `RateLimit-Remaining`, and `RateLimit-Reset` or `RateLimit-ResetTime`
-  depending on the instance; both are read.
+  `RateLimit-Limit`, `RateLimit-Remaining`, and `RateLimit-Reset` or
+  `RateLimit-ResetTime` depending on the instance; all are read. A
+  self-managed instance with limits off, as the 17.11.7 one the source was
+  tried on, sends none, and the rate stays unknown.
 
 ### What GitLab does not say
 
-- Whether a label change, a push or an approval moves `updated_at`; the
-  source code reads both ways. Diffing `labels` and `sha` covers it.
+- A merge request's approval time: the approvals list names the approvers
+  only. The source takes it from the system note "approved this merge
+  request", and an approval withdrawn and given again is not told from the
+  first, since it keeps the id `ap:<username>`.
 - A diff hunk for an inline comment: only the position. `hunk` is left out.
 - Who made a push, short of the day-granular events API. `pushed` reports
-  the commits' authors, matched on the identity's email.
+  the commits' authors; a commit carries an email, which is read as the
+  identity when it is one of the emails `GET /user` gives for the token's
+  owner and the token's owner is the identity.
+- A merge request closed or merged is read from the list's entry alone, so a
+  comment on it afterwards is missed until its `updated_at` moves.
 
 ## Jira Cloud
 
