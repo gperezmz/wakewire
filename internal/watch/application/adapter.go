@@ -169,9 +169,15 @@ func (s *Service) Next(ctx context.Context, session string, proc int, reader dom
 	if !w.PolledAt.IsZero() && now.Sub(w.PolledAt) < s.interval(*w) {
 		return s.offer(ctx, w.ID, res, reader)
 	}
+	// The lease is this binary's own, not the session's: a slow tick and
+	// the next one share the session's process but are two binaries.
+	holder := s.self
+	if holder.PID == 0 {
+		holder = self
+	}
 	var taken bool
 	err = s.store.Tx(ctx, func(tx Tx) error {
-		taken, err = tx.TakeLease(w.ID, self, now.Add(domain.LeaseFor), s.leaseFree)
+		taken, err = tx.TakeLease(w.ID, holder, now.Add(domain.LeaseFor), s.leaseFree)
 		return err
 	})
 	if err != nil {
@@ -181,7 +187,7 @@ func (s *Service) Next(ctx context.Context, session string, proc int, reader dom
 		pollCtx, cancel := context.WithTimeout(ctx, domain.PollBudget)
 		err = s.poll(pollCtx, *w)
 		cancel()
-		if rerr := s.store.Tx(ctx, func(tx Tx) error { return tx.ReleaseLease(w.ID, self) }); err == nil {
+		if rerr := s.store.Tx(ctx, func(tx Tx) error { return tx.ReleaseLease(w.ID, holder) }); err == nil {
 			err = rerr
 		}
 		if err != nil {

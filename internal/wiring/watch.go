@@ -3,6 +3,7 @@ package wiring
 import (
 	"context"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gperezmz/wakewire/internal/adapters/config"
@@ -22,6 +23,9 @@ type WatchOptions struct {
 	Account   AccountOptions
 	Clock     application.Clock
 	Processes application.Processes
+	// Self is this binary's own process, which holds the poll lease; the
+	// zero value is the running process.
+	Self application.Process
 }
 
 type systemClock struct{}
@@ -68,6 +72,14 @@ func NewWatch(ctx context.Context, paths home.Paths, getenv func(string) string,
 	if o.Processes != nil {
 		procs = o.Processes
 	}
+	// Where the table cannot name this process, the lease falls back to the
+	// session's process, as the commands that need the table fail anyway.
+	self := o.Self
+	if self.PID == 0 {
+		if start, running, err := procs.StartOf(os.Getpid()); err == nil && running {
+			self = application.Process{PID: os.Getpid(), Start: start}
+		}
+	}
 	acl := accounts.Accounts{Service: acct}
 	var transport http.RoundTripper
 	if o.Account.Transport != nil {
@@ -75,7 +87,7 @@ func NewWatch(ctx context.Context, paths home.Paths, getenv func(string) string,
 	}
 	src := sources.Sources{Accounts: acl, HTTP: httpread.New("wakewire", transport),
 		Endpoints: sources.Endpoints{GitHub: o.Account.GitHubAPI, Origin: o.Account.Origin}}
-	svc := application.New(store, src, acl, gitrepo.Repos{}, procs, clock, settings)
+	svc := application.New(store, src, acl, gitrepo.Repos{}, procs, clock, settings, application.WithSelf(self))
 	return &Watch{Service: svc, Store: store, Settings: settings}, nil
 }
 

@@ -17,7 +17,7 @@ timeout, so several sessions' binaries can read and write it at once.
 | `batch_changes` | Change in a batch | Batch and change, so a batch keeps its changes after another takes its place |
 | `problems` | Problem | Watch, source, code, text, the fix, `since`, `delivered_at`, `cleared_at` |
 | `source_state` | Watch and source | The source's own state between polls (ETags, the items each list held, pull request heads), unreachable polls in a row, the rate-limit budget, `skip_until` |
-| `leases` | Watch being polled | Process id and start time, `expires_at` |
+| `leases` | Watch being polled | The polling binary's process id and start time, `expires_at` |
 | `meta` | — | Schema version, `pruned_at` |
 
 A poll writes a source's changes and its snapshots in one transaction, so a
@@ -71,8 +71,9 @@ because the session registered another watch.
 ## Leases
 
 `adapter next` takes the watch's lease before polling and releases it after.
-A lease is free when its expiry, 90 s after it was taken, has passed, or when
-its process is gone by rule 1. A second `next` that finds the lease taken
+The lease is held by the binary's own process, not the session's, so two
+ticks of one session do not poll together. A lease is free when its expiry,
+90 s after it was taken, has passed, or when its process is gone by rule 1. A second `next` that finds the lease taken
 returns at once, delivering any pending batch without polling. No database
 lock is held across a request, neither a poll's nor the probe `status` makes
 of each account, so one slow service never blocks other watches.

@@ -24,17 +24,30 @@ type Service struct {
 	processes Processes
 	clock     Clock
 	settings  Settings
+	self      Process
 }
 
+// Option adjusts a Service.
+type Option func(*Service)
+
+// WithSelf names the running binary's own process. A lease is held by it,
+// not by the session whose tick it answers: two ticks of one session are
+// two binaries, and only one of them may poll.
+func WithSelf(p Process) Option { return func(s *Service) { s.self = p } }
+
 // New builds the service from its ports.
-func New(store Store, sources Sources, accounts Accounts, repos Repos, processes Processes, clock Clock, settings Settings) *Service {
+func New(store Store, sources Sources, accounts Accounts, repos Repos, processes Processes, clock Clock, settings Settings, opts ...Option) *Service {
 	if settings.Interval == 0 {
 		settings.Interval = domain.DefaultInterval
 	}
 	if settings.Marker == "" {
 		settings.Marker = domain.DefaultMarker
 	}
-	return &Service{store, sources, accounts, repos, processes, clock, settings}
+	svc := &Service{store: store, sources: sources, accounts: accounts, repos: repos, processes: processes, clock: clock, settings: settings}
+	for _, o := range opts {
+		o(svc)
+	}
+	return svc
 }
 
 func (s *Service) interval(w Watch) time.Duration {
