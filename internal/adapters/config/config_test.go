@@ -166,3 +166,13 @@ func TestAParseErrorNeverQuotesATokenPrefix(t *testing.T) {
 		}
 	}
 }
+
+func TestAnIntervalMayBeGivenInDays(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, []byte("[poll]\ninterval = \"1d\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(path); err != nil {
+		t.Fatal(err)
+	}
+}

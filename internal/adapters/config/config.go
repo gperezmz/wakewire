@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -117,12 +118,23 @@ func parse(path, text string) (File, error) {
 }
 
 func checkInterval(path, s string) error {
-	d, err := time.ParseDuration(s)
+	d, err := parseDuration(s)
 	if err != nil || d < MinInterval {
 		return NewError(fmt.Sprintf("[poll] interval %q in %s is not a duration of at least %s", s, path, MinInterval),
 			fmt.Sprintf("set `interval = \"2m\"` (or another duration from 30s) under [poll] in %s", path))
 	}
 	return nil
+}
+
+// parseDuration reads a Go duration or a number of days, as `1d`, as the
+// command line does.
+func parseDuration(s string) (time.Duration, error) {
+	if n, ok := strings.CutSuffix(s, "d"); ok {
+		if days, err := strconv.Atoi(n); err == nil && days > 0 {
+			return time.Duration(days) * 24 * time.Hour, nil
+		}
+	}
+	return time.ParseDuration(s)
 }
 
 func checkAccounts(path, text string, accounts []Account) error {

@@ -644,14 +644,14 @@ func (x *tx) TakeLease(watchID int64, holder application.Process, until time.Tim
 	var l application.Lease
 	var expires sql.NullString
 	err := x.t.QueryRow(`SELECT watch_id, pid, pid_start, expires_at FROM leases WHERE watch_id=?`, watchID).
-		Scan(&l.WatchID, &l.Holder.PID, &l.Holder.Start, &expires)
+		Scan(&l.WatchID, &l.Process.PID, &l.Process.Start, &expires)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 	case err != nil:
 		return false, err
 	default:
 		l.ExpiresAt = parseTS(expires)
-		if l.Holder != holder && !free(l) {
+		if l.Process != holder && !free(l) {
 			return false, nil
 		}
 	}

@@ -369,15 +369,15 @@ func (x *tx) SaveSourceState(s application.SourceState) error {
 }
 
 func (x *tx) TakeLease(watchID int64, holder application.Process, until time.Time, free func(application.Lease) bool) (bool, error) {
-	if l, ok := x.s.Leases[watchID]; ok && l.Holder != holder && !free(l) {
+	if l, ok := x.s.Leases[watchID]; ok && l.Process != holder && !free(l) {
 		return false, nil
 	}
-	x.s.Leases[watchID] = application.Lease{WatchID: watchID, Holder: holder, ExpiresAt: until}
+	x.s.Leases[watchID] = application.Lease{WatchID: watchID, Process: holder, ExpiresAt: until}
 	return true, nil
 }
 
 func (x *tx) ReleaseLease(watchID int64, holder application.Process) error {
-	if l, ok := x.s.Leases[watchID]; ok && l.Holder == holder {
+	if l, ok := x.s.Leases[watchID]; ok && l.Process == holder {
 		delete(x.s.Leases, watchID)
 	}
 	return nil

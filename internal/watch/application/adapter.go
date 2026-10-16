@@ -207,8 +207,8 @@ func (s *Service) leaseFree(l Lease) bool {
 	if !s.clock.Now().Before(l.ExpiresAt) {
 		return true
 	}
-	start, running, err := s.processes.StartOf(l.Holder.PID)
-	return err == nil && (!running || start != l.Holder.Start)
+	start, running, err := s.processes.StartOf(l.Process.PID)
+	return err == nil && (!running || start != l.Process.Start)
 }
 
 // offer builds or re-offers the watch's batch, unless it is paused.

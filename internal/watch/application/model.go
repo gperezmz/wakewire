@@ -102,7 +102,7 @@ type SourceState struct {
 // Lease is one process's claim to be polling a watch now.
 type Lease struct {
 	WatchID   int64
-	Holder    Process
+	Process   Process
 	ExpiresAt time.Time
 }
 

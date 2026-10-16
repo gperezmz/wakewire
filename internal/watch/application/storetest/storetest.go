@@ -424,7 +424,7 @@ func Run(t *testing.T, open func(t *testing.T) application.Store) {
 			}
 			return nil
 		}))
-		if seen.WatchID != w.ID || seen.Holder != a || !seen.ExpiresAt.Equal(until) {
+		if seen.WatchID != w.ID || seen.Process != a || !seen.ExpiresAt.Equal(until) {
 			t.Fatalf("free was shown %+v", seen)
 		}
 		must(t, s.Tx(ctx, func(tx application.Tx) error {
