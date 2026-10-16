@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -116,6 +117,25 @@ func TestAddWithEnvAndGHSourcesResolvesTheTokenAndStoresNothing(t *testing.T) {
 
 func envReq() AddRequest {
 	return AddRequest{Name: "e", Host: "gitlab.x.com", Owners: []string{"p"}, TokenSource: "env:MY_VAR"} //nolint:gosec // an environment variable's name, not a secret
+}
+
+// A token typed where a token source belongs must not come back in the error.
+func TestAddNeverEchoesATokenGivenAsTheTokenSource(t *testing.T) {
+	const secret = "ghp_SECRETVALUE0123456789" //nolint:gosec // a made-up value, to see it never comes back
+	for _, src := range []string{secret, "env:" + secret, "gh:" + secret} {
+		r := newRig()
+		_, err := r.Add(context.Background(), AddRequest{Name: "a", Host: "github.com", Owners: []string{"o"}, TokenSource: src})
+		if err == nil {
+			t.Fatalf("%s: want an error", src)
+		}
+		var c coded
+		if !errors.As(err, &c) {
+			t.Fatalf("%s: %v is not coded", src, err)
+		}
+		if text := err.Error() + c.Hint(); strings.Contains(text, "SECRET") {
+			t.Errorf("%s: error quotes the value: %s", src, text)
+		}
+	}
 }
 
 func TestAddRejectsBadInputAsInvalidValue(t *testing.T) {

@@ -152,3 +152,17 @@ func TestAParseErrorNeverQuotesTheSource(t *testing.T) {
 		t.Fatalf("error quotes the file: %v", err)
 	}
 }
+
+func TestAParseErrorNeverQuotesATokenPrefix(t *testing.T) {
+	for _, text := range []string{"[[accounts]]\ntoken = glpat-SECRETVALUE0123\n", "token = ghp_SECRETVALUE0123\n"} {
+		_, err := Load(put(t, text))
+		if err == nil {
+			t.Fatal("want an error")
+		}
+		var c coded
+		errors.As(err, &c)
+		if strings.Contains(err.Error()+c.Hint(), "glpat") || strings.Contains(err.Error()+c.Hint(), "ghp_") || strings.Contains(err.Error()+c.Hint(), "SECRET") {
+			t.Fatalf("error quotes the file: %v %s", err, c.Hint())
+		}
+	}
+}

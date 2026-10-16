@@ -2,8 +2,17 @@ package domain
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
+
+// A token typed where a token source belongs must not come back in the error.
+func TestParseTokenSourceNeverQuotesWhatItRefuses(t *testing.T) {
+	_, err := ParseTokenSource("ghp_SECRETVALUE0123456789")
+	if err == nil || strings.Contains(err.Error(), "SECRET") {
+		t.Fatalf("%v", err)
+	}
+}
 
 func TestKindForHost(t *testing.T) {
 	cases := map[string]ServiceKind{

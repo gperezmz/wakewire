@@ -90,6 +90,13 @@ func (s *Service) credential(a domain.Account) (Credential, error) {
 
 // token resolves where an account says its token comes from.
 func (s *Service) token(a domain.Account) (string, error) {
+	return s.resolve(a, true)
+}
+
+// resolve reads the token a.Token names. With named false its errors leave
+// out the variable or login the source names: a source typed on the command
+// line may be a token pasted in the wrong place, and no token is ever printed.
+func (s *Service) resolve(a domain.Account, named bool) (string, error) {
 	switch a.Token.Kind {
 	case domain.Stored:
 		t, found, err := s.p.Vault.Token(a.Name)
@@ -104,6 +111,11 @@ func (s *Service) token(a domain.Account) (string, error) {
 		return t, nil
 	case domain.Env:
 		t := strings.TrimSpace(s.p.Getenv(a.Token.Arg))
+		if t == "" && !named {
+			return "", NewError(CodeNoToken,
+				fmt.Sprintf("account %q reads its token from an environment variable, which is empty or unset", a.Name),
+				"export that variable where wakewire runs, or give another --token source")
+		}
 		if t == "" {
 			return "", NewError(CodeNoToken,
 				fmt.Sprintf("account %q reads its token from $%s, which is empty or unset", a.Name, a.Token.Arg),
@@ -112,6 +124,11 @@ func (s *Service) token(a domain.Account) (string, error) {
 		return t, nil
 	case domain.GH:
 		t, err := s.p.GH.Token(a.Host, a.Token.Arg)
+		if err != nil && !named {
+			return "", NewError(CodeNoToken,
+				fmt.Sprintf("gh gave no token for the login given on %s", a.Host),
+				fmt.Sprintf("run `gh auth login --hostname %s` as that login, or give another --token source", a.Host))
+		}
 		if err != nil {
 			return "", NewError(CodeNoToken,
 				fmt.Sprintf("gh gave no token for %s on %s: %v", a.Token.Arg, a.Host, err),

@@ -142,7 +142,7 @@ func (s *Service) Add(ctx context.Context, r AddRequest) (AddResult, error) {
 			res.Outcome = OutcomeAlready
 			return res, nil
 		}
-		if token, err = s.token(a); err != nil {
+		if token, err = s.resolve(a, false); err != nil {
 			return AddResult{}, err
 		}
 	}

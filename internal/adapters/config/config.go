@@ -100,8 +100,9 @@ func Load(path string) (File, error) {
 func parse(path, text string) (File, error) {
 	f := Defaults()
 	if _, err := toml.Decode(text, &f); err != nil {
+		// Only the line is named: the parser quotes what it chokes on, which may be a token.
 		if pe, ok := errors.AsType[toml.ParseError](err); ok {
-			return File{}, NewError(fmt.Sprintf("%s does not parse: %s (line %d)", path, pe.Message, pe.Position.Line),
+			return File{}, NewError(fmt.Sprintf("%s does not parse (line %d)", path, pe.Position.Line),
 				fmt.Sprintf("fix line %d of %s, or move the file aside to start from the defaults", pe.Position.Line, path))
 		}
 		return File{}, NewError(fmt.Sprintf("%s does not parse: %v", path, err), "fix the file, or move it aside to start from the defaults")

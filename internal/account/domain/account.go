@@ -67,7 +67,7 @@ func ParseTokenSource(s string) (TokenSource, error) {
 	case strings.HasPrefix(s, "gh:") && s[3:] != "" && !strings.ContainsAny(s[3:], " \t\n"):
 		return TokenSource{Kind: GH, Arg: s[3:]}, nil
 	}
-	return TokenSource{}, &Violation{Field: "token", Message: fmt.Sprintf("%q is not a token source: use stored, env:<VAR> or gh:<login>", s)}
+	return TokenSource{}, &Violation{Field: "token", Message: "the token source must be stored, env:<VAR> or gh:<login>"}
 }
 
 var (
