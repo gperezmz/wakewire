@@ -43,3 +43,20 @@ jobs:
           go-version-file: go.mod
       - name: go test -race
         run: go test -race ./...
+
+  mod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: typecheck
+        run: npx --yes --package typescript@7.0.2 -- tsc -p mod
+      - name: install Claude Code
+        run: npm install --global @anthropic-ai/claude-code@2.1.301
+      - name: claude plugin validate
+        run: claude plugin validate .
+      - name: claude plugin test
+        run: claude plugin test mod
+
