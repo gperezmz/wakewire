@@ -183,7 +183,7 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 		c.fail("mod", err)
 		failed(err)
 	} else if a == nil {
-		c.warn("mod", "no wakewire mod has said hello for this session", "install it: claude plugin install wakewire@wakewire")
+		c.warn("mod", "no wakewire mod has said hello for this session", "install it: claude plugin install wakewire --marketplace gperezmz/wakewire")
 	} else if a.Protocol != domain.Protocol {
 		c.warn("mod", fmt.Sprintf("the mod speaks protocol %d, this binary %d", a.Protocol, domain.Protocol),
 			"install the binary and the mod from the same release")
