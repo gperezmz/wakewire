@@ -42,6 +42,13 @@ contract keep that risk inside the adapter.
 | **"If none of it needs you, a one-line reply is enough"** | Leaving the reply to the model | In real sessions a wake that needed nothing drew a ten-to-twenty-line summary and a question; over hundreds of wakes the replies cost more than the wakes. What needs the session stays its workflow's call |
 | **The note after compaction from a function hook** | A `SessionStart` command hook beside the module | One hooks module holds all of the mod; `classic.SessionStart` carries `additionalContext` the same way |
 
+## Distribution
+
+| Decision | Chosen over | Why |
+|---|---|---|
+| **A Homebrew cask, from this repository as its own tap** | A formula; a separate `homebrew-tap` repository | GoReleaser deprecates formulas that install prebuilt binaries, and Homebrew casks install a `binary` on macOS and Linux alike. Serving the tap from this repository needs no second repository and no extra token: the release job's own token writes `Casks/wakewire.rb`, one bot commit per release |
+| **A Nix flake that builds from source** | A flake fetching the release archives | It needs no hash per release, only one of the Go dependencies, which CI keeps current by building the flake |
+
 ## Registration
 
 | Decision | Chosen over | Why |

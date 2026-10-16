@@ -49,3 +49,30 @@ changelog:
 
 release:
   prerelease: auto
+
+# A Homebrew cask, served from this repository as its own tap, for macOS and
+# Linux: `brew tap gperezmz/wakewire https://github.com/gperezmz/wakewire`.
+# The release job's GITHUB_TOKEN pushes Casks/wakewire.rb to main.
+homebrew_casks:
+  - name: wakewire
+    binaries: [wakewire]
+    repository:
+      owner: gperezmz
+      name: wakewire
+      branch: main
+    directory: Casks
+    commit_author:
+      name: github-actions[bot]
+      email: 41898282+github-actions[bot]@users.noreply.github.com
+    commit_msg_template: "chore(brew): update wakewire to {{ .Tag }}"
+    homepage: https://github.com/gperezmz/wakewire
+    description: Wakes an agent session when what it waits on changes on GitHub, GitLab or Jira
+    skip_upload: false
+    # The binaries are not signed by Apple: without this, Gatekeeper refuses
+    # the first run on macOS.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/wakewire"]
+          end

@@ -44,6 +44,20 @@ install -m 755 wakewire ~/.local/bin/wakewire      # any folder on PATH
 wakewire version
 ```
 
+With Homebrew, on macOS or Linux; this repository is its own tap:
+
+```sh
+brew tap gperezmz/wakewire https://github.com/gperezmz/wakewire
+brew install --cask wakewire
+```
+
+With Nix, built from source:
+
+```sh
+nix run github:gperezmz/wakewire -- version
+nix profile install github:gperezmz/wakewire
+```
+
 Or with Go 1.27.2 or later:
 
 ```sh
