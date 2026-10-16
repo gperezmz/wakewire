@@ -16,14 +16,15 @@ import (
 	"github.com/gperezmz/wakewire/internal/wiring"
 )
 
-// The real sandbox: the KAN project of example.atlassian.net, which the
-// user designated for these tests. Its credential is read through the
-// account service, from the account stored for the site; the token is
-// never printed, logged or written.
-const (
-	realSite    = "example.atlassian.net"
-	realSiteTag = "example"
-)
+// The real sandbox: the KAN project of the Jira Cloud site that
+// WAKEWIRE_JIRA_SANDBOX names (as <site>.atlassian.net), which the user
+// designated for these tests, so the repository names no site. Its
+// credential is read through the account service, from the account stored
+// for the site; the token is never printed, logged or written.
+func realSite() string { return os.Getenv("WAKEWIRE_JIRA_SANDBOX") }
+
+// realSiteTag is the site's own name, which the recordings replace.
+func realSiteTag() string { site, _, _ := strings.Cut(realSite(), "."); return site }
 
 // sandbox reads the sandbox with a plain HTTP client. Writes live in
 // record_test.go and exist only in tests: wakewire itself only reads.
@@ -40,6 +41,9 @@ type sandbox struct {
 // newSandbox skips the test when no account is stored for the site.
 func newSandbox(t *testing.T) *sandbox {
 	t.Helper()
+	if realSite() == "" {
+		t.Skip("set WAKEWIRE_JIRA_SANDBOX to the sandbox's <site>.atlassian.net")
+	}
 	paths, err := home.Resolve(os.Getenv)
 	if err != nil {
 		t.Skip("no home folder: ", err)
@@ -48,9 +52,9 @@ func newSandbox(t *testing.T) *sandbox {
 	if err != nil {
 		t.Skip("accounts: ", err)
 	}
-	cred, err := accts.ForSite(realSite)
+	cred, err := accts.ForSite(realSite())
 	if err != nil {
-		t.Skipf("no account for %s yet: %v", realSite, err)
+		t.Skipf("no account for %s yet: %v", realSite(), err)
 	}
 	sb := &sandbox{t: t, email: cred.Email, token: cred.Token, hc: &http.Client{Timeout: 30 * time.Second}}
 	var me struct {
@@ -74,7 +78,7 @@ func (sb *sandbox) send(method, path string, body any) []byte {
 		}
 		rd = strings.NewReader(string(b))
 	}
-	req, err := http.NewRequest(method, "https://"+realSite+path, rd)
+	req, err := http.NewRequest(method, "https://"+realSite()+path, rd)
 	if err != nil {
 		sb.t.Fatal(err)
 	}

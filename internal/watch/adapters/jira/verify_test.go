@@ -21,8 +21,8 @@ func TestJiraStillKeepsTheContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	restore := strings.NewReplacer(account, sb.accountID, "wwsite", realSiteTag).Replace
-	diffs, err := contract.Live(c, "https://"+realSite, http.DefaultClient, func(r *http.Request) {
+	restore := strings.NewReplacer(account, sb.accountID, "wwsite", realSiteTag()).Replace
+	diffs, err := contract.Live(c, "https://"+realSite(), http.DefaultClient, func(r *http.Request) {
 		r.SetBasicAuth(sb.email, sb.token)
 	}, restore)
 	if err != nil {

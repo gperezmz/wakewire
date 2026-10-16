@@ -29,7 +29,7 @@ import (
 // scrubber replaces the sandbox's site, account and the names and email
 // Jira and git hold for the person recording.
 func scrubber(sb *sandbox) contract.Scrubber {
-	replace := [][2]string{{realSiteTag, "wwsite"}, {sb.accountID, account}, {url.QueryEscape(sb.accountID), account},
+	replace := [][2]string{{realSiteTag(), "wwsite"}, {sb.accountID, account}, {url.QueryEscape(sb.accountID), account},
 		{sb.email, "ww@example.com"}}
 	names := []string{sb.displayName}
 	if out, err := exec.Command("git", "config", "user.name").Output(); err == nil {
@@ -188,7 +188,7 @@ func TestRecordScenario(t *testing.T) {
 	sb := newSandbox(t)
 	rec := &contract.Recorder{Next: http.DefaultTransport, Scrub: scrubber(sb)}
 	// Only the source's own transport is recorded; the writes above go through sb.
-	r := newRunner(t, realSite, sb.accountID, "", rec, sb.email, sb.token)
+	r := newRunner(t, realSite(), sb.accountID, "", rec, sb.email, sb.token)
 	var steps []step
 	poll := func(what string) {
 		time.Sleep(4 * time.Second)
@@ -230,7 +230,7 @@ func TestRecordScenario(t *testing.T) {
 	poll("the second spec done")
 	poll("nothing moved again")
 
-	c := rec.Scrub.Contract(rec.Contract("Jira", "Recorded by record_test.go against the KAN project of "+realSite+" on "+time.Now().UTC().Format("2006-01-02")))
+	c := rec.Scrub.Contract(rec.Contract("Jira", "Recorded by record_test.go against the KAN project of "+realSite()+" on "+time.Now().UTC().Format("2006-01-02")))
 	if err := c.Save(contractFile); err != nil {
 		t.Fatal(err)
 	}
