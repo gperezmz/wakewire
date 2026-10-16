@@ -84,6 +84,13 @@ func (r Rules) InSet(it Item) bool {
 	return slices.ContainsFunc(it.Assignees, r.IsIdentity)
 }
 
+// assignedTo says whether an assignment activity gave the item to the
+// identity: it names the identity (a service that does not say whom it
+// assigned leaves it empty), and the item shows the identity assigned.
+func (r Rules) assignedTo(it Item, a Activity) bool {
+	return (a.Assignee == "" || r.IsIdentity(a.Assignee)) && slices.ContainsFunc(it.Assignees, r.IsIdentity)
+}
+
 func hasLabel(labels []string, want string) bool {
 	return want != "" && slices.ContainsFunc(labels, func(l string) bool { return strings.EqualFold(l, want) })
 }

@@ -87,6 +87,7 @@ func diffNew(r Rules, obs Observation, since time.Time) Diffed {
 	next.Baseline = since
 	var out []Change
 	var commits []Commit
+	var assigned *Activity
 	for _, a := range obs.Activities {
 		if !a.At.After(since) {
 			continue
@@ -97,10 +98,23 @@ func diffNew(r Rules, obs Observation, since time.Time) Diffed {
 			}
 			continue
 		}
-		if a.Kind == KindEdited || a.Kind == KindReassigned {
-			continue // an item new to the watch has no earlier text or assignees to compare
+		if a.Kind == KindReassigned {
+			// An item new to the watch has no earlier assignees to compare,
+			// but an assignment to the identity is how a spec comes into
+			// its partition.
+			if obs.Item.Kind == ItemIssue && r.assignedTo(obs.Item, a) && (assigned == nil || a.At.After(assigned.At)) {
+				assigned = &a
+			}
+			continue
+		}
+		if a.Kind == KindEdited {
+			continue // an item new to the watch has no earlier text to compare
 		}
 		out = append(out, fromActivity(obs.Item, a))
+	}
+	if assigned != nil {
+		out = append(out, Change{Item: obs.Item.Ref, URL: orDefault(assigned.URL, obs.Item.URL), Kind: KindReassigned,
+			From: []string{}, To: nonNil(obs.Item.Assignees), By: assigned.By, At: assigned.At})
 	}
 	if len(commits) > 0 {
 		out = append(out, Change{Item: obs.Item.Ref, URL: obs.Item.URL, Kind: KindPushed, At: obs.At, Head: obs.Item.Head, Commits: commits})
