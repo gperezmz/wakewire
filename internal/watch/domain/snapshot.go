@@ -104,7 +104,28 @@ func diffNew(r Rules, obs Observation, since time.Time) Diffed {
 	if len(commits) > 0 {
 		out = append(out, Change{Item: obs.Item.Ref, URL: obs.Item.URL, Kind: KindPushed, At: obs.At, Head: obs.Item.Head, Commits: commits})
 	}
+	// A spec that came into the partition with nothing in its timeline saying
+	// so, as a Jira issue created with its labels is: it gained the spec label
+	// as far as the watch can tell.
+	if obs.Item.Kind == ItemIssue && r.InSet(obs.Item) && !entered(out, r) {
+		out = append(out, Change{Item: obs.Item.Ref, URL: obs.Item.URL, Kind: KindLabelAdded, Label: r.Labels[MeaningSpec],
+			At: obs.At})
+	}
 	return Diffed{Changes: classifyAll(out, obs.Item.Kind, r), Next: next, Drop: !r.InSet(obs.Item)}
+}
+
+// entered says whether changes show a spec entering the partition: the
+// spec label added, or the spec given to the identity.
+func entered(cs []Change, r Rules) bool {
+	for _, c := range cs {
+		if c.Kind == KindLabelAdded && r.Labels.Is(c.Label, MeaningSpec) {
+			return true
+		}
+		if c.Kind == KindReassigned {
+			return true
+		}
+	}
+	return false
 }
 
 // Settle reports the held edits of an item that was not read this poll,

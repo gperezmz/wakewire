@@ -232,3 +232,15 @@ func TestAChangeRecordedTwiceIsReportedOnce(t *testing.T) {
 		t.Fatalf("%s %+v", kinds(d.Changes), d.Changes)
 	}
 }
+
+func TestASpecNewWithItsLabelsWakesAsTheSpecLabelAdded(t *testing.T) {
+	d := Diff(rules, nil, Observation{Item: spec(), At: at(10)}, at(5))
+	if kinds(d.Changes) != "label_added" || d.Changes[0].Label != "type::spec" {
+		t.Fatalf("%s", kinds(d.Changes))
+	}
+	notSpec := spec()
+	notSpec.Labels = []string{"bug"}
+	if d := Diff(rules, nil, Observation{Item: notSpec, At: at(10)}, at(5)); len(d.Changes) != 0 {
+		t.Fatalf("%s", kinds(d.Changes))
+	}
+}

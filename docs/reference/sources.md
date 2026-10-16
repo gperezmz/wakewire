@@ -215,16 +215,20 @@ change from or to a status it has not seen is left to the field diff.
 
 - Which edits move `updated`; diffing the fields covers all but comments,
   which also rely on the comment total.
-- Whether the comment total is reported on `search/jql`. If it is not, a
-  comment that moves nothing else is seen only when `updated` moves.
-- How a label change is written in the changelog, one item per label or one
-  joined string; both are read.
 - Whether labels match case-sensitively; wakewire compares them without
   regard to case.
 - Whether a status change names the statuses by id or by name in `from` and
   `to`; both are looked up.
-- Whether an issue created with labels records them in its changelog. If it
-  does not, a spec created already labelled shows no `label_added`.
+
+What a run against the sandbox settled:
+
+- The comment total is reported on `search/jql`, as `comment.total`, with
+  `maxResults` 0, so a comment is seen on the next poll.
+- A label change is one changelog item whose `fromString` and `toString`
+  join the labels with spaces.
+- An issue created with its labels records no label change in its
+  changelog. A spec new to the watch whose timeline shows no way in is
+  reported as the spec label added, with no `by`.
 
 ## Problems
 
