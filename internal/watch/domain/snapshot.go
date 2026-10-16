@@ -132,20 +132,28 @@ func (d *differ) fresh(a Activity) bool {
 	return !slices.Contains(d.prev.Seen, a.ID) && a.At.After(d.prev.Baseline) && !d.consumed[a.ID]
 }
 
-// claim finds the newest fresh activity matching ok, marks it consumed and
-// answers who made it and when; the observation's time where none matches.
+// claim finds the newest fresh activity matching ok and answers who made
+// it and when; the observation's time where none matches. Every fresh
+// activity matching ok is consumed with it: a service may record one change
+// more than once, as GitLab records a spec closed by a merge.
 func (d *differ) claim(ok func(Activity) bool) (string, time.Time) {
 	idx := -1
 	for i, a := range d.obs.Activities {
-		if d.fresh(a) && ok(a) && (idx < 0 || a.At.After(d.obs.Activities[idx].At)) {
-			idx = i
+		if d.fresh(a) && ok(a) {
+			if idx < 0 || a.At.After(d.obs.Activities[idx].At) {
+				idx = i
+			}
 		}
 	}
 	if idx < 0 {
 		return "", d.obs.At
 	}
 	a := d.obs.Activities[idx]
-	d.consumed[a.ID] = true
+	for _, b := range d.obs.Activities {
+		if d.fresh(b) && ok(b) {
+			d.consumed[b.ID] = true
+		}
+	}
 	return a.By, a.At
 }
 

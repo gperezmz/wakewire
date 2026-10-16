@@ -219,3 +219,16 @@ func TestPartition(t *testing.T) {
 		}
 	}
 }
+
+func TestAChangeRecordedTwiceIsReportedOnce(t *testing.T) {
+	prev := Diff(rules, nil, Observation{Item: spec(), At: at(0)}, time.Time{}).Next
+	now := spec()
+	now.State = "closed"
+	d := Diff(rules, &prev, Observation{Item: now, At: at(3), Activities: []Activity{
+		{ID: "se:1", Kind: KindClosed, By: "alice", At: at(1)},
+		{ID: "n:9", Kind: KindClosed, By: "alice", At: at(2)},
+	}}, time.Time{})
+	if kinds(d.Changes) != "closed" || d.Changes[0].At != at(2) {
+		t.Fatalf("%s %+v", kinds(d.Changes), d.Changes)
+	}
+}
