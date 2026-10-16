@@ -67,11 +67,13 @@ func (a api) do(method, path string, body any) map[string]any {
 
 func num(m map[string]any, key string) string { return fmt.Sprint(int(m[key].(float64))) }
 
-// scrubber replaces the sandbox's owner, host and the names the instance
-// and git hold for the person recording.
+// scrubber replaces the sandbox's owner, host, the numeric ids of the owner
+// and of the project, and the names the instance and git hold for the person
+// recording. The ids come from the API at run time, never from the code.
 func scrubber(t *testing.T, a api, clone string) contract.Scrubber {
 	replace := [][2]string{{realSandbox(t).Owner(), "wwuser"}, {a.host, "gitlab.example.com"}}
 	me := a.do("GET", "user", nil)
+	project := a.do("GET", "projects/"+url.PathEscape(realSandbox(t).Path), nil)
 	for _, v := range []string{fmt.Sprint(me["name"]), sh(t, clone, "", "git", "config", "user.name")} {
 		if v != "" && v != realSandbox(t).Owner() {
 			replace = append(replace, [2]string{v, "Wakewire User"})
@@ -79,6 +81,7 @@ func scrubber(t *testing.T, a api, clone string) contract.Scrubber {
 	}
 	return contract.Scrubber{
 		Replace:      replace,
+		Numbers:      map[string]string{num(me, "id"): "1001", num(project, "id"): "1002"},
 		KeepRequest:  []string{"If-None-Match"},
 		KeepResponse: []string{"Etag", "Date", "RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset", "RateLimit-ResetTime"},
 		// Fields that name or place a person and that the client never reads.
