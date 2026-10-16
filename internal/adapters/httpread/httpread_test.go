@@ -81,6 +81,47 @@ func TestSpentBudgetIsRateLimitedWithReset(t *testing.T) {
 	}
 }
 
+// Go keeps a custom header such as PRIVATE-TOKEN across a redirect to another
+// host, so the client must not follow one.
+func TestARedirectToAnotherHostIsNotFollowedAndLeaksNoCredential(t *testing.T) {
+	leaked := ""
+	other := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		leaked = r.Header.Get("PRIVATE-TOKEN") + r.Header.Get("Authorization")
+	}))
+	defer other.Close()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, other.URL+"/stolen", http.StatusFound)
+	}))
+	defer srv.Close()
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/user", nil)
+	req.Header.Set("PRIVATE-TOKEN", "sekrit-token-value")
+	req.Header.Set("Authorization", "Bearer sekrit-token-value")
+	_, err := New("test", nil).Do(context.Background(), "GitLab", req)
+	var e *Error
+	if !errors.As(err, &e) || e.Code() != "unreachable" || !strings.Contains(e.Error(), "another host") {
+		t.Fatalf("got %v", err)
+	}
+	if leaked != "" {
+		t.Fatal("a credential reached the other host")
+	}
+}
+
+func TestARedirectWithinTheHostIsFollowed(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/old" {
+			http.Redirect(w, r, "/new", http.StatusMovedPermanently)
+			return
+		}
+		_, _ = w.Write([]byte("moved"))
+	}))
+	defer srv.Close()
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/old", nil)
+	resp, err := New("test", nil).Do(context.Background(), "GitHub", req)
+	if err != nil || string(resp.Body) != "moved" {
+		t.Fatalf("%v %v", resp, err)
+	}
+}
+
 func TestASecondaryRateLimitIsRateLimitedNotARefusedToken(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("X-Ratelimit-Remaining", "4000")

@@ -56,9 +56,25 @@ func New(userAgent string, base http.RoundTripper) *Client {
 		base = http.DefaultTransport
 	}
 	return &Client{
-		http:      &http.Client{Timeout: RequestTimeout, Transport: readOnly{base}},
+		http:      &http.Client{Timeout: RequestTimeout, Transport: readOnly{base}, CheckRedirect: sameHost},
 		userAgent: userAgent,
 	}
+}
+
+// ErrRedirect is what the client answers a redirect to another host.
+var ErrRedirect = errors.New("redirect to another host refused")
+
+// sameHost refuses a redirect to a host other than the one asked: Go keeps a
+// custom credential header, such as GitLab's PRIVATE-TOKEN, across hosts, so
+// no credential may leave for a host the account was not set up for.
+func sameHost(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	if req.URL.Host != via[0].URL.Host {
+		return ErrRedirect
+	}
+	return nil
 }
 
 // ErrWrite is what the transport answers a request that would write.
@@ -112,6 +128,10 @@ func (c *Client) Do(ctx context.Context, service string, req *http.Request) (*Re
 		}
 		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 			msg = fmt.Sprintf("%s did not answer %s %s before the poll's budget ran out", service, req.Method, req.URL.Path)
+		}
+		if errors.Is(err, ErrRedirect) {
+			return nil, NewError("unreachable", fmt.Sprintf("%s redirected %s %s to another host, which wakewire does not follow", service, req.Method, req.URL.Path),
+				"check `host` of the account in config.toml, then `wakewire doctor`")
 		}
 		if errors.Is(err, ErrWrite) {
 			return nil, NewError("invalid_value", err.Error(), "this is a bug in wakewire: report it")
