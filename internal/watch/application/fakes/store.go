@@ -49,8 +49,19 @@ type Store struct {
 	s  state
 	// FailCommit, when set, fails the next commit, as a killed process would.
 	FailCommit bool
+	commits    int // transactions that committed or were made to fail, counted from 1
+	failAt     int // the commit number to fail; 0: none
 	open       atomic.Int32
 }
+
+// Commits answers how many transactions have reached their commit.
+func (st *Store) Commits() int { st.mu.Lock(); defer st.mu.Unlock(); return st.commits }
+
+// FailCommitNumber fails the n-th commit counted from the store's start, as
+// a killed process would: whatever that transaction wrote is gone. A test
+// that kills the process at each commit of a use case in turn shows what
+// has to be written together.
+func (st *Store) FailCommitNumber(n int) { st.mu.Lock(); st.failAt = n; st.mu.Unlock() }
 
 // InTx says whether a transaction is open now: a transaction holds
 // state.db's write lock, so a call that waits on the network must not be
@@ -118,7 +129,8 @@ func (st *Store) Tx(_ context.Context, fn func(application.Tx) error) error {
 	if err := fn(&tx{&cp}); err != nil {
 		return err
 	}
-	if st.FailCommit {
+	st.commits++
+	if st.FailCommit || st.commits == st.failAt {
 		st.FailCommit = false
 		return crashed{}
 	}
