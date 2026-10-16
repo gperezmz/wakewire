@@ -10,6 +10,7 @@ import type { WakewireLine } from '../types'
 /** The wake contract this mod speaks; the binary must speak the same. */
 const PROTOCOL = 1
 const TICK_MS = 30_000
+const PULSE_MS = 3_000
 const BINARY = 'wakewire'
 
 type Problem = { code: string; text: string }
@@ -30,6 +31,12 @@ let ticking = false
 let timer: Timer | undefined
 let session = ''
 let watch = ''
+// The wake submitted and not yet started as a turn: acknowledged only when
+// its turn starts, so a wake queued behind a turn that never ends is
+// offered again to whoever holds the watch next.
+let awaiting: { id: number; text: string; count: number } | undefined
+// The turn a wake started, whose end takes the ✦ off the footer.
+let wokeTurn: string | undefined
 let usable = false
 
 /** The footer label's state: drawn by the SessionMode hook, written by the ticks. */
@@ -56,32 +63,56 @@ function shortWatch(w: string): string {
   return w.split('/').slice(1).join('/') || w
 }
 
-function hhmm(iso: string): string {
-  const d = new Date(iso)
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+/** troubleWords names a problem in a few words, for the footer. */
+function troubleWords(p: Problem): string {
+  const service = /not watching ([^:(.]+?)(?: until|[:(.]|$)/.exec(p.text)?.[1]?.trim() ?? 'the service'
+  switch (p.code) {
+    case 'unreachable':
+      return `can't reach ${service}`
+    case 'token_refused':
+      return `${service} refused the token`
+    case 'rate_limited':
+      return `${service} rate-limited`
+    case 'no_account':
+      return `no account for ${service}`
+    case 'no_stored_token':
+    case 'no_token':
+      return `no token for ${service}`
+  }
+  return `not watching ${service}`
+}
+
+const EMPTY: WakewireLine = { watch: '', paused: false, held: 0, trouble: null, woke: 0, pulse: false }
+
+/** setLine changes some of the footer's state; the drawing follows. */
+async function setLine($: EngineInterface, patch: Partial<WakewireLine>): Promise<void> {
+  await update($, line, (prev: WakewireLine | null | undefined): WakewireLine => ({ ...EMPTY, ...prev, ...patch }))
 }
 
 /**
- * show puts the watch's state where it belongs: an all-well or paused watch
- * in the dim footer label alone, trouble on the status line too, which Claude
- * Code draws as a warning.
+ * show puts the watch's state where it belongs: the footer label always,
+ * trouble on the status line too, which Claude Code draws as a warning. A
+ * poll that just ran makes the dot pulse for a moment.
  */
-async function show($: EngineInterface, l: LineState | undefined): Promise<void> {
+async function show($: EngineInterface, l: LineState | undefined, polled = false): Promise<void> {
   if (!l) return
   watch = l.watch
   const problem = l.problems[0]
-  const kind: WakewireLine['kind'] = problem ? 'trouble' : l.pausedSince ? 'paused' : 'watching'
-  $.ui.status(problem ? `${shortWatch(l.watch)}: ${problem.text.replace(/\.$/, '')}` : undefined)
-  await update($, line, () => ({ kind, watch: l.watch }))
+  $.ui.status(problem ? problem.text.replace(/\.$/, '') : undefined)
+  await setLine($, {
+    watch: l.watch,
+    paused: l.pausedSince !== null,
+    held: l.held,
+    trouble: problem ? troubleWords(problem) : null,
+    pulse: polled,
+  })
+  if (polled) $.clock.after(PULSE_MS, () => void setLine($, { pulse: false }).catch(() => undefined))
 }
 
-/** trouble shows a fault on the status line and a red dot in the footer. */
-async function trouble($: EngineInterface, text: string): Promise<void> {
+/** trouble shows a fault on the status line and names it in the footer. */
+async function trouble($: EngineInterface, text: string, words: string): Promise<void> {
   $.ui.status(text)
-  await update($, line, (prev: WakewireLine | null | undefined): WakewireLine => ({
-    kind: 'trouble',
-    watch: prev?.watch ?? watch,
-  }))
+  await setLine($, { trouble: words })
 }
 
 /** quiet clears both: this session holds no watch. */
@@ -92,6 +123,8 @@ async function quiet($: EngineInterface): Promise<void> {
 
 function disarm(): void {
   armed = false
+  awaiting = undefined
+  wokeTurn = undefined
   timer?.cancel()
   timer = undefined
 }
@@ -147,8 +180,11 @@ async function tick($: EngineInterface): Promise<void> {
       return
     }
     const n = await run($, ['adapter', 'next', '--session', session, '--reader', 'tool', '--json'], 90_000)
+    // The tick may have waited a minute: the session may have ended or been
+    // cleared since, and what it brought belongs to no one here.
+    if (!armed || (await $.session.id()) !== session) return
     if (!n.ok || !n.json) {
-      await trouble($, `${shortWatch(watch)}: ${n.json?.error?.message ?? 'the tick failed'}`)
+      await trouble($, n.json?.error?.message ?? 'the tick failed', 'tick failed')
       return
     }
     if (n.json.state === 'taken-over') {
@@ -162,16 +198,20 @@ async function tick($: EngineInterface): Promise<void> {
       await quiet($)
       return
     }
-    await show($, n.json.status)
-    const batch = n.json.batch as { id: number; wake: string } | null
-    if (!batch) return
+    await show($, n.json.status, n.json.polled === true)
+    const batch = n.json.batch as { id: number; wake: string; count: number } | null
+    if (!batch || awaiting) return
     // Submitted as the person's own words, read bare: the wake's first and
     // last lines are wakewire's fixed words, its others facts only, and the
     // frame Claude Code puts around a plugin's prompt would cost more than
     // the wake on every one of them.
+    awaiting = { id: batch.id, text: batch.wake, count: batch.count }
     const sent = await $.prompt.submit({ text: batch.wake, asUser: true })
-    if (sent.drop !== undefined) return // not acknowledged: offered again next tick
-    await run($, ['adapter', 'ack', String(batch.id), '--json'])
+    if (sent.drop !== undefined) {
+      awaiting = undefined // not acknowledged: offered again next tick
+      return
+    }
+    await setLine($, { woke: batch.count })
   } finally {
     ticking = false
   }
@@ -272,16 +312,45 @@ export const register: Register = on => {
     const l = await read($, line)
     if (!l) return next(e)
     const { Box, Text } = $.ui.resolve(e)
-    const dot = { watching: 'success', paused: 'warning', trouble: 'error' }[l.kind]
-    // The state alone; `/wakewire status` has the watch and its details.
-    const what = l.kind === 'paused' ? 'wakewire paused' : 'wakewire'
+    const [mark, color, words] = l.trouble
+      ? ['●', 'error', l.trouble]
+      : l.woke > 0
+        ? ['✦', 'claude', `${l.woke} new`]
+        : l.paused
+          ? ['⏸', 'warning', `paused · ${l.held} held`]
+          : [l.pulse ? '◉' : '●', 'success', 'watching']
     return (
       <Box>
         {e.props.modes.length > 0 && <Text dimColor>{e.props.modes.join(' & ')} · </Text>}
-        <Text color={dot}>{l.kind === 'paused' ? '⏸' : '●'}</Text>
-        <Text dimColor> {what}</Text>
+        <Text color={color}>{mark}</Text>
+        <Text dimColor> wakewire </Text>
+        <Text color={l.trouble || l.woke > 0 ? color : undefined} dimColor={!l.trouble && l.woke === 0}>
+          {words}
+        </Text>
       </Box>
     )
+  })
+
+  // The wake's turn started: now it is delivered.
+  on('turn.start', async ($, e, next) => {
+    const r = await next(e)
+    const w = awaiting
+    if (w && e.agentId === undefined && e.text === w.text) {
+      awaiting = undefined
+      wokeTurn = e.turnId
+      await run($, ['adapter', 'ack', String(w.id), '--json'])
+    }
+    return r
+  })
+
+  // The wake's turn ended: the ✦ comes off.
+  on('turn.complete', async ($, e, next) => {
+    const r = await next(e)
+    if (wokeTurn !== undefined && e.turnId === wokeTurn) {
+      wokeTurn = undefined
+      await setLine($, { woke: 0 })
+    }
+    return r
   })
 
   on('classic.SessionStart', async ($, e, next) => {

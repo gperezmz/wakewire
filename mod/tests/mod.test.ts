@@ -1,21 +1,28 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
 
 // A fake wakewire binary: answers each argv the mod runs, and records them.
-function binary(on: any, opts: { protocol?: number; holds?: boolean; batch?: { id: number; wake: string } | null } = {}) {
+function binary(
+  on: any,
+  opts: { protocol?: number; holds?: boolean; batch?: { id: number; wake: string; count?: number } | null; gate?: Promise<void> } = {},
+) {
   const calls: string[][] = []
-  const state = { holds: opts.holds ?? true, batch: opts.batch ?? null, acked: [] as number[] }
-  const status = { watch: 'github.com/o/x', polledAt: null, pausedSince: null, held: 0, pending: 0, problems: [] }
+  const state = { holds: opts.holds ?? true, batch: opts.batch ?? null, acked: [] as number[], problems: [] as { code: string; text: string }[] }
+  const status = () => ({ watch: 'github.com/o/x', polledAt: null, pausedSince: null, held: 0, pending: 0, problems: state.problems })
   on('process.run', ($: any, e: any) => {
     const argv = [...e.argv] as string[]
     calls.push(argv)
     const out = (v: unknown) => ({ value: { exitCode: 0, stdout: JSON.stringify(v), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [, cmd, sub] = argv
     if (cmd === 'version') return out({ version: 'v1.0.0', commit: 'abc', protocol: opts.protocol ?? 1 })
-    if (cmd === 'adapter' && sub === 'hello') return out({ protocol: 1, holds: state.holds, watch: 'github.com/o/x', status })
+    if (cmd === 'adapter' && sub === 'hello') return out({ protocol: 1, holds: state.holds, watch: 'github.com/o/x', status: status() })
     if (cmd === 'adapter' && sub === 'next') {
       expect(argv.slice(5, 7)).toEqual(['--reader', 'tool'])
+      if (opts.gate) {
+        const answer = { state: state.holds ? 'armed' : 'idle', polled: true, batch: state.batch, status: status() }
+        return opts.gate.then(() => out(answer))
+      }
       const batch = state.batch
-      return out({ state: state.holds ? 'armed' : 'idle', polled: true, batch, status })
+      return out({ state: state.holds ? 'armed' : 'idle', polled: true, batch, status: status() })
     }
     if (cmd === 'adapter' && sub === 'ack') {
       state.acked.push(Number(argv[3]))
@@ -58,6 +65,10 @@ function world(on: any, ids: string[] = ['sess-1']) {
   on('session.id', () => ({ value: ids[Math.min(n++, ids.length - 1)] }))
   on('tool.register', () => ({ value: undefined }))
   on('command.register', () => ({ value: undefined }))
+  on('turn.start', ($: any, e: any) => ({ turnId: e.turnId }))
+  on('turn.complete', () => ({ text: '' }))
+  on('ui.render', { component: 'SessionMode' }, () => ({ type: 'Box', props: {}, children: [] }))
+  on('classic.SessionStart', () => ({}))
   seen = []
   on('ui.status', ($: any, e: any) => {
     seen.push(e.text)
@@ -76,12 +87,28 @@ describe('wakewire mod', () => {
     expect(bin.calls.map(c => c.slice(1, 3).join(' '))).toEqual(['version --json', 'adapter hello'])
     expect(seen.at(-1)).toBe(undefined) // all is well: nothing on the status line
     const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: ['focus'] } })
-    expect((await footer.find({ type: 'Text', text: /^ ?wakewire$/ })) !== undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: 'watching' })) !== undefined).toBe(true)
     expect((await footer.find({ type: 'Text', text: /focus/ })) !== undefined).toBe(true)
     await footer.unmount()
     await clock.advance(30_000)
     expect(sent).toEqual(['[wakewire] github.com/o/x: 1 change since 09:00 (batch 7)'])
+    expect(bin.state.acked).toEqual([]) // queued, not yet delivered
+    await clock.advance(30_000)
+    expect(sent.length).toBe(1) // not submitted again while it waits for its turn
+    await $.turn.start({ text: sent[0]!, turnId: 't1' } as any)
     expect(bin.state.acked).toEqual([7])
+  })
+
+  test('a wake whose turn never starts is not acknowledged, so the next holder gets it', async ($, on) => {
+    const clock = mock.clock(on)
+    world(on)
+    const bin = binary(on, { batch: { id: 4, wake: '[wakewire] New activity:' } })
+    submits(on)
+    await $.session.start(start)
+    await clock.advance(30_000)
+    await $.turn.start({ text: 'something the person typed', turnId: 't1' } as any)
+    await $.session.end({ reason: 'prompt_input_exit', sessionId: 'sess-1', resume: { sessionId: 'sess-1' } } as any)
+    expect(bin.state.acked).toEqual([])
   })
 
   test('a dropped wake is not acknowledged, so it is offered again', async ($, on) => {
@@ -115,13 +142,16 @@ describe('wakewire mod', () => {
     expect(bin.calls.length).toBe(2)
   })
 
-  test('the session end is reported and the status line cleared', async ($, on) => {
+  test('the session end is reported and the footer label cleared', async ($, on) => {
     mock.clock(on)
     world(on)
     const bin = binary(on)
     await $.session.start(start)
+    const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: [] } })
+    expect((await footer.find({ type: 'Text', text: /wakewire/ })) !== undefined).toBe(true)
     await $.session.end({ reason: 'clear', sessionId: 'sess-1', resume: { sessionId: 'sess-1' } } as any)
-    expect(seen.at(-1)).toBe(undefined)
+    expect((await footer.find({ type: 'Text', text: /wakewire/ })) === undefined).toBe(true)
+    await footer.unmount()
     const ended = bin.calls.find(c => c[2] === 'ended')
     expect(ended).toEqual(['wakewire', 'adapter', 'ended', '--session', 'sess-1', '--reason', 'clear', '--json'])
   })
@@ -187,5 +217,87 @@ describe('wakewire mod', () => {
     await clock.advance(60_000)
     expect(bin.calls.filter(c => c[2] === 'next').length).toBe(0)
     expect(bin.calls.filter(c => c[2] === 'hello').map(c => c[4])).toEqual(['old', 'new'])
+  })
+
+  test('a problem goes on the status line and turns the dot red; it clears when the problem does', async ($, on) => {
+    const clock = mock.clock(on)
+    world(on)
+    const bin = binary(on)
+    await $.session.start(start)
+    const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: [] } })
+    bin.state.problems = [{ code: 'token_refused', text: 'not watching GitHub: GitHub refused the token (401).' }]
+    await clock.advance(30_000)
+    expect(seen.at(-1)).toBe('not watching GitHub: GitHub refused the token (401)')
+    const dot: any = await footer.find({ type: 'Text', text: '●' })
+    expect(dot?.props?.color).toBe('error')
+    expect((await footer.find({ type: 'Text', text: 'GitHub refused the token' })) !== undefined).toBe(true)
+    bin.state.problems = []
+    await clock.advance(30_000)
+    expect(seen.at(-1)).toBe(undefined)
+    expect(((await footer.find({ type: 'Text', text: /^[●◉]$/ })) as any)?.props?.color).toBe('success')
+    await footer.unmount()
+  })
+
+  test('a dry run or a failed register arms nothing', async ($, on) => {
+    const clock = mock.clock(on)
+    world(on)
+    const bin = binary(on, { holds: false })
+    let fail = false
+    on('tool.call', { tool: 'Bash' }, () =>
+      fail ? { result: { stdout: '', stderr: 'held', interrupted: false }, isError: true } : { result: { stdout: '', stderr: '', interrupted: false } })
+    await $.session.start(start)
+    bin.state.holds = true
+    await $.tool.call({ tool: 'Bash', command: 'wakewire register --dry-run' } as any)
+    fail = true
+    await $.tool.call({ tool: 'Bash', command: 'wakewire register' } as any)
+    await clock.advance(30_000)
+    expect(bin.calls.filter(c => c[2] === 'hello').length).toBe(1)
+    expect(bin.calls.filter(c => c[2] === 'next').length).toBe(0)
+  })
+
+  test('a tick still waiting when the session is cleared delivers nothing', async ($, on) => {
+    const clock = mock.clock(on)
+    world(on, ['old', 'old', 'old', 'new'])
+    let release = () => {}
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    const bin = binary(on, { batch: { id: 9, wake: '[wakewire] New activity:' }, gate })
+    const sent = submits(on)
+    await $.session.start(start)
+    await clock.advance(30_000)
+    await $.session.end({ reason: 'clear', sessionId: 'old', resume: { sessionId: 'old' } } as any)
+    release()
+    await clock.settle()
+    expect(sent).toEqual([])
+    expect(bin.state.acked).toEqual([])
+  })
+
+  test('a wake marks the footer until its turn ends, and a poll pulses the dot', async ($, on) => {
+    const clock = mock.clock(on)
+    world(on)
+    const bin = binary(on, { batch: { id: 5, wake: '[wakewire] New activity:', count: 2 } })
+    const sent = submits(on)
+    await $.session.start(start)
+    const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: [] } })
+    await clock.advance(30_000)
+    expect((await footer.find({ type: 'Text', text: '2 new' })) !== undefined).toBe(true)
+    await $.turn.start({ text: sent[0]!, turnId: 't9' } as any)
+    await $.turn.complete({ turnId: 't9', answer: 'ok', durationMs: 1, isAborted: false } as any)
+    expect((await footer.find({ type: 'Text', text: 'watching' })) !== undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: '◉' })) !== undefined).toBe(true)
+    await clock.advance(3_000)
+    expect((await footer.find({ type: 'Text', text: '●' })) !== undefined).toBe(true)
+    expect(bin.state.acked).toEqual([5])
+    await footer.unmount()
+  })
+
+  test('after compaction the session is told it holds the watch', async ($, on) => {
+    mock.clock(on)
+    world(on)
+    binary(on)
+    await $.session.start(start)
+    const r: any = await $.classic.SessionStart({ source: 'compact' } as any)
+    expect(String(r.additionalContext ?? '')).toContain('holds the wakewire watch for github.com/o/x')
   })
 })
