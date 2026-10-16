@@ -1,0 +1,12 @@
+{
+  "name": "wakewire",
+  "owner": { "name": "gperezmz", "url": "https://github.com/gperezmz" },
+  "description": "wakewire's Claude Code adapter: wakes a session when what it waits on changes on GitHub, GitLab or Jira.",
+  "plugins": [
+    {
+      "name": "wakewire",
+      "source": "./mod",
+      "description": "Wakes this session when what it waits on changes on GitHub, GitLab or Jira. Needs the wakewire binary on PATH."
+    }
+  ]
+}
