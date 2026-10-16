@@ -5,12 +5,9 @@ package gitlab
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
-	"strconv"
 	"time"
 
 	"github.com/gperezmz/wakewire/internal/adapters/httpread"
@@ -69,51 +66,15 @@ func (c *client) get(ctx context.Context, path string, query url.Values, etag st
 // readRate reads the budget GitLab reports. An instance with rate limits
 // off sends none of these headers, and the rate stays zero.
 func (c *client) readRate(h http.Header) {
-	if n, err := strconv.Atoi(h.Get("RateLimit-Limit")); err == nil {
-		c.rate.Limit = n
-	}
-	if n, err := strconv.Atoi(h.Get("RateLimit-Remaining")); err == nil {
-		c.rate.Remaining = n
-	}
-	if n, err := strconv.ParseInt(h.Get("RateLimit-Reset"), 10, 64); err == nil {
-		if n < 1e9 { // seconds from now, as some instances send it
-			c.rate.ResetAt = time.Now().UTC().Add(time.Duration(n) * time.Second)
-		} else {
-			c.rate.ResetAt = time.Unix(n, 0).UTC()
-		}
-	} else if t, err := http.ParseTime(h.Get("RateLimit-ResetTime")); err == nil {
-		c.rate.ResetAt = t.UTC()
-	}
+	r := httpread.Rate{Limit: c.rate.Limit, Remaining: c.rate.Remaining, ResetAt: c.rate.ResetAt}
+	r.Read(h)
+	c.rate.Limit, c.rate.Remaining, c.rate.ResetAt = r.Limit, r.Remaining, r.ResetAt
 }
 
-var nextLink = regexp.MustCompile(`<([^>]+)>;\s*rel="next"`)
-
 // getAll follows a list's next links, up to pages pages, decoding each
-// page's items into out.
+// page's items into one slice.
 func getAll[T any](ctx context.Context, c *client, path string, query url.Values, pages int) ([]T, error) {
-	var all []T
-	for range pages {
-		resp, err := c.get(ctx, path, query, "")
-		if err != nil {
-			return nil, err
-		}
-		if resp.Status/100 != 2 {
-			return all, nil
-		}
-		var page []T
-		if err := json.Unmarshal(resp.Body, &page); err != nil {
-			return nil, fmt.Errorf("GitLab's answer to %s: %w", path, err)
-		}
-		all = append(all, page...)
-		m := nextLink.FindStringSubmatch(resp.Header.Get("Link"))
-		if m == nil {
-			break
-		}
-		next, err := url.Parse(m[1])
-		if err != nil {
-			break
-		}
-		path, query = next.EscapedPath(), next.Query()
-	}
-	return all, nil
+	return httpread.GetAll[T](ctx, "GitLab", func(ctx context.Context, path string, query url.Values) (*httpread.Response, error) {
+		return c.get(ctx, path, query, "")
+	}, path, query, pages)
 }
