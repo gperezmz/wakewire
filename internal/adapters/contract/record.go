@@ -82,6 +82,29 @@ func (s Scrubber) Body(b []byte) json.RawMessage {
 	return out
 }
 
+// Contract scrubs a whole contract again: its note, paths, queries,
+// headers and bodies.
+func (s Scrubber) Contract(c Contract) Contract {
+	c.Note = s.Text(c.Note)
+	for i := range c.Interactions {
+		it := &c.Interactions[i]
+		it.Request.Path = s.Text(it.Request.Path)
+		for k, v := range it.Request.Query {
+			it.Request.Query[k] = s.Text(v)
+		}
+		for k, v := range it.Response.Headers {
+			it.Response.Headers[k] = s.Text(v)
+		}
+		if len(it.Request.Body) > 0 {
+			it.Request.Body = s.Body(it.Request.Body)
+		}
+		if len(it.Response.Body) > 0 {
+			it.Response.Body = s.Body(it.Response.Body)
+		}
+	}
+	return c
+}
+
 // Recorder is an http.RoundTripper that records what passes through it.
 type Recorder struct {
 	Next    http.RoundTripper

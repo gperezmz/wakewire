@@ -1,0 +1,46 @@
+[
+  {
+    "name": "first poll: what is there is no change",
+    "wake": ""
+  },
+  {
+    "name": "a new spec in the partition",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 20:38 (batch 3)\n- #2: label \"type::spec\" added by wwuser\nWhat each person wrote is in batch 3: mcp__wakewire__changes or `wakewire changes 3`."
+  },
+  {
+    "name": "ready label, agent label, a comment and an echo",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 2 changes since 20:38 (batch 8)\n- #2: label \"ready-for-dev\" added by wwuser\n- #2: comment by wwuser\nWhat each person wrote is in batch 8: mcp__wakewire__changes or `wakewire changes 8`."
+  },
+  {
+    "name": "a description edit, held",
+    "wake": ""
+  },
+  {
+    "name": "the edit holds still: reported",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 20:38 (batch 10)\n- #2: description edited\nWhat each person wrote is in batch 10: mcp__wakewire__changes or `wakewire changes 10`."
+  },
+  {
+    "name": "nothing moved: every list answers 304",
+    "wake": ""
+  },
+  {
+    "name": "a new pull request of the identity's",
+    "wake": ""
+  },
+  {
+    "name": "a comment, an inline comment and a review",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 3 changes since 20:38 (batch 14)\n- PR #3: comment by wwuser\n- PR #3: review, commented, by wwuser\n- PR #3: inline comment by wwuser\nWhat each person wrote is in batch 14: mcp__wakewire__changes or `wakewire changes 14`."
+  },
+  {
+    "name": "a push with someone else's commit",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 20:39 (batch 16)\n- PR #3: pushed commit by ada@example.com\nWhat each person wrote is in batch 16: mcp__wakewire__changes or `wakewire changes 16`."
+  },
+  {
+    "name": "merged",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 2 changes since 20:39 (batch 19)\n- #2: closed by wwuser\n- PR #3: merged by wwuser\nWhat each person wrote is in batch 19: mcp__wakewire__changes or `wakewire changes 19`."
+  },
+  {
+    "name": "the spec closed",
+    "wake": ""
+  }
+]
