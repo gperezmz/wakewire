@@ -157,5 +157,6 @@ wakewire knows nothing of fleets, manifests, builders or grants: it watches
 an identity's work and wakes whoever holds the watch. What run-fleet adds
 (the manifest, a board of what waits on the operator) is a separate project,
 which can read wakewire through its documented outputs: `status --json`,
-`ledger --json`, the [wake contract](../reference/wake-contract.md), and in
-Claude Code a `$.wakewire` noun the mod publishes for other mods.
+`ledger --json` and the [wake contract](../reference/wake-contract.md). The
+mod publishes nothing for other mods in v1; the
+[design decisions](design-decisions.md#the-mod) say why.

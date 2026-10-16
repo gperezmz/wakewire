@@ -32,6 +32,13 @@ contract keep that risk inside the adapter.
 | **Store at discovery, deliver by acknowledgement** | Advancing a cursor only after delivery | Nothing found ever lives only in memory, and a crash mid-poll loses nothing |
 | **The adapter ticks, the binary decides** | The adapter keeping the interval | Changing the interval needs no reload, and a failed delivery is retried within 30 s |
 
+## The mod
+
+| Decision | Chosen over | Why |
+|---|---|---|
+| **No `$.wakewire` noun in v1** | A noun with `status()`, `recent(n)`, `pause()`, `resume()` and an event per delivered batch, for other mods | No mod reads it yet. A noun is built in `engine.create`, where `$` is still empty, and the mod API has no way for a mod to raise an event of its own, so the per-batch event cannot be built as planned. Other mods and programs read `wakewire status --json` and `ledger --json` |
+| **The note after compaction from a function hook** | A `SessionStart` command hook beside the module | One hooks module holds all of the mod; `classic.SessionStart` carries `additionalContext` the same way |
+
 ## Registration
 
 | Decision | Chosen over | Why |
