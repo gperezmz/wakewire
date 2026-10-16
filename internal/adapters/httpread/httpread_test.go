@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestOnlyReadsAreAllowed(t *testing.T) {
@@ -71,6 +72,26 @@ func TestSpentBudgetIsRateLimitedWithReset(t *testing.T) {
 	_, err := New("test", nil).Do(context.Background(), "GitHub", req)
 	var e *Error
 	if !errors.As(err, &e) || e.Code() != "rate_limited" || e.ResetAt.Unix() != 1900000000 {
+		t.Fatalf("got %v", err)
+	}
+	// The watch application skips a rate-limited source through this method.
+	var r interface{ Reset() time.Time }
+	if !errors.As(err, &r) || r.Reset().Unix() != 1900000000 {
+		t.Fatalf("no Reset(): %v", err)
+	}
+}
+
+func TestASecondaryRateLimitIsRateLimitedNotARefusedToken(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("X-Ratelimit-Remaining", "4000")
+		w.Header().Set("Retry-After", "60")
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer srv.Close()
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/user", nil)
+	_, err := New("test", nil).Do(context.Background(), "GitHub", req)
+	var e *Error
+	if !errors.As(err, &e) || e.Code() != "rate_limited" || e.ResetAt.IsZero() {
 		t.Fatalf("got %v", err)
 	}
 }

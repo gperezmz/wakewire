@@ -35,6 +35,10 @@ func (e *Error) Error() string { return e.message }
 func (e *Error) Code() string  { return e.code }
 func (e *Error) Hint() string  { return e.hint }
 
+// Reset is when a spent budget refills; zero when the service did not say or
+// the error is not about a rate limit.
+func (e *Error) Reset() time.Time { return e.ResetAt }
+
 // NewError builds a coded service error.
 func NewError(code, message, hint string) *Error {
 	return &Error{code: code, message: message, hint: hint}
@@ -140,8 +144,12 @@ func (c *Client) Do(ctx context.Context, service string, req *http.Request) (*Re
 	return r, nil
 }
 
+// rateLimited says whether a 403 is a spent budget rather than a refused
+// token: the primary limit reports no calls remaining, GitHub's secondary
+// limit asks to retry later with calls remaining.
 func rateLimited(resp *http.Response) bool {
-	return resp.StatusCode == http.StatusForbidden && resp.Header.Get("X-Ratelimit-Remaining") == "0"
+	return resp.StatusCode == http.StatusForbidden &&
+		(resp.Header.Get("X-Ratelimit-Remaining") == "0" || resp.Header.Get("Retry-After") != "")
 }
 
 // resetTime reads when a spent budget resets, from whichever header the
