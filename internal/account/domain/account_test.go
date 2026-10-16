@@ -7,12 +7,12 @@ import (
 
 func TestKindForHost(t *testing.T) {
 	cases := map[string]ServiceKind{
-		"github.com":           GitHub,
-		"GitHub.com":           GitHub,
+		"github.com":         GitHub,
+		"GitHub.com":         GitHub,
 		"acme.atlassian.net": Jira,
-		"atlassian.net":        GitLab, // no site name: not a Jira Cloud site
-		"gitlab.com":           GitLab,
-		"gitlab.client.com":    GitLab,
+		"atlassian.net":      GitLab, // no site name: not a Jira Cloud site
+		"gitlab.com":         GitLab,
+		"gitlab.client.com":  GitLab,
 	}
 	for host, want := range cases {
 		if got := KindForHost(host); got != want {
@@ -23,9 +23,9 @@ func TestKindForHost(t *testing.T) {
 
 func TestParseTokenSource(t *testing.T) {
 	good := map[string]TokenSource{
-		"stored":        {Kind: Stored},
-		"env:MY_TOKEN":  {Kind: Env, Arg: "MY_TOKEN"},
-		"gh:jdoe-neo": {Kind: GH, Arg: "jdoe-neo"},
+		"stored":       {Kind: Stored},
+		"env:MY_TOKEN": {Kind: Env, Arg: "MY_TOKEN"},
+		"gh:jdoe-neo":  {Kind: GH, Arg: "jdoe-neo"},
 	}
 	for in, want := range good {
 		got, err := ParseTokenSource(in)

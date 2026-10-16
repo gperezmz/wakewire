@@ -154,7 +154,7 @@ func TestForRepoResolvesEachTokenSource(t *testing.T) {
 	r.env["MY_TOKEN"] = " env-secret\n"
 	r.vault["kept"] = "stored-secret"
 	for owner, want := range map[string]struct{ token, src string }{
-		"acme":    {"gh-secret", "gh:me-work"},
+		"acme":   {"gh-secret", "gh:me-work"},
 		"ENVORG": {"env-secret", "env:MY_TOKEN"},
 		"kept":   {"stored-secret", "stored"},
 	} {

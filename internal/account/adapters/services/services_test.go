@@ -96,8 +96,8 @@ func ptr(s string) *string { return &s }
 
 func TestGitHubOwnersAndUsers(t *testing.T) {
 	p, seen := serve(t, map[string]http.HandlerFunc{
-		"/users/acme": reply(`{"login":"acme","id":1,"type":"Organization"}`),
-		"/users/someone":    reply(`{"login":"someone","id":42,"name":"Some One"}`),
+		"/users/acme":    reply(`{"login":"acme","id":1,"type":"Organization"}`),
+		"/users/someone": reply(`{"login":"someone","id":42,"name":"Some One"}`),
 	})
 	c := cred(application.GitHub)
 	if err := p.Owner(context.Background(), c, "acme"); err != nil {
@@ -156,9 +156,9 @@ func TestGitLabProbeAndItsTokenScopes(t *testing.T) {
 
 func TestGitLabOwnersFallBackFromGroupToUser(t *testing.T) {
 	p, _ := serve(t, map[string]http.HandlerFunc{
-		"/api/v4/groups/platform":       reply(`{"id":3,"path":"platform"}`),
-		"/api/v4/users?username=jdoe": reply(`[{"id":5,"username":"jdoe","name":"G"}]`),
-		"/api/v4/users?username=ghost":  reply(`[]`),
+		"/api/v4/groups/platform":      reply(`{"id":3,"path":"platform"}`),
+		"/api/v4/users?username=jdoe":  reply(`[{"id":5,"username":"jdoe","name":"G"}]`),
+		"/api/v4/users?username=ghost": reply(`[]`),
 	})
 	c := cred(application.GitLab)
 	if err := p.Owner(context.Background(), c, "platform"); err != nil {

@@ -13,7 +13,7 @@ func TestParseRemote(t *testing.T) {
 		"git@github.com-personal:gperezmz/wakewire.git":    {"github.com-personal", "gperezmz/wakewire", "ssh"},
 		"https://github.com/o/r.git":                       {"github.com", "o/r", ""},
 		"ssh://git@gitlab.example.com:2222/g/sub/proj.git": {"gitlab.example.com", "g/sub/proj", "ssh"},
-		"https://user@gitlab.example.com/a/b":                 {"gitlab.example.com", "a/b", ""},
+		"https://user@gitlab.example.com/a/b":              {"gitlab.example.com", "a/b", ""},
 	} {
 		host, path, ssh, err := ParseRemote(raw)
 		if err != nil || host != want[0] || path != want[1] || ssh != (want[2] == "ssh") {
