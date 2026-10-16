@@ -74,7 +74,11 @@ describe('wakewire mod', () => {
     const seen = statuses(on)
     await $.session.start(start)
     expect(bin.calls.map(c => c.slice(1, 3).join(' '))).toEqual(['version --json', 'adapter hello'])
-    expect(seen.at(-1)).toBe('wakewire · watching o/x · polled not yet')
+    expect(seen.at(-1)).toBe(undefined) // all is well: nothing on the status line
+    const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: ['focus'] } })
+    expect((await footer.find({ type: 'Text', text: /wakewire o\/x$/ })) !== undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: /focus/ })) !== undefined).toBe(true)
+    await footer.unmount()
     await clock.advance(30_000)
     expect(sent).toEqual(['[wakewire] github.com/o/x: 1 change since 09:00 (batch 7)'])
     expect(bin.state.acked).toEqual([7])
@@ -98,7 +102,7 @@ describe('wakewire mod', () => {
     const bin = binary(on, { protocol: 2 })
     const seen = statuses(on)
     await $.session.start(start)
-    expect(seen.at(-1)).toBe('wakewire · needs update: the binary speaks protocol 2, this mod 1')
+    expect(seen.at(-1)).toBe('needs update: the binary speaks protocol 2, this mod 1')
     expect(bin.calls.length).toBe(1)
   })
 
@@ -156,7 +160,7 @@ describe('wakewire mod', () => {
     await $.session.start(start)
     await clock.advance(30_000)
     await clock.advance(90_000)
-    expect(seen.at(-1)).toBe('wakewire · taken over by claude-code:other')
+    expect(seen.at(-1)).toBe('taken over by claude-code:other')
     expect(calls.filter(c => c[2] === 'next').length).toBe(1)
   })
 

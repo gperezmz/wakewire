@@ -32,8 +32,8 @@ stateDiagram-v2
 | Tick | `$.clock.every(30000, …)` | Skips if the previous tick is still running. Runs `wakewire adapter next --session <id> --reader tool` through `$.process.run` with `timeoutMs: 90000` |
 | `next` returns a batch | `$.prompt.submit({ text, asUser: true })` | Submits the wake; when the result has no `drop`, runs `wakewire adapter ack <batch>`. A dropped or failed submit is not acknowledged, so the batch is offered on the next tick |
 | `next` says the watch was taken over | `$.ui.status` | Shows `taken over by …`, stops ticking |
-| A tick finds a new session id | `$.session.id()` | The process went on under another session, as after `/clear`: stops ticking, clears the status line and runs `hello` for the new id, which holds nothing until it registers |
-| Session ends | `session.end` | Stops ticking, clears the status line, and runs `wakewire adapter ended --session <e.sessionId> --reason <e.reason>` with `timeoutMs: 1200`, inside the 1.5 s that `session.end` gives every hook. After `/clear` the process goes on under a new session, which holds nothing until it registers |
+| A tick finds a new session id | `$.session.id()` | The process went on under another session, as after `/clear`: stops ticking, clears the footer label and the status line, and runs `hello` for the new id, which holds nothing until it registers |
+| Session ends | `session.end` | Stops ticking, clears the footer label and the status line, and runs `wakewire adapter ended --session <e.sessionId> --reason <e.reason>` with `timeoutMs: 1200`, inside the 1.5 s that `session.end` gives every hook. After `/clear` the process goes on under a new session, which holds nothing until it registers |
 
 `session.end` fires for `/exit`, Ctrl-C and Ctrl-D (`prompt_input_exit`), for
 `/clear` with the old session id (`clear`), for SIGINT, SIGTERM and SIGHUP
@@ -53,7 +53,8 @@ shell.
 
 | Addition | Mod API | Does |
 |---|---|---|
-| Status line | `$.ui.status(text)` | `wakewire · watching acme/x · polled 40s ago`; `wakewire · acme/x · paused since 11:20 · 4 held`; the open problem's text, as `wakewire · acme/x · not watching GitHub. GitHub refused the token (401)`; `wakewire · not installed: the wakewire binary is not on PATH`; `wakewire · needs update: the binary speaks protocol 2, this mod 1`; `wakewire · taken over by claude-code:…` |
+| Footer label | a `ui.render` hook on `SessionMode`, the dim labels at the right of the prompt footer, drawn from the mod's `$.state` contract in `types/index.d.ts` | While the session holds a watch: a green `● wakewire acme/x`; paused, a yellow `⏸ wakewire paused · 4 held`; in trouble, a red `● wakewire`. Claude Code's own mode labels stay beside it |
+| Status line | `$.ui.status(text)`, which Claude Code draws as a warning, `⚠ wakewire: …` | Only for trouble: the open problem (`acme/x: not watching GitHub: GitHub refused the token (401)`), `not installed: the wakewire binary is not on PATH`, `needs update: the binary speaks protocol 2, this mod 1`, `taken over by claude-code:…`. Clear otherwise |
 | Tool `mcp__wakewire__changes` | `$.tool.register` and a `tool.call` hook answering it | Takes `{ batch }`, returns the text of `wakewire changes <batch> --json` as the tool's result. It runs without a permission prompt, since the mod answers it |
 | Slash command `/wakewire` | `$.command.register`, with `immediate` so it runs mid-turn too, and a `command.run` hook answering it | `status`, `pause [duration]`, `resume` on the watch this session holds, without a model turn |
 | Note after compaction | a function hook on `classic.SessionStart` that adds `additionalContext` when its `source` is `compact` | States that this session holds the watch, that wakes open with `[wakewire]`, and how to read a batch. Where an organization manages Claude Code, classic events skip plugins a person installed, and no note is added |

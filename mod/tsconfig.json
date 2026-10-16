@@ -13,5 +13,5 @@
     "jsxFactory": "h",
     "jsxFragmentFactory": "Fragment"
   },
-  "include": ["typings", "hooks", "tests"]
+  "include": ["typings", "types", "hooks", "tests"]
 }

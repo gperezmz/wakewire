@@ -2,7 +2,10 @@
 // session's ticks, delivers wakes, serves batches to the agent and reports
 // when the session ends. Everything lasting is in the binary's state.db;
 // see docs/reference/claude-code-mod.md.
+import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, Timer } from 'claude-code'
+
+import type { WakewireLine } from '../types'
 
 /** The wake contract this mod speaks; the binary must speak the same. */
 const PROTOCOL = 1
@@ -28,7 +31,9 @@ let timer: Timer | undefined
 let session = ''
 let watch = ''
 let usable = false
-let last: LineState | undefined
+
+/** The footer label's state: drawn by the SessionMode hook, written by the ticks. */
+const line = atom({ plugin: 'wakewire', key: 'line' } as const, null)
 
 /** run starts the binary by argv, with no shell, and reads its JSON. */
 async function run($: EngineInterface, args: string[], timeoutMs = 30_000): Promise<Answer> {
@@ -51,34 +56,39 @@ function shortWatch(w: string): string {
   return w.split('/').slice(1).join('/') || w
 }
 
-function since(iso: string | null): string {
-  if (!iso) return 'not yet'
-  const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000))
-  if (s < 90) return `${s}s ago`
-  if (s < 5400) return `${Math.round(s / 60)}m ago`
-  return `${Math.round(s / 3600)}h ago`
-}
-
 function hhmm(iso: string): string {
   const d = new Date(iso)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-/** statusLine is what the status line shows for a watch. */
-function statusLine(l: LineState): string {
-  const head = `wakewire · ${shortWatch(l.watch)}`
+/**
+ * show puts the watch's state where it belongs: an all-well or paused watch
+ * in the dim footer label alone, trouble on the status line too, which Claude
+ * Code draws as a warning.
+ */
+async function show($: EngineInterface, l: LineState | undefined): Promise<void> {
+  if (!l) return
+  watch = l.watch
   const problem = l.problems[0]
-  if (problem) return `${head} · ${problem.text.replace(/\.$/, '')}`
-  if (l.pausedSince) return `${head} · paused since ${hhmm(l.pausedSince)} · ${l.held} held`
-  return `wakewire · watching ${shortWatch(l.watch)} · polled ${since(l.polledAt)}`
+  const kind: WakewireLine['kind'] = problem ? 'trouble' : l.pausedSince ? 'paused' : 'watching'
+  $.ui.status(problem ? `${shortWatch(l.watch)}: ${problem.text.replace(/\.$/, '')}` : undefined)
+  await update($, line, () => ({ kind, watch: l.watch, held: l.held }))
 }
 
-function show($: EngineInterface, l: LineState | undefined): void {
-  last = l
-  if (l) {
-    watch = l.watch
-    $.ui.status(statusLine(l))
-  }
+/** trouble shows a fault on the status line and a red dot in the footer. */
+async function trouble($: EngineInterface, text: string): Promise<void> {
+  $.ui.status(text)
+  await update($, line, (prev: WakewireLine | null | undefined): WakewireLine => ({
+    kind: 'trouble',
+    watch: prev?.watch ?? watch,
+    held: prev?.held ?? 0,
+  }))
+}
+
+/** quiet clears both: this session holds no watch. */
+async function quiet($: EngineInterface): Promise<void> {
+  $.ui.status(undefined)
+  await update($, line, () => null)
 }
 
 function disarm(): void {
@@ -91,12 +101,12 @@ function disarm(): void {
 async function checkBinary($: EngineInterface): Promise<boolean> {
   const v = await run($, ['version', '--json'])
   if (v.missing || (!v.ok && !v.json)) {
-    $.ui.status('wakewire · not installed: the wakewire binary is not on PATH')
+    $.ui.status('not installed: the wakewire binary is not on PATH')
     return false
   }
   const protocol = v.json?.protocol
   if (protocol !== PROTOCOL) {
-    $.ui.status(`wakewire · needs update: the binary speaks protocol ${protocol}, this mod ${PROTOCOL}`)
+    $.ui.status(`needs update: the binary speaks protocol ${protocol}, this mod ${PROTOCOL}`)
     return false
   }
   return true
@@ -108,17 +118,19 @@ async function hello($: EngineInterface): Promise<void> {
   session = await $.session.id()
   const h = await run($, ['adapter', 'hello', '--session', session, '--protocol', String(PROTOCOL), '--json'])
   if (!h.ok || !h.json) {
-    $.ui.status(`wakewire · ${h.json?.error?.message ?? 'hello failed'}`)
+    $.ui.status(h.json?.error?.message ?? 'hello failed')
     return
   }
-  if (h.json.holds) arm($, h.json.status)
+  if (h.json.holds) await arm($, h.json.status)
 }
 
-function arm($: EngineInterface, l: LineState | undefined): void {
-  show($, l)
+async function arm($: EngineInterface, l: LineState | undefined): Promise<void> {
+  await show($, l)
   if (armed) return
   armed = true
-  timer = $.clock.every(TICK_MS, () => void tick($))
+  timer = $.clock.every(TICK_MS, () => {
+    tick($).catch(() => undefined) // a failed tick is shown by the next one
+  })
 }
 
 /** tick asks the binary whether a poll is due and what waits to be delivered. */
@@ -131,26 +143,27 @@ async function tick($: EngineInterface): Promise<void> {
       // The process went on under another session, as after /clear: that
       // session holds nothing until it registers.
       disarm()
-      $.ui.status(undefined)
+      await quiet($)
       await hello($)
       return
     }
     const n = await run($, ['adapter', 'next', '--session', session, '--reader', 'tool', '--json'], 90_000)
     if (!n.ok || !n.json) {
-      $.ui.status(`wakewire · ${shortWatch(watch)} · ${n.json?.error?.message ?? 'the tick failed'}`)
+      await trouble($, `${shortWatch(watch)}: ${n.json?.error?.message ?? 'the tick failed'}`)
       return
     }
     if (n.json.state === 'taken-over') {
       disarm()
-      $.ui.status(`wakewire · taken over by ${n.json.by}`)
+      await update($, line, () => null)
+      $.ui.status(`taken over by ${n.json.by}`)
       return
     }
     if (n.json.state !== 'armed') {
       disarm()
-      $.ui.status(undefined)
+      await quiet($)
       return
     }
-    show($, n.json.status)
+    await show($, n.json.status)
     const batch = n.json.batch as { id: number; wake: string } | null
     if (!batch) return
     // Submitted as the person's own words, read bare: the wake's first and
@@ -192,7 +205,7 @@ async function wakewireCommand($: EngineInterface, args: string): Promise<{ text
     default:
       return { text: `/wakewire takes status, pause [duration] or resume, not ${JSON.stringify(verb)}.` }
   }
-  if (verb !== 'status') void tick($)
+  if (verb !== 'status') tick($).catch(() => undefined) // the label follows; nothing waits on it
   return { text: r.text.trim() }
 }
 
@@ -248,10 +261,32 @@ export const register: Register = on => {
       disarm()
       // After /clear the process goes on under a new session, which holds
       // nothing until it registers.
-      if (held) $.ui.status(undefined)
+      if (held) await quiet($)
       await run($, ['adapter', 'ended', '--session', e.sessionId, '--reason', e.reason, '--json'], 1_200)
     }
     return next(e)
+  })
+
+  // The footer label: a colored dot and the watch, beside Claude Code's own
+  // mode labels, drawn as they are, dim.
+  on('ui.render', { component: 'SessionMode' }, async ($, e, next) => {
+    const l = await read($, line)
+    if (!l) return next(e)
+    const { Box, Text } = $.ui.resolve(e)
+    const dot = { watching: 'success', paused: 'warning', trouble: 'error' }[l.kind]
+    const what =
+      l.kind === 'paused'
+        ? `wakewire paused · ${l.held} held`
+        : l.kind === 'trouble'
+          ? 'wakewire'
+          : `wakewire ${shortWatch(l.watch)}`
+    return (
+      <Box>
+        {e.props.modes.length > 0 && <Text dimColor>{e.props.modes.join(' & ')} · </Text>}
+        <Text color={dot}>{l.kind === 'paused' ? '⏸' : '●'}</Text>
+        <Text dimColor> {what}</Text>
+      </Box>
+    )
   })
 
   on('classic.SessionStart', async ($, e, next) => {

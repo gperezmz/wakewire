@@ -7,5 +7,6 @@
     "url": "https://github.com/gperezmz"
   },
   "homepage": "https://github.com/gperezmz/wakewire",
-  "repository": "https://github.com/gperezmz/wakewire"
+  "repository": "https://github.com/gperezmz/wakewire",
+  "types": "./types/index.d.ts"
 }
