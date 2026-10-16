@@ -123,7 +123,7 @@ func (s *Service) pollOne(ctx context.Context, w Watch, src BoundSource, firstPo
 		}
 		state.WatchID, state.Source = w.ID, src.Name
 		state.Data, state.Rate, state.Failures, state.OKAt = out.State, out.Rate, 0, started
-		if out.Rate.Limit > 0 && out.Rate.Remaining*20 < out.Rate.Limit {
+		if domain.NearlySpent(out.Rate.Remaining, out.Rate.Limit) {
 			state.SkipUntil = out.Rate.ResetAt
 			if err := s.raise(tx, w, src.Name, "rate_limited", fmt.Sprintf(
 				"not watching %s until %s: its rate limit is nearly spent (%d of %d left).",

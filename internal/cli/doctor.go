@@ -216,7 +216,7 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 		low := false
 		for _, st := range all {
 			for _, src := range st.Sources {
-				if r := src.Rate; r != nil && r.Limit > 0 && r.Remaining*10 < r.Limit {
+				if r := src.Rate; r != nil && domain.NearlySpent(r.Remaining, r.Limit) {
 					low = true
 					c.warn("budget", fmt.Sprintf("%s for %s has %d of %d requests left until %s", src.Service, st.Watch,
 						r.Remaining, r.Limit, r.ResetAt.Local().Format("15:04")), "lengthen the interval: wakewire interval 5m")
