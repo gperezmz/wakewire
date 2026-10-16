@@ -70,10 +70,10 @@ func (c *client) readRate(h http.Header) {
 	c.rate.Limit, c.rate.Remaining, c.rate.ResetAt = r.Limit, r.Remaining, r.ResetAt
 }
 
-// getAll follows a list's next links, up to pages pages, decoding each
-// page's items into one slice.
-func getAll[T any](ctx context.Context, c *client, path string, query url.Values, pages int) ([]T, error) {
-	return httpread.GetAll[T](ctx, "GitHub", func(ctx context.Context, path string, query url.Values) (*httpread.Response, error) {
+// getLast reads the last pages pages of a list that comes oldest first and
+// grows at its end, so that a busy item's new activity is never past the cap.
+func getLast[T any](ctx context.Context, c *client, path string, query url.Values, pages int) ([]T, error) {
+	return httpread.GetLast[T](ctx, "GitHub", func(ctx context.Context, path string, query url.Values) (*httpread.Response, error) {
 		return c.get(ctx, path, query, "")
 	}, path, query, pages)
 }

@@ -30,10 +30,11 @@ func newPager(t *testing.T, total int) *pager {
 		link := func(rel string, page int) string {
 			return fmt.Sprintf(`<%s%s?page=%d>; rel="%s"`, p.srv.URL, r.URL.EscapedPath(), page, rel)
 		}
+		links := link("last", p.total)
 		if n < p.total {
-			w.Header().Add("Link", link("next", n+1))
+			links = link("next", n+1) + ", " + links
 		}
-		w.Header().Add("Link", link("last", p.total))
+		w.Header().Set("Link", links)
 		_, _ = fmt.Fprintf(w, "[%d,%d]", 2*n-1, 2*n)
 	}))
 	t.Cleanup(p.srv.Close)
@@ -52,6 +53,49 @@ func (p *pager) get(_ context.Context, path string, query url.Values) (*Response
 func TestGetAllFollowsNextLinksUpToThePageCap(t *testing.T) {
 	p := newPager(t, 3)
 	got, err := GetAll[int](context.Background(), "Test", p.get, "/items", url.Values{"per_page": {"2"}}, 10)
+	if err != nil || fmt.Sprint(got) != "[1 2 3 4 5 6]" || len(p.requests) != 3 {
+		t.Fatalf("%v %v %v", got, err, p.requests)
+	}
+}
+
+// A busy item has more pages than the cap: what is new is at the end.
+func TestGetLastReadsTheLastPagesOfALongList(t *testing.T) {
+	p := newPager(t, 7)
+	got, err := GetLast[int](context.Background(), "Test", p.get, "/items", url.Values{"per_page": {"2"}}, 3)
+	if err != nil || fmt.Sprint(got) != "[9 10 11 12 13 14]" {
+		t.Fatalf("%v %v %v", got, err, p.requests)
+	}
+	want := []string{"/items?per_page=2", "/items?page=5", "/items?page=6", "/items?page=7"}
+	if fmt.Sprint(p.requests) != fmt.Sprint(want) {
+		t.Fatalf("requests %v, want %v", p.requests, want)
+	}
+}
+
+func TestGetLastReadsAListThatJustFitsWhole(t *testing.T) {
+	p := newPager(t, 3)
+	got, err := GetLast[int](context.Background(), "Test", p.get, "/items", url.Values{"per_page": {"2"}}, 3)
+	if err != nil || fmt.Sprint(got) != "[1 2 3 4 5 6]" || len(p.requests) != 3 {
+		t.Fatalf("%v %v %v", got, err, p.requests)
+	}
+}
+
+func TestGetLastWithoutALastLinkReadsFromTheStartAsFarAsTheCap(t *testing.T) {
+	p := newPager(t, 7)
+	get := func(ctx context.Context, path string, q url.Values) (*Response, error) {
+		resp, err := p.get(ctx, path, q)
+		resp.Header.Set("Link", nextLink.FindString(resp.Header.Get("Link"))) // no rel="last"
+		return resp, err
+	}
+	got, err := GetLast[int](context.Background(), "Test", get, "/items", nil, 3)
+	if err != nil || fmt.Sprint(got) != "[1 2 3 4 5 6]" {
+		t.Fatalf("%v %v", got, err)
+	}
+}
+
+// A list that comes newest first has what is new on its first pages.
+func TestGetAllReadsTheFirstPagesOfALongList(t *testing.T) {
+	p := newPager(t, 7)
+	got, err := GetAll[int](context.Background(), "Test", p.get, "/items", nil, 3)
 	if err != nil || fmt.Sprint(got) != "[1 2 3 4 5 6]" || len(p.requests) != 3 {
 		t.Fatalf("%v %v %v", got, err, p.requests)
 	}

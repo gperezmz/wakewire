@@ -246,7 +246,7 @@ func (s *Source) observe(ctx context.Context, c *client, in application.PollInpu
 	}
 	repoPath := "/repos/" + s.Repo.Path
 	n := strings.TrimPrefix(strings.TrimPrefix(it.Ref, "PR "), "#")
-	events, err := getAll[event](ctx, c, repoPath+"/issues/"+n+"/timeline", url.Values{"per_page": {"100"}}, pages)
+	events, err := getLast[event](ctx, c, repoPath+"/issues/"+n+"/timeline", url.Values{"per_page": {"100"}}, pages)
 	if err != nil {
 		return o, err
 	}
@@ -258,7 +258,7 @@ func (s *Source) observe(ctx context.Context, c *client, in application.PollInpu
 	if it.Kind != domain.ItemPull {
 		return o, nil
 	}
-	comments, err := getAll[reviewComment](ctx, c, repoPath+"/pulls/"+n+"/comments", url.Values{"per_page": {"100"}}, pages)
+	comments, err := getLast[reviewComment](ctx, c, repoPath+"/pulls/"+n+"/comments", url.Values{"per_page": {"100"}}, pages)
 	if err != nil {
 		return o, err
 	}
@@ -266,7 +266,7 @@ func (s *Source) observe(ctx context.Context, c *client, in application.PollInpu
 		o.Activities = append(o.Activities, rc.activity())
 	}
 	if had && it.Head != "" && it.Head != snap.Item.Head {
-		commits, err := getAll[commit](ctx, c, repoPath+"/pulls/"+n+"/commits", url.Values{"per_page": {"100"}}, 3)
+		commits, err := getLast[commit](ctx, c, repoPath+"/pulls/"+n+"/commits", url.Values{"per_page": {"100"}}, 3)
 		if err != nil {
 			return o, err
 		}

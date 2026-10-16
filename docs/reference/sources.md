@@ -46,8 +46,12 @@ not sent.
 | `GET /repos/{o}/{r}/pulls/{n}/commits?per_page=100` | When the head moved: the commits after the head last seen, each with its author's login, or the commit's author email where GitHub links no account |
 
 The timeline carries conversation comments and reviews, so the separate
-comments and reviews requests are not needed. Each list follows its `next`
-link, up to 10 pages. About 1 request per issue and 2 or 3 per pull request
+comments and reviews requests are not needed. Each list is read up to 10
+pages, the commit list up to 3 (300 commits, more than a head can move by).
+A list longer than that is read from its end, since these lists run oldest
+first: page 1 shows from the `last` link how many pages there are, and the
+last 10 (or 3) are read, so that a busy item's new activity is never past the
+cap; one extra request for such an item. About 1 request per issue and 2 or 3 per pull request
 that moved; on the watch's first poll none, since what is there then is no
 change. Entries already recorded are skipped by their ids. A review of state
 `commented` with no body only carries inline comments, which are read on
