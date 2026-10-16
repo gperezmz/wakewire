@@ -298,6 +298,14 @@ type AckResult struct {
 	Already   bool  `json:"already,omitempty"`
 }
 
+// problemKey names the change that reported a problem: raise stores both
+// with the same source, code and time.
+type problemKey struct {
+	source SourceName
+	code   string
+	at     int64 // UnixNano
+}
+
 // Ack marks a batch delivered.
 func (s *Service) Ack(ctx context.Context, batch int64) (AckResult, error) {
 	res := AckResult{Batch: batch}
@@ -332,12 +340,20 @@ func (s *Service) Ack(ctx context.Context, batch int64) (AckResult, error) {
 		if err := tx.SetChangeStatus(ids, domain.StatusDelivered, b.ID); err != nil {
 			return err
 		}
+		// Only the problems this batch reported are delivered: a problem
+		// raised after the batch was offered waits for its own.
+		reported := map[problemKey]bool{}
+		for _, c := range cs {
+			if c.Change.Kind == domain.KindProblem {
+				reported[problemKey{c.Source, c.Change.Code, c.Change.At.UnixNano()}] = true
+			}
+		}
 		probs, err := tx.OpenProblems(b.WatchID)
 		if err != nil {
 			return err
 		}
 		for _, p := range probs {
-			if p.DeliveredAt == nil {
+			if p.DeliveredAt == nil && reported[problemKey{p.Source, p.Code, p.Since.UnixNano()}] {
 				p.DeliveredAt = &now
 				if err := tx.SaveProblem(p); err != nil {
 					return err
