@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"maps"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -205,6 +207,67 @@ func TestSearchPagesFollowTheToken(t *testing.T) {
 	out, err := src.Poll(context.Background(), application.PollInput{Rules: rules, FirstPoll: true})
 	if err != nil || calls != 2 || len(out.Observations) != 2 {
 		t.Fatalf("calls %d, err %v, %+v", calls, err, out.Observations)
+	}
+}
+
+// A busy issue has more comments or changes than the pages the source reads:
+// the ones read must be the newest, or what is new is never fetched.
+func TestABusyIssueIsReadFromItsEnd(t *testing.T) {
+	const total = 250
+	var asked []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start, _ := strconv.Atoi(r.URL.Query().Get("startAt"))
+		asked = append(asked, r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]+"@"+strconv.Itoa(start))
+		var items []string
+		for i := start; i < min(start+100, total); i++ {
+			if strings.HasSuffix(r.URL.Path, "/comment") {
+				items = append(items, fmt.Sprintf(`{"id":"%d","created":"2026-10-16T10:00:00.000+0000"}`, i))
+			} else {
+				items = append(items, fmt.Sprintf(`{"id":"%d","created":"2026-10-16T10:00:00.000+0000","items":[{"field":"labels","toString":"l%d"}]}`, i, i))
+			}
+		}
+		key := map[bool]string{true: "comments", false: "values"}[strings.HasSuffix(r.URL.Path, "/comment")]
+		_, _ = fmt.Fprintf(w, `{"%s":[%s],"total":%d}`, key, strings.Join(items, ","), total)
+	}))
+	defer srv.Close()
+	src := &Source{HTTP: httpread.New("test", nil), Base: srv.URL, Site: "x.atlassian.net", Project: "KAN",
+		Email: "me@example.com", Token: "s3cr3t-value", Name: "jira", Pages: 1}
+	c := &client{http: src.HTTP, base: srv.URL, email: src.Email, token: src.Token}
+
+	comments, err := src.comments(context.Background(), c, "KAN-1")
+	if err != nil || len(comments) != 100 || comments[0].ID != "150" || comments[99].ID != "249" {
+		t.Fatalf("%d comments from %v: %v", len(comments), asked, err)
+	}
+	hs, err := src.issueChangelog(context.Background(), c, "KAN-1")
+	if err != nil || len(hs) != 100 || hs[0].ID != "150" || hs[99].ID != "249" {
+		t.Fatalf("%d histories from %v: %v", len(hs), asked, err)
+	}
+	if want := "comment@0 comment@150 changelog@0 changelog@150"; strings.Join(asked, " ") != want {
+		t.Fatalf("asked %v, want %s", asked, want)
+	}
+}
+
+// The bulk changelog pages by token with no way to ask for the end, so one
+// longer than the cap is read issue by issue instead.
+func TestABulkChangelogLongerThanTheCapFallsBackToTheIssuesOwn(t *testing.T) {
+	bulk := 0
+	src, f := newSource(t, map[string]func(map[string]any) (int, string){
+		"POST /rest/api/3/search/jql": answer(page(specLabelled)),
+		"POST /rest/api/3/changelog/bulkfetch": func(map[string]any) (int, string) {
+			bulk++
+			return 200, `{"issueChangeLogs":[],"nextPageToken":"more"}`
+		},
+		"GET /rest/api/3/issue/KAN-1/changelog": answer(`{"isLast":true,"total":1,"values":[{"id":"500","created":"2026-10-16T10:04:00.000+0000",
+			"items":[{"field":"labels","fromString":"","toString":"ready-for-dev"}]}]}`),
+		"GET /rest/api/3/issue/KAN-1/comment": answer(`{"total":1,"comments":[]}`),
+	})
+	src.Pages = 2
+	var i issue
+	_ = json.Unmarshal([]byte(spec), &i)
+	snap := domain.Snapshot{Item: i.item("x.atlassian.net")}
+	out, err := src.Poll(context.Background(), application.PollInput{Rules: rules, Snapshots: map[string]domain.Snapshot{"KAN-1": snap}})
+	if err != nil || bulk != 2 || len(out.Observations[0].Activities) != 1 {
+		t.Fatalf("bulk %d, err %v, %+v (requests %v)", bulk, err, out.Observations, f.requests)
 	}
 }
 

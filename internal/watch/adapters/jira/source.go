@@ -265,14 +265,19 @@ func (s *Source) changelogs(ctx context.Context, c *client, keys []string, ids m
 	return out, nil
 }
 
+// errBulkTruncated says the bulk changelog has more pages than the cap. It
+// pages by token, oldest first, so the pages that are new cannot be asked
+// for: the histories are read issue by issue instead, each from its end.
+var errBulkTruncated = errors.New("the bulk changelog is longer than the pages read")
+
 func (s *Source) bulkChangelogs(ctx context.Context, c *client, keys []string) (map[string][]history, error) {
-	pages := s.Pages
-	if pages == 0 {
-		pages = 5
-	}
+	pages := s.pages()
 	out := map[string][]history{}
 	token := ""
-	for i := 0; i < pages; i++ {
+	for i := 0; ; i++ {
+		if i == pages {
+			return nil, errBulkTruncated
+		}
 		body := map[string]any{"issueIdsOrKeys": keys}
 		if token != "" {
 			body["nextPageToken"] = token
@@ -305,20 +310,17 @@ func (s *Source) bulkChangelogs(ctx context.Context, c *client, keys []string) (
 	return out, nil
 }
 
-// issueChangelog reads one issue's histories, oldest first.
+// issueChangelog reads one issue's histories, oldest first: the last pages
+// of them when there are more than the cap.
 func (s *Source) issueChangelog(ctx context.Context, c *client, key string) ([]history, error) {
-	var all []history
-	start, pages := 0, s.Pages
-	if pages == 0 {
-		pages = 5
-	}
-	for i := 0; i < pages; i++ {
-		resp, err := c.do(ctx, "GET", "/rest/api/3/issue/"+url.PathEscape(key)+"/changelog", url.Values{"startAt": {strconv.Itoa(start)}, "maxResults": {"100"}}, nil)
+	return readTail(s.pages(), func(start int) ([]history, int, bool, error) {
+		resp, err := c.do(ctx, "GET", "/rest/api/3/issue/"+url.PathEscape(key)+"/changelog",
+			url.Values{"startAt": {strconv.Itoa(start)}, "maxResults": {strconv.Itoa(pageSize)}}, nil)
 		if err != nil {
-			return nil, err
+			return nil, 0, false, err
 		}
 		if resp.Status/100 != 2 {
-			return all, nil
+			return nil, 0, false, nil
 		}
 		var page struct {
 			Values []history `json:"values"`
@@ -326,43 +328,74 @@ func (s *Source) issueChangelog(ctx context.Context, c *client, key string) ([]h
 			Total  int       `json:"total"`
 		}
 		if err := json.Unmarshal(resp.Body, &page); err != nil {
-			return nil, fmt.Errorf("reading the changelog of %s from Jira: %w", key, err)
+			return nil, 0, false, fmt.Errorf("reading the changelog of %s from Jira: %w", key, err)
 		}
-		all = append(all, page.Values...)
-		start += len(page.Values)
-		if len(page.Values) == 0 || (page.IsLast != nil && *page.IsLast) || (page.IsLast == nil && start >= page.Total) {
-			break
+		total := page.Total
+		if page.IsLast != nil && *page.IsLast {
+			total = start + len(page.Values) // the end, whatever the total says
 		}
-	}
-	return all, nil
+		return page.Values, total, true, nil
+	})
 }
 
-// comments reads an issue's comments, oldest first.
+// comments reads an issue's comments, oldest first: the last pages of them
+// when there are more than the cap.
 func (s *Source) comments(ctx context.Context, c *client, key string) ([]comment, error) {
-	var all []comment
-	start, pages := 0, s.Pages
-	if pages == 0 {
-		pages = 5
-	}
-	for i := 0; i < pages; i++ {
+	return readTail(s.pages(), func(start int) ([]comment, int, bool, error) {
 		resp, err := c.do(ctx, "GET", "/rest/api/3/issue/"+url.PathEscape(key)+"/comment",
-			url.Values{"startAt": {strconv.Itoa(start)}, "maxResults": {"100"}, "orderBy": {"created"}}, nil)
+			url.Values{"startAt": {strconv.Itoa(start)}, "maxResults": {strconv.Itoa(pageSize)}, "orderBy": {"created"}}, nil)
 		if err != nil {
-			return nil, err
+			return nil, 0, false, err
 		}
 		if resp.Status/100 != 2 {
-			return all, nil
+			return nil, 0, false, nil
 		}
 		var page struct {
 			Comments []comment `json:"comments"`
 			Total    int       `json:"total"`
 		}
 		if err := json.Unmarshal(resp.Body, &page); err != nil {
-			return nil, fmt.Errorf("reading the comments on %s from Jira: %w", key, err)
+			return nil, 0, false, fmt.Errorf("reading the comments on %s from Jira: %w", key, err)
 		}
-		all = append(all, page.Comments...)
-		start += len(page.Comments)
-		if len(page.Comments) == 0 || start >= page.Total {
+		return page.Comments, page.Total, true, nil
+	})
+}
+
+// pageSize is the page size asked of the paged answers read by offset.
+const pageSize = 100
+
+func (s *Source) pages() int {
+	if s.Pages == 0 {
+		return 5
+	}
+	return s.Pages
+}
+
+// readTail reads an answer paged by offset, oldest first, that grows at its
+// end: all of it when it fits in pages pages, else its last pages pages,
+// since what is new is at the end. fetch reads the page at start and says
+// the answer's total and whether it was a success; a failure ends the read
+// with what was read. The first page is read from the start to learn the
+// total, and dropped when the total is past the cap.
+func readTail[T any](pages int, fetch func(start int) (items []T, total int, ok bool, err error)) ([]T, error) {
+	var all []T
+	start, skipped := 0, false
+	for n := 0; n < pages; n++ {
+		items, total, ok, err := fetch(start)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return all, nil
+		}
+		if n == 0 && !skipped && total > pages*pageSize {
+			all, skipped, n = nil, true, -1
+			start = total - pages*pageSize
+			continue
+		}
+		all = append(all, items...)
+		start += len(items)
+		if len(items) == 0 || start >= total {
 			break
 		}
 	}

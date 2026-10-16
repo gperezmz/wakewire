@@ -196,6 +196,12 @@ about again.
 | `POST /rest/api/3/changelog/bulkfetch` for every issue that moved, no `fieldIds` filter | Who changed labels, assignee, status and text, oldest first. On failure, `GET /rest/api/3/issue/{key}/changelog` per issue |
 | `GET /rest/api/3/issue/{key}/comment?orderBy=created` | Comments, with `author`; bodies are Atlassian Document Format, converted to Markdown. Read only for an issue new to the watch or whose comment total moved |
 
+Each paged answer is read up to 5 pages of 100. Comments and an issue's own
+changelog are asked for from the start only to learn their total; one longer
+than 500 is then read from its last 500, so a busy issue's new activity is
+never past the cap. The bulk changelog pages by token and cannot be asked for
+its end: one longer than 5 pages is read issue by issue instead.
+
 About 1 request idle and 3 to 5 when something moved.
 
 The bulk request is the one Atlassian marks experimental; it takes at most
