@@ -7,9 +7,8 @@ fields against its snapshot; fetch an item's comments, reviews and events only
 when its fields or its update time moved. Why contents rather than timestamps:
 [how it works](../explanation/how-wakewire-works.md#why-it-diffs-contents-not-timestamps).
 
-The endpoints were checked against each service's documentation on
-2026-10-16; what the documentation does not settle is in the last section of
-each.
+Each service's last section, Limits, says what the service leaves unsaid and
+how wakewire reads around it.
 
 ## GitHub
 
@@ -23,9 +22,9 @@ each.
 
 Each carries `If-None-Match` with the last ETag. A `304` does not count
 against the rate limit, so an idle poll costs nothing. The URLs never change
-between polls, which is what lets the ETag match. Run against a sandbox, the
-issues list's ETag moved for a label-only change and for a body-only edit,
-and the pull requests list showed a pushed head on the next poll.
+between polls, which is what lets the ETag match. The ETag moves for any
+change to a listed item, a label or the body alone included, and the pull
+requests list shows a pushed head on the next poll.
 
 From the lists, wakewire keeps to items with the spec label (from requests 1
 and 2, where `assignee` is the identity or nobody) and to pull requests
@@ -66,14 +65,13 @@ their own, so it is skipped.
   use cases" (latency from 30 s to 6 h); the search API, at 30 requests a
   minute.
 
-### What GitHub does not say
+### Limits
 
-- Which edits move an issue's `updated_at`. A review, a conversation comment
-  and an inline comment were seen to move it; title and body edits and pushes
-  were not tested. Diffing contents covers the fields; comments rely on the
-  `comments` count and on `updated_at`.
-- Who made a plain push: no REST endpoint names the pusher. `pushed` reports
-  the new commits' authors, and wakes only when one is not the identity.
+- GitHub does not document which edits move an issue's `updated_at`, so the
+  fields are diffed, and comments are read when the `comments` count or
+  `updated_at` moves.
+- No REST endpoint names who pushed. `pushed` reports the new commits'
+  authors, and wakes only when one is not the identity.
 
 ## GitLab
 
@@ -95,18 +93,16 @@ Requests 1 to 3 carry `If-None-Match` with the last ETag. GitLab sends a weak
 ETag on them, it changes when the list's body does, and it answers `304` to
 its own tag. Requests 4 and 5 carry none, since each is a single read.
 
-Request 4 exists because the project's merge request list is cached: GitLab
-17.11 keeps each merge request's entry until its `updated_at` moves, and a
-push, a comment or an approval does not move it. The list went on showing
-the old `sha` and a `user_notes_count` of 0 more than ten minutes after a
-push and four comments, while a read of the merge request alone showed both.
-Its `labels`, `title`, `description` and `state` follow the list's entry. The
-issue lists were current. Request 5 exists because no field of the merge
-request or the list shows an approval.
+Request 4 is needed because the merge request list keeps each entry until
+its `updated_at` moves, and a push, a comment or an approval does not move
+it, so the list's `sha` and `user_notes_count` lag while a read of the merge
+request alone is current. Its `labels`, `title`, `description` and `state`
+are taken from the list, which keeps them current, as do the issue lists.
+Request 5 is needed because no field of a merge request shows an approval.
 
-No `updated_after` filter: a comment, a push and an approval left
-`updated_at` where it was every time they were tried, and a label change moved
-it once in four, so filtering by it would hide them. Diffed
+No `updated_after` filter: a comment, a push or an approval does not move
+`updated_at`, and a label change does not always, so filtering by it would
+hide them. Diffed
 fields: `state` (`opened` is open; `closed`, `locked` and `merged` are
 closed), `labels`, `assignees`, `title`, `description`, `user_notes_count`,
 `sha`, `merged_at`, `updated_at`. An idle poll costs 3 requests plus 2 for
@@ -135,15 +131,15 @@ label events, `se:` state events, `n:` notes, `ap:<username>` an approval,
   defaults to 7,200 an hour when an administrator enables limits. Headers:
   `RateLimit-Limit`, `RateLimit-Remaining`, and `RateLimit-Reset` or
   `RateLimit-ResetTime` depending on the instance; all are read. A
-  self-managed instance with limits off, as the 17.11.7 one the source was
-  tried on, sends none, and the rate stays unknown.
+  self-managed instance with limits off sends none, and the rate stays
+  unknown.
 
-### What GitLab does not say
+### Limits
 
-- A merge request's approval time: the approvals list names the approvers
-  only. The source takes it from the system note "approved this merge
-  request", and an approval withdrawn and given again is not told from the
-  first, since it keeps the id `ap:<username>`.
+- The approvals list names the approvers but not when they approved. The
+  time comes from the system note "approved this merge request", and an
+  approval withdrawn and given again is not told from the first, since it
+  keeps the id `ap:<username>`.
 - A diff hunk for an inline comment: only the position. `hunk` is left out.
 - Who made a push, short of the day-granular events API. `pushed` reports
   the commits' authors; a commit carries an email, which is read as the
@@ -221,24 +217,18 @@ change from or to a status it has not seen is left to the field diff.
   `X-RateLimit-NearLimit: true`, which Jira sends when less than 20 % of its
   capacity remains, is shown in status.
 
-### What Jira does not say
+### Limits
 
-- Which edits move `updated`; diffing the fields covers all but comments,
-  which also rely on the comment total.
-- Whether labels match case-sensitively; wakewire compares them without
-  regard to case.
-- Whether a status change names the statuses by id or by name in `from` and
-  `to`; both are looked up.
-
-What a run against the sandbox settled:
-
-- The comment total is reported on `search/jql`, as `comment.total`, with
-  `maxResults` 0, so a comment is seen on the next poll.
-- A label change is one changelog item whose `fromString` and `toString`
-  join the labels with spaces.
-- An issue created with its labels records no label change in its
-  changelog. A spec new to the watch whose timeline shows no way in is
-  reported as the spec label added, with no `by`.
+- Jira does not document which edits move `updated`, so the fields are
+  diffed, and comments are read when `comment.total`, which `search/jql`
+  reports with `maxResults` 0, moves.
+- Labels are compared without regard to case. A label change is one
+  changelog item whose `fromString` and `toString` join the labels with
+  spaces.
+- A status change's `from` and `to` are looked up by id and by name.
+- Labels an issue is created with are in no changelog. A spec new to the
+  watch with nothing in its timeline that shows how it came in is reported
+  as the spec label added, with no `by`.
 
 ## Problems
 
@@ -246,8 +236,9 @@ A source becomes a problem, delivered once, when:
 
 | Problem | `code` |
 |---|---|
-| The service answers 401 or 403 | `token_refused` |
-| The service does not answer for 3 polls in a row | `unreachable` |
-| The remaining budget is below 5 % | `rate_limited`; the source is skipped until its reset time |
+| The service answers 401 or 403, or 404 for the repository | `token_refused` |
+| For 3 polls in a row, the service does not answer, answers 5xx, or redirects to another host | `unreachable` |
+| The remaining budget is below 5 %, the service answers 429, or 403 with `Retry-After` | `rate_limited`; the source is skipped until its reset time |
+| No account covers the repository or the site, or its token cannot be had | `no_account`, `no_stored_token`, `no_token` |
 
 A problem clears on the first poll that succeeds; `status` shows when.

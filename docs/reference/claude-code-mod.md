@@ -8,7 +8,7 @@ in the binary's `state.db`.
 
 The mod API is early access: it loads only where function hooks are enabled,
 and may change between Claude Code releases without notice. The names below
-are from `mods/types/claude-code.d.ts` as published with Claude Code 2.1.301.
+are from the mod type declarations of Claude Code 2.1.302, the version the mod is built and run against.
 
 ## Lifecycle
 
@@ -67,22 +67,11 @@ plugin's prompt runs once the session is idle: a wake arriving mid-turn waits
 behind the running turn, and the call resolves once the prompt is queued or
 entered. In an idle session it starts a turn on its own.
 
-`asUser` makes the model read the wake bare, as the person's own words. Left
-out, Claude Code frames a plugin's prompt in words of its own, which the mod
-cannot change, only switch off:
-
-```text
-The wakewire plugin sent a message:
-[wakewire] …
-This is how Claude Code surfaces a prompt a plugin submits between turns — it starts this turn in the user's place. Address the message above.
-```
-
-The frame says who sent the turn, at about forty tokens on every wake, and
-the mod leaves it off; the [design decisions](../explanation/design-decisions.md#the-mod)
-weigh the two. Every hook still sees the prompt's origin as the plugin's, and
-the transcript names it. What tells the model what a wake is: the
-`[wakewire]` that opens it, its last line, and the tool's description, which
-is in the session's tool list from the start (`isDeferred: false`):
+`asUser` makes the model read the wake bare, as the person's own words; every
+hook still sees the prompt's origin as the plugin's, and the transcript names
+it. What tells the model what a wake is: the `[wakewire]` that opens it, its
+last line, and the tool's description, which is in the session's tool list
+from the start (`isDeferred: false`):
 
 > A [wakewire] message reports new activity on this session's own specs and
 > pull requests, and names a batch. This tool reads that batch in full: every
@@ -95,7 +84,7 @@ The [wake contract](wake-contract.md) fixes the wake's words.
 
 The mod ships as a Claude Code plugin in this repository's `mod/` folder: a
 `.claude-plugin/plugin.json`, a `hooks/hooks.json` naming the module, the
-TypeScript module `hooks/register.ts` and its tests under `tests/`. The
+TypeScript module `hooks/register.tsx`, the `$.state` contract `types/index.d.ts`, and the tests under `tests/`. The
 repository's `.claude-plugin/marketplace.json` lists it, so the repository is
 the marketplace it installs from. It is tested with `claude plugin test mod`
 and typechecked with `tsc -p mod` against `mod/typings/claude-code.d.ts`, the
