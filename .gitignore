@@ -13,3 +13,4 @@ apm_modules/
 .claude/settings.json
 bin/
 dist/
+result

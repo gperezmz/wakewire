@@ -62,3 +62,13 @@ jobs:
       - name: claude plugin test
         run: claude plugin test mod
 
+  nix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+      - name: nix build
+        run: nix build .#wakewire --print-build-logs
+      - name: the flake's binary runs
+        run: ./result/bin/wakewire version --json
+
