@@ -8,9 +8,11 @@ import (
 )
 
 // startOf reads kp_proc.p_starttime from sysctl kern.proc.pid.<pid>.
+// For a process that does not exist, sysctl answers no record, which
+// golang.org/x/sys reports as EIO.
 func startOf(pid int) (string, bool, error) {
 	kp, err := unix.SysctlKinfoProc("kern.proc.pid", pid)
-	if errors.Is(err, unix.ESRCH) {
+	if errors.Is(err, unix.ESRCH) || errors.Is(err, unix.EIO) {
 		return "", false, nil
 	}
 	if err != nil {
