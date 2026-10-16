@@ -15,6 +15,12 @@ linters:
     - unconvert
     - unparam
   settings:
+    errcheck:
+      exclude-functions:
+        # Text for a person goes through a tabwriter onto a strings.Builder,
+        # whose writes cannot fail; the flush is checked.
+        - fmt.Fprintf
+        - fmt.Fprintln
     revive:
       rules:
         - name: exported
@@ -22,6 +28,7 @@ linters:
     gosec:
       excludes:
         - G304 # paths come from wakewire's own home folder or a repository the user named
+        - G204 # git, ssh and gh are run by argv, never through a shell
     depguard:
       rules:
         watch-domain:

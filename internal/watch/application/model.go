@@ -39,10 +39,11 @@ type Registration struct {
 
 // Adapter is one session's loaded adapter.
 type Adapter struct {
-	Session string
-	Process Process
-	HelloAt time.Time
-	HeardAt time.Time
+	Session  string
+	Process  Process
+	HelloAt  time.Time
+	HeardAt  time.Time
+	Protocol int // the wake contract the adapter speaks
 }
 
 // StoredChange is a change as the ledger keeps it.

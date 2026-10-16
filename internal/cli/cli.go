@@ -68,11 +68,17 @@ type streams struct {
 	out, err io.Writer
 }
 
-// Run executes one command line and returns the process's exit code.
+// Run executes one command line against the real world and returns the
+// process's exit code.
 func Run(ctx context.Context, args []string, build wiring.Build, stdin io.Reader, stdout, stderr io.Writer) int {
+	return RunWith(ctx, args, DefaultDeps(build), stdin, stdout, stderr)
+}
+
+// RunWith executes one command line with the given dependencies.
+func RunWith(ctx context.Context, args []string, deps Deps, stdin io.Reader, stdout, stderr io.Writer) int {
 	s := streams{in: stdin, out: stdout, err: stderr}
 	asJSON := slices.Contains(args[1:], "--json")
-	root := rootCommand(build, s)
+	root := rootCommand(deps, s)
 	err := root.Run(ctx, args)
 	if err == nil {
 		return exitOK
@@ -81,6 +87,10 @@ func Run(ctx context.Context, args []string, build wiring.Build, stdin io.Reader
 }
 
 func report(s streams, asJSON bool, err error) int {
+	var only *exitOnly
+	if errors.As(err, &only) {
+		return only.code
+	}
 	var c coded
 	if !errors.As(err, &c) {
 		c = usageError(err.Error(), "wakewire --help lists the commands and their flags")
@@ -118,7 +128,7 @@ func answer(s streams, cmd *ucli.Command, v any, text string) error {
 
 var jsonFlag = &ucli.BoolFlag{Name: "json", Usage: "print exactly one JSON object on stdout"}
 
-func rootCommand(build wiring.Build, s streams) *ucli.Command {
+func rootCommand(deps Deps, s streams) *ucli.Command {
 	root := &ucli.Command{
 		Name:      "wakewire",
 		Usage:     "wake an agent session when what it waits on changes on GitHub, GitLab or Jira",
@@ -136,9 +146,13 @@ func rootCommand(build wiring.Build, s streams) *ucli.Command {
 			}
 			return ucli.ShowAppHelp(cmd)
 		},
-		Commands: []*ucli.Command{
-			versionCommand(build, s),
-		},
+		Commands: append(watchCommands(deps, s),
+			lazyAccountCommand(deps, s),
+			doctorCommand(deps, s),
+			pathsCommand(deps, s),
+			versionCommand(deps.Build, s),
+			adapterCommand(deps, s),
+		),
 	}
 	quietUsage(root)
 	return root

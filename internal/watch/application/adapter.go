@@ -45,7 +45,7 @@ type Offer struct {
 }
 
 // Hello records that an adapter is loaded for a session.
-func (s *Service) Hello(ctx context.Context, session string, proc int) (HelloResult, error) {
+func (s *Service) Hello(ctx context.Context, session string, proc, protocol int) (HelloResult, error) {
 	res := HelloResult{Protocol: domain.Protocol}
 	start, _, err := s.processes.StartOf(proc)
 	if err != nil {
@@ -53,7 +53,7 @@ func (s *Service) Hello(ctx context.Context, session string, proc int) (HelloRes
 	}
 	now := s.clock.Now()
 	err = s.store.Tx(ctx, func(tx Tx) error {
-		if err := tx.SaveAdapter(Adapter{Session: session, Process: Process{proc, start}, HelloAt: now, HeardAt: now}); err != nil {
+		if err := tx.SaveAdapter(Adapter{Session: session, Process: Process{proc, start}, HelloAt: now, HeardAt: now, Protocol: protocol}); err != nil {
 			return err
 		}
 		w, _, err := s.held(tx, session)
@@ -101,7 +101,7 @@ func (s *Service) Next(ctx context.Context, session string, proc int) (NextResul
 			return err
 		}
 		if a == nil || a.Process != self {
-			a = &Adapter{Session: session, Process: self, HelloAt: now}
+			a = &Adapter{Session: session, Process: self, HelloAt: now, Protocol: domain.Protocol}
 		}
 		a.HeardAt = now
 		if err := tx.SaveAdapter(*a); err != nil {

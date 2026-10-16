@@ -297,7 +297,7 @@ func TestKillNineMakesTheRegistrationDormantAndTakeoverInheritsWhatWaits(t *test
 func TestEndedAndClearedSessionsLetGo(t *testing.T) {
 	h := newHarness(t)
 	h.mustRegister("s1", 100)
-	if _, err := h.svc.Hello(h.ctx, "s1", 100); err != nil {
+	if _, err := h.svc.Hello(h.ctx, "s1", 100, 1); err != nil {
 		t.Fatal(err)
 	}
 	if r, _ := h.svc.Ended(h.ctx, "s1", "clear"); !r.Dormant {
@@ -311,7 +311,7 @@ func TestEndedAndClearedSessionsLetGo(t *testing.T) {
 	h2 := newHarness(t)
 	h2.mustRegister("s1", 100)
 	h2.clock.Advance(time.Second)
-	if hello, _ := h2.svc.Hello(h2.ctx, "s1-after-clear", 100); hello.Holds {
+	if hello, _ := h2.svc.Hello(h2.ctx, "s1-after-clear", 100, 1); hello.Holds {
 		t.Fatal("the new session holds a watch it never registered")
 	}
 	st, _ := h2.svc.Status(h2.ctx, nil)

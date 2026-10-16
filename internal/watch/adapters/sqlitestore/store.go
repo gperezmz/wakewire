@@ -287,7 +287,7 @@ func (x *tx) SaveRegistration(g application.Registration) error {
 func scanAdapter(r scanner) (*application.Adapter, error) {
 	var a application.Adapter
 	var hello, heard sql.NullString
-	if err := r.Scan(&a.Session, &a.Process.PID, &a.Process.Start, &hello, &heard); err != nil {
+	if err := r.Scan(&a.Session, &a.Process.PID, &a.Process.Start, &hello, &heard, &a.Protocol); err != nil {
 		return nil, err
 	}
 	a.HelloAt, a.HeardAt = parseTS(hello), parseTS(heard)
@@ -295,11 +295,11 @@ func scanAdapter(r scanner) (*application.Adapter, error) {
 }
 
 func (x *tx) Adapter(session string) (*application.Adapter, error) {
-	return noRow(scanAdapter(x.t.QueryRow(`SELECT session, pid, pid_start, hello_at, heard_at FROM adapters WHERE session=?`, session)))
+	return noRow(scanAdapter(x.t.QueryRow(`SELECT session, pid, pid_start, hello_at, heard_at, protocol FROM adapters WHERE session=?`, session)))
 }
 
 func (x *tx) AdaptersOf(p application.Process) ([]application.Adapter, error) {
-	rows, err := x.t.Query(`SELECT session, pid, pid_start, hello_at, heard_at FROM adapters WHERE pid=? AND pid_start=?`, p.PID, p.Start)
+	rows, err := x.t.Query(`SELECT session, pid, pid_start, hello_at, heard_at, protocol FROM adapters WHERE pid=? AND pid_start=?`, p.PID, p.Start)
 	if err != nil {
 		return nil, err
 	}
@@ -316,9 +316,9 @@ func (x *tx) AdaptersOf(p application.Process) ([]application.Adapter, error) {
 }
 
 func (x *tx) SaveAdapter(a application.Adapter) error {
-	_, err := x.t.Exec(`INSERT INTO adapters(session, pid, pid_start, hello_at, heard_at) VALUES(?,?,?,?,?)
+	_, err := x.t.Exec(`INSERT INTO adapters(session, pid, pid_start, hello_at, heard_at, protocol) VALUES(?,?,?,?,?,?)
 		ON CONFLICT(session) DO UPDATE SET pid=excluded.pid, pid_start=excluded.pid_start, hello_at=excluded.hello_at,
-		heard_at=excluded.heard_at`, a.Session, a.Process.PID, a.Process.Start, ts(a.HelloAt), ts(a.HeardAt))
+		heard_at=excluded.heard_at, protocol=excluded.protocol`, a.Session, a.Process.PID, a.Process.Start, ts(a.HelloAt), ts(a.HeardAt), a.Protocol)
 	return err
 }
 

@@ -42,7 +42,8 @@ CREATE TABLE adapters (
   pid INTEGER NOT NULL,
   pid_start TEXT NOT NULL,
   hello_at TEXT NOT NULL,
-  heard_at TEXT NOT NULL
+  heard_at TEXT NOT NULL,
+  protocol INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX adapters_process ON adapters(pid, pid_start);
 CREATE TABLE snapshots (
