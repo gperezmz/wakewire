@@ -114,32 +114,50 @@ One request:
 
 ```text
 POST /rest/api/3/search/jql
-jql:    project = <KEY> AND labels = "<spec label>"
-        AND (assignee = currentUser() OR (reporter = currentUser() AND assignee is EMPTY))
+jql:    (project = "<KEY>" AND labels = "<spec label>"
+         AND (assignee = "<account ID>" OR (reporter = "<account ID>" AND assignee is EMPTY)))
         OR issuekey in (<every watched issue>)
+        ORDER BY updated DESC
 fields: summary, description, labels, assignee, reporter, status, resolution, comment, updated
+maxResults: 100
 reconcileIssues: <watched issue ids, at most 50>
 ```
 
 The `issuekey in (…)` clause is left out while nothing is watched yet. It keeps issues that left the partition in view
 until that is recorded. `reconcileIssues` asks for read-after-write
-consistency, since the search index can lag by seconds to minutes. Diffed
-fields: `labels`, `assignee`, `status`, `resolution`, `summary`,
-`description`, the comment total, `updated`. No time filter: JQL dates have
-minute precision and a time zone that depends on settings, and comparing each
-issue's `updated` with its snapshot avoids both.
+consistency, since the search index can lag by seconds to minutes; it takes
+issue ids as numbers, at most 50, the same on every page, which wakewire
+keeps from earlier searches. A search that has a `nextPageToken` is followed
+for up to 5 pages. Diffed fields: `labels`, `assignee`, `status` (open, or
+closed when its category is Done, whatever its `resolution`), `summary`,
+`description`, the comment total, `updated`. No time filter: JQL dates have minute precision and a time
+zone that depends on settings, and comparing each issue's `updated` with its
+snapshot avoids both.
 
-`currentUser()` is the token's owner. Where an account sets `user`, the JQL
-uses that account ID instead.
+The JQL names the identity by account ID, always, and never `currentUser()`:
+the identity is the token's owner unless the account sets `user`, and the
+watch keeps the account ID either way. The search requires a bounded query;
+the `project` restriction bounds it.
+
+A watched issue that no search returns any more, which means it was deleted
+or the account can no longer see it, is reported once as it was and not asked
+about again.
 
 ### Per issue that moved
 
 | Request | Gives |
 |---|---|
 | `POST /rest/api/3/changelog/bulkfetch` for every issue that moved, no `fieldIds` filter | Who changed labels, assignee, status and text, oldest first. On failure, `GET /rest/api/3/issue/{key}/changelog` per issue |
-| `GET /rest/api/3/issue/{key}/comment` | Comments, with `author`; bodies are Atlassian Document Format, converted to Markdown |
+| `GET /rest/api/3/issue/{key}/comment?orderBy=created` | Comments, with `author`; bodies are Atlassian Document Format, converted to Markdown. Read only for an issue new to the watch or whose comment total moved |
 
 About 1 request idle and 3 to 5 when something moved.
+
+The bulk request is the one Atlassian marks experimental; it takes at most
+1,000 issues and 10 field ids, which is why wakewire sends none. A
+changelog item names a status but not its category, so wakewire learns each
+status's category, by id and by name, from the issues the search returns, and
+reads a status change into Done as `closed` and out of it as `reopened`. A
+change from or to a status it has not seen is left to the field diff.
 
 ### Identity, limits
 
@@ -148,7 +166,8 @@ About 1 request idle and 3 to 5 when something moved.
   by account ID, and JQL accepts no username or email.
 - API-token traffic stays under Jira's burst limits, whose figures Atlassian
   does not publish. A `429` is retried only after its `Retry-After`;
-  `X-RateLimit-NearLimit: true` is shown in status.
+  `X-RateLimit-NearLimit: true`, which Jira sends when less than 20 % of its
+  capacity remains, is shown in status.
 
 ### What Jira does not say
 
@@ -160,6 +179,10 @@ About 1 request idle and 3 to 5 when something moved.
   joined string; both are read.
 - Whether labels match case-sensitively; wakewire compares them without
   regard to case.
+- Whether a status change names the statuses by id or by name in `from` and
+  `to`; both are looked up.
+- Whether an issue created with labels records them in its changelog. If it
+  does not, a spec created already labelled shows no `label_added`.
 
 ## Problems
 
