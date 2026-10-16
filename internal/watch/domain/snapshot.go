@@ -40,6 +40,8 @@ type Observation struct {
 	Activities []Activity
 	// At is the service's time of the read.
 	At time.Time
+	// OffList: the item was read alone, having fallen off the lists.
+	OffList bool
 }
 
 // Diffed is what one observation comes to.
@@ -65,6 +67,7 @@ func Diff(r Rules, prev *Snapshot, obs Observation, since time.Time) Diffed {
 		Baseline:   prev.Baseline,
 		ObservedAt: obs.At,
 		Held:       d.held,
+		OffList:    obs.OffList,
 	}
 	drop := !r.InSet(obs.Item)
 	if drop {
