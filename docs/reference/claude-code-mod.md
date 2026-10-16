@@ -53,7 +53,7 @@ shell.
 | Addition | Mod API | Does |
 |---|---|---|
 | Status line | `$.ui.status(text)` | `wakewire · watching acme/x · polled 40s ago`, `· paused since 11:20 · 4 held`, `· not watching GitHub: token refused`, `· not installed`, `· needs update` |
-| Tool `mcp__wakewire__changes` | `$.tool.register` and a `tool.call` hook answering it | Takes `{ batch }`, returns `wakewire changes <batch> --json` as the tool's result |
+| Tool `mcp__wakewire__changes` | `$.tool.register` and a `tool.call` hook answering it | Takes `{ batch }`, returns the text of `wakewire changes <batch> --json` as the tool's result. It runs without a permission prompt, since the mod answers it |
 | Slash command `/wakewire` | `$.command.register` | `status`, `pause [duration]`, `resume`, without a model turn |
 | Note after compaction | a `SessionStart` command hook in the same plugin, matcher `compact`, printing `additionalContext` | States that this session holds the watch, that wakes open with `[wakewire]`, and how to read a batch |
 | `$.wakewire` noun | an `engine.create` hook, with its types in `types/index.d.ts` | `status()`, `recent(n)`, `pause()`, `resume()` and an event per delivered batch, for other mods such as a future fleet board |

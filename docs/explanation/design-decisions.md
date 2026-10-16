@@ -67,6 +67,19 @@ contract keep that risk inside the adapter.
 | **No CI checks in v1** | Waking on checks | They are frequent, and the agent reads them when it reads a pull request |
 | **Comment edits and deletions ignored in v1** | Waking on them | Rare, and none of the services records them reliably |
 
+## Proven by running it
+
+Claims the design rested on that a run has since settled, with what it
+showed. Each was run in an interactive Claude Code 2.1.302 session on Linux,
+with a spike mod loaded by `claude --plugin-dir`.
+
+| Claim | Found |
+|---|---|
+| A wake submitted by a mod enters an idle session and starts a turn | It does. `$.prompt.submit` from a `$.clock.after` timer resolved within 50 ms with `origin: { kind: 'plugin' }`, and the model began its turn about 2 s later with no keystroke. The model reads it framed as "The wwspike plugin sent a message:", followed by the text and a line saying a plugin's prompt starts the turn in the user's place |
+| Calling the mod's tool needs at most one "always allow" | It needs none. A tool registered with `$.tool.register` and answered by the mod's own `tool.call` hook ran with no permission prompt, in the default (manual) permission mode, with no allow rule in any settings file. Its result must be a string: an object is refused as not matching the tool's output shape |
+| The binary takes the session's process id from its parent when the mod runs it | It can. A child started by `$.process.run` has the `claude` process as its parent, the same process `CLAUDE_PID` names in a Bash command |
+| `/clear` is seen by the mod | `session.end` fires with `reason: 'clear'` and the old session id, and later Bash commands see the new `CLAUDE_CODE_SESSION_ID` while `CLAUDE_PID` stays the same |
+
 ## Not proven until it runs
 
 Each of these is a claim about a harness or a service that only a run
@@ -74,8 +87,6 @@ settles, with what changes if it fails:
 
 | Claim | If false |
 |---|---|
-| A wake submitted by a mod enters an idle session and starts a turn | Fall back to the `asyncRewake` hook |
-| Calling the mod's tool needs at most one "always allow" | Document the permission rule to add |
 | `adapter next` every 30 s is unnoticeable in the session | Lengthen the tick |
 | Plain pushes to a pull request change its head in the list responses on time | Fetch each open pull request's head per poll |
 | GitHub's list responses change their ETag when only a label or the body changes | Drop conditional requests and pay two requests per idle poll |
