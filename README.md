@@ -58,8 +58,8 @@ claude plugin install wakewire --marketplace gperezmz/wakewire
 
 The mod is a Claude Code plugin whose hooks module runs inside the session;
 it needs function hooks enabled, and the `wakewire` binary on `PATH`. In a
-session, the footer shows `● wakewire <owner>/<repo>` while the session holds
-a watch.
+session, the footer shows `● wakewire` while the session holds a watch, and
+`/wakewire status` shows its details.
 
 ## Set up an account
 

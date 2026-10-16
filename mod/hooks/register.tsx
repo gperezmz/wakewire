@@ -72,7 +72,7 @@ async function show($: EngineInterface, l: LineState | undefined): Promise<void>
   const problem = l.problems[0]
   const kind: WakewireLine['kind'] = problem ? 'trouble' : l.pausedSince ? 'paused' : 'watching'
   $.ui.status(problem ? `${shortWatch(l.watch)}: ${problem.text.replace(/\.$/, '')}` : undefined)
-  await update($, line, () => ({ kind, watch: l.watch, held: l.held }))
+  await update($, line, () => ({ kind, watch: l.watch }))
 }
 
 /** trouble shows a fault on the status line and a red dot in the footer. */
@@ -81,7 +81,6 @@ async function trouble($: EngineInterface, text: string): Promise<void> {
   await update($, line, (prev: WakewireLine | null | undefined): WakewireLine => ({
     kind: 'trouble',
     watch: prev?.watch ?? watch,
-    held: prev?.held ?? 0,
   }))
 }
 
@@ -274,12 +273,8 @@ export const register: Register = on => {
     if (!l) return next(e)
     const { Box, Text } = $.ui.resolve(e)
     const dot = { watching: 'success', paused: 'warning', trouble: 'error' }[l.kind]
-    const what =
-      l.kind === 'paused'
-        ? `wakewire paused · ${l.held} held`
-        : l.kind === 'trouble'
-          ? 'wakewire'
-          : `wakewire ${shortWatch(l.watch)}`
+    // The state alone; `/wakewire status` has the watch and its details.
+    const what = l.kind === 'paused' ? 'wakewire paused' : 'wakewire'
     return (
       <Box>
         {e.props.modes.length > 0 && <Text dimColor>{e.props.modes.join(' & ')} · </Text>}

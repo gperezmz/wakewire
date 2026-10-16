@@ -53,7 +53,7 @@ shell.
 
 | Addition | Mod API | Does |
 |---|---|---|
-| Footer label | a `ui.render` hook on `SessionMode`, the dim labels at the right of the prompt footer, drawn from the mod's `$.state` contract in `types/index.d.ts` | While the session holds a watch: a green `● wakewire acme/x`; paused, a yellow `⏸ wakewire paused · 4 held`; in trouble, a red `● wakewire`. Claude Code's own mode labels stay beside it |
+| Footer label | a `ui.render` hook on `SessionMode`, the dim labels at the right of the prompt footer, drawn from the mod's `$.state` contract in `types/index.d.ts` | The watch's state alone, while the session holds one: a green `● wakewire` while watching, a yellow `⏸ wakewire paused`, a red `● wakewire` in trouble. `/wakewire status` shows the watch and its details. Claude Code's own mode labels stay beside it |
 | Status line | `$.ui.status(text)`, which Claude Code draws as a warning, `⚠ wakewire: …` | Only for trouble: the open problem (`acme/x: not watching GitHub: GitHub refused the token (401)`), `not installed: the wakewire binary is not on PATH`, `needs update: the binary speaks protocol 2, this mod 1`, `taken over by claude-code:…`. Clear otherwise |
 | Tool `mcp__wakewire__changes` | `$.tool.register` and a `tool.call` hook answering it | Takes `{ batch }`, returns the text of `wakewire changes <batch> --json` as the tool's result. It runs without a permission prompt, since the mod answers it |
 | Slash command `/wakewire` | `$.command.register`, with `immediate` so it runs mid-turn too, and a `command.run` hook answering it | `status`, `pause [duration]`, `resume` on the watch this session holds, without a model turn |

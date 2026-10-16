@@ -6,8 +6,6 @@ export type WakewireLine = {
   kind: 'watching' | 'paused' | 'trouble'
   /** the watch, as <host>/<owner>/<repo> */
   watch: string
-  /** changes held while paused */
-  held: number
 }
 
 declare module 'claude-code' {

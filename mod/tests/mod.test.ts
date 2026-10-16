@@ -76,7 +76,7 @@ describe('wakewire mod', () => {
     expect(bin.calls.map(c => c.slice(1, 3).join(' '))).toEqual(['version --json', 'adapter hello'])
     expect(seen.at(-1)).toBe(undefined) // all is well: nothing on the status line
     const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: ['focus'] } })
-    expect((await footer.find({ type: 'Text', text: /wakewire o\/x$/ })) !== undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: /^ ?wakewire$/ })) !== undefined).toBe(true)
     expect((await footer.find({ type: 'Text', text: /focus/ })) !== undefined).toBe(true)
     await footer.unmount()
     await clock.advance(30_000)
