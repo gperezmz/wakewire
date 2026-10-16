@@ -54,7 +54,7 @@ func (s *Service) pollOne(ctx context.Context, w Watch, src BoundSource, firstPo
 	if s.clock.Now().Before(state.SkipUntil) {
 		return nil
 	}
-	out, err := src.Source.Poll(ctx, PollInput{Rules: src.Rules, IncludeIssues: src.IncludeIssues, Snapshots: snaps, State: state.Data})
+	out, err := src.Source.Poll(ctx, PollInput{Rules: src.Rules, IncludeIssues: src.IncludeIssues, FirstPoll: firstPoll, Snapshots: snaps, State: state.Data})
 	if err != nil {
 		var c interface{ Code() string }
 		if errors.As(err, &c) {

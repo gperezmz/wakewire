@@ -80,8 +80,11 @@ type RateInfo struct {
 type PollInput struct {
 	Rules         domain.Rules
 	IncludeIssues bool // the tracker is this forge's own issues
-	Snapshots     map[string]domain.Snapshot
-	State         []byte // the source's own state from its last poll, such as ETags
+	// FirstPoll: the watch has never been polled, so whatever is there now
+	// is no change, and a source need not read any item's timeline.
+	FirstPoll bool
+	Snapshots map[string]domain.Snapshot
+	State     []byte // the source's own state from its last poll, such as ETags
 }
 
 // PollOutput is what one poll of one source read.
