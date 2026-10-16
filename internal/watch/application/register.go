@@ -47,7 +47,7 @@ type Issue struct {
 // RegisterResult is register's answer.
 type RegisterResult struct {
 	Outcome    string          `json:"outcome"` // registered, refreshed, taken-over; with --dry-run, what it would be
-	DryRun     bool            `json:"dryRun,omitempty"`
+	DryRun     bool            `json:"dryRun"`
 	Watch      string          `json:"watch"`
 	Identity   string          `json:"identity"`
 	Tracker    string          `json:"tracker"`

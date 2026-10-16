@@ -103,7 +103,7 @@ adapter: not loaded. Nothing in this session will poll until the wakewire mod is
 Where the tracker is Jira, the tracker line reads
 `tracker <site>/<KEY> as <display name> (account <name>)`.
 
-Under `--json` it prints `{"outcome": "registered" | "refreshed" | "taken-over", "dryRun", "watch", "identity", "tracker", "forge", "trackerAs", "holder", "pid", "watched": true|false, "notWatched": [{code, text}], "adapter": "loaded" | "not-loaded", "paused": null | "<since>", "source": {file, heading, headingLine, values}, "replaced"}`;
+Under `--json` it prints `{"outcome": "registered" | "refreshed" | "taken-over", "dryRun": true|false, "watch", "identity", "tracker", "forge", "trackerAs", "holder", "pid", "watched": true|false, "notWatched": [{code, text}], "adapter": "loaded" | "not-loaded", "paused": null | "<since>", "source": {file, heading, headingLine, values}, "replaced"}`;
 `replaced` names the session a takeover took the watch from.
 `adapter: not-loaded` means nothing in this session will poll: the mod is not
 installed or not enabled. A live holder exits 2 with `held`, naming the
