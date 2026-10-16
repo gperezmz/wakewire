@@ -65,6 +65,9 @@ What each person wrote is in batch 193: mcp__wakewire__changes or `wakewire chan
 - It opens with `[wakewire]`, the watch and the batch id, so a skill tells a
   wake from its user typing.
 - Changes to one item and kind are counted on one line.
+- A reassignment reads `reassigned` or `unassigned`, without who from and
+  to: Jira names people by account ID, no word for a wake. The batch has
+  `from` and `to`.
 - At most 20 lines; past that, `- and N more` and the batch holds them all.
 - After a long absence the lines become counts per item.
 - A problem's wake names the problem and the command that shows its fix:

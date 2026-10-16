@@ -147,8 +147,12 @@ func phrase(k Kind, g []Change) string {
 	case KindClosed, KindReopened, KindMerged:
 		return string(k) + by
 	case KindReassigned:
-		last := g[len(g)-1]
-		return fmt.Sprintf("reassigned from %s to %s%s", people(last.From), people(last.To), by)
+		// Who it went from and to is in the batch: an account ID, as Jira
+		// names people, is no word for a wake.
+		if len(g[len(g)-1].To) == 0 {
+			return "unassigned" + by
+		}
+		return "reassigned" + by
 	case KindEdited:
 		var fields []string
 		for _, c := range g {
@@ -191,17 +195,6 @@ func byline(g []Change) string {
 		return " by " + strings.Join(names, ", ")
 	}
 	return fmt.Sprintf(" by %d people", len(names))
-}
-
-func people(ids []string) string {
-	if len(ids) == 0 {
-		return "nobody"
-	}
-	var out []string
-	for _, id := range ids {
-		out = append(out, safe(id, "someone"))
-	}
-	return strings.Join(out, ", ")
 }
 
 // handle is what a login, a label or a state may hold to appear in a wake.

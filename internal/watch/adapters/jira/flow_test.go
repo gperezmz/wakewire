@@ -106,6 +106,6 @@ func TestWakesFromAHandWrittenJira(t *testing.T) {
 	p.assignee, p.updated = "acc-other", 3
 	p.histories = append(p.histories, `{"id":"502","author":{"accountId":"acc-me","displayName":"Ada Reviewer"},"created":"2027-01-01T13:00:00.000+0000",
 		"items":[{"field":"assignee","fieldId":"assignee","from":"acc-me","to":"acc-other"}]}`)
-	expect("reassigned away", "- KAN-1: reassigned from acc-me to acc-other by Ada")
+	expect("reassigned away", "- KAN-1: reassigned by Ada")
 	expect("gone from the set", "")
 }
