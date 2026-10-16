@@ -28,3 +28,15 @@ func Liveness(f HolderFacts) (holds bool, why string) {
 	}
 	return true, ""
 }
+
+// Resumable says whether a session that ended for this reason, as
+// session.end gives it, may come back to its registration: the session or
+// its process went away. A cleared session, and one whose registration was
+// ended for another watch, are done with it.
+func Resumable(endReason string) bool {
+	switch endReason {
+	case "prompt_input_exit", "other", "logout", "resume":
+		return true
+	}
+	return false
+}

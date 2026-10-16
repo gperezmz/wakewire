@@ -61,9 +61,12 @@ watch over; `register --take-over` does so whatever the answer.
 
 A session that comes back under the same id, as `claude --resume` brings it
 in a new process, takes its registration back at the adapter's `hello`:
-the registration takes the new process and is held again. It does not where
-another session took the watch over meanwhile, or where the session was
-cleared.
+the registration takes the new process and is held again. It does so only
+where the session or its process went away: the session ended with the
+reason `prompt_input_exit`, `other`, `logout` or `resume`, or did not end and
+its process is gone. It does not where another session took the watch over
+meanwhile, where the session was cleared, or where its registration was ended
+because the session registered another watch.
 
 ## Leases
 

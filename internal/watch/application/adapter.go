@@ -72,8 +72,8 @@ func (s *Service) Hello(ctx context.Context, session string, proc, protocol int)
 
 // revive gives a session its registration back when it comes back under
 // the same id, as `claude --resume` brings it, in a new process: the
-// registration had gone dormant only because that session ended, and no
-// other session has taken the watch over since.
+// registration had gone dormant only because that session or its process
+// went away, and no other session has taken the watch over since.
 func (s *Service) revive(tx Tx, session string, p Process, now time.Time) error {
 	r, err := tx.RegistrationBySession(session)
 	if err != nil || r == nil {
@@ -83,11 +83,19 @@ func (s *Service) revive(tx Tx, session string, p Process, now time.Time) error 
 	if err != nil || cur == nil || cur.Session != session {
 		return err
 	}
-	if cur.EndedAt == nil && cur.Process == p {
-		return nil
-	}
-	if cur.EndedAt != nil && cur.EndReason == "clear" {
-		return nil // a cleared session does not come back
+	if cur.EndedAt == nil {
+		if cur.Process == p {
+			return nil
+		}
+		start, running, err := s.processes.StartOf(cur.Process.PID)
+		if err != nil {
+			return err
+		}
+		if running && start == cur.Process.Start {
+			return nil // the registering process still runs: this is another session's process
+		}
+	} else if !domain.Resumable(cur.EndReason) {
+		return nil // ended on purpose: cleared, or registered for another watch
 	}
 	cur.EndedAt, cur.EndReason, cur.Process, cur.HeardAt = nil, "", p, now
 	return tx.SaveRegistration(*cur)
