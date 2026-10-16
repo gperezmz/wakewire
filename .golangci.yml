@@ -1,0 +1,179 @@
+version: "2"
+
+# The import graph is the boundary contract (docs/explanation/design-decisions.md
+# and the boundaries-backend shape): imports point inward, adapters ->
+# application -> domain, inside each context; only the composition root
+# (internal/wiring) and other adapters name an adapter; a context's domain
+# and application name no other context and no vendor package.
+linters:
+  enable:
+    - depguard
+    - errorlint
+    - gosec
+    - misspell
+    - revive
+    - unconvert
+    - unparam
+  settings:
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+    gosec:
+      excludes:
+        - G304 # paths come from wakewire's own home folder or a repository the user named
+    depguard:
+      rules:
+        watch-domain:
+          files: ["**/internal/watch/domain/**"]
+          allow: ["$gostd", "github.com/gperezmz/wakewire/internal/watch/domain"]
+          deny:
+            - pkg: "github.com/gperezmz/wakewire/internal"
+              desc: a domain imports nothing of wakewire's but itself
+            - pkg: "github.com/"
+              desc: a domain names no vendor package
+            - pkg: "golang.org/x/"
+              desc: a domain names no vendor package
+            - pkg: "modernc.org/"
+              desc: a domain names no vendor package
+            - pkg: "os"
+              desc: a domain does not reach outside the process
+            - pkg: "os/exec"
+              desc: a domain does not reach outside the process
+            - pkg: "os/signal"
+              desc: a domain does not reach outside the process
+            - pkg: "net"
+              desc: a domain does not reach outside the process
+            - pkg: "net/http"
+              desc: a domain does not reach outside the process
+            - pkg: "database/sql"
+              desc: a domain does not reach outside the process
+            - pkg: "syscall"
+              desc: a domain does not reach outside the process
+            - pkg: "io/fs"
+              desc: a domain does not reach outside the process
+            - pkg: "path/filepath"
+              desc: a domain does not reach outside the process
+        watch-application:
+          files: ["**/internal/watch/application/**"]
+          allow: ["$gostd", "github.com/gperezmz/wakewire/internal/watch/domain", "github.com/gperezmz/wakewire/internal/watch/application"]
+          deny:
+            - pkg: "github.com/gperezmz/wakewire/internal"
+              desc: application imports only its own context's domain
+            - pkg: "github.com/"
+              desc: application names no vendor package
+            - pkg: "golang.org/x/"
+              desc: application names no vendor package
+            - pkg: "modernc.org/"
+              desc: application names no vendor package
+            - pkg: "os"
+              desc: application reaches outside the process only through a port
+            - pkg: "os/exec"
+              desc: application reaches outside the process only through a port
+            - pkg: "os/signal"
+              desc: application reaches outside the process only through a port
+            - pkg: "net"
+              desc: application reaches outside the process only through a port
+            - pkg: "net/http"
+              desc: application reaches outside the process only through a port
+            - pkg: "database/sql"
+              desc: application reaches outside the process only through a port
+            - pkg: "syscall"
+              desc: application reaches outside the process only through a port
+            - pkg: "io/fs"
+              desc: application reaches outside the process only through a port
+            - pkg: "path/filepath"
+              desc: application reaches outside the process only through a port
+        watch-adapters:
+          files: ["**/internal/watch/adapters/**"]
+          deny:
+            - pkg: "github.com/gperezmz/wakewire/internal/account/domain"
+              desc: the account context's domain is its own; cross through its application
+            - pkg: "github.com/gperezmz/wakewire/internal/account/adapters"
+              desc: an adapter does not import another context's adapters, the transport or the root
+            - pkg: "github.com/gperezmz/wakewire/internal/cli"
+              desc: an adapter does not import another context's adapters, the transport or the root
+            - pkg: "github.com/gperezmz/wakewire/internal/wiring"
+              desc: an adapter does not import another context's adapters, the transport or the root
+        account-domain:
+          files: ["**/internal/account/domain/**"]
+          allow: ["$gostd", "github.com/gperezmz/wakewire/internal/account/domain"]
+          deny:
+            - pkg: "github.com/gperezmz/wakewire/internal"
+              desc: a domain imports nothing of wakewire's but itself
+            - pkg: "github.com/"
+              desc: a domain names no vendor package
+            - pkg: "golang.org/x/"
+              desc: a domain names no vendor package
+            - pkg: "modernc.org/"
+              desc: a domain names no vendor package
+            - pkg: "os"
+              desc: a domain does not reach outside the process
+            - pkg: "os/exec"
+              desc: a domain does not reach outside the process
+            - pkg: "os/signal"
+              desc: a domain does not reach outside the process
+            - pkg: "net"
+              desc: a domain does not reach outside the process
+            - pkg: "net/http"
+              desc: a domain does not reach outside the process
+            - pkg: "database/sql"
+              desc: a domain does not reach outside the process
+            - pkg: "syscall"
+              desc: a domain does not reach outside the process
+            - pkg: "io/fs"
+              desc: a domain does not reach outside the process
+            - pkg: "path/filepath"
+              desc: a domain does not reach outside the process
+        account-application:
+          files: ["**/internal/account/application/**"]
+          allow: ["$gostd", "github.com/gperezmz/wakewire/internal/account/domain", "github.com/gperezmz/wakewire/internal/account/application"]
+          deny:
+            - pkg: "github.com/gperezmz/wakewire/internal"
+              desc: application imports only its own context's domain
+            - pkg: "github.com/"
+              desc: application names no vendor package
+            - pkg: "golang.org/x/"
+              desc: application names no vendor package
+            - pkg: "modernc.org/"
+              desc: application names no vendor package
+            - pkg: "os"
+              desc: application reaches outside the process only through a port
+            - pkg: "os/exec"
+              desc: application reaches outside the process only through a port
+            - pkg: "os/signal"
+              desc: application reaches outside the process only through a port
+            - pkg: "net"
+              desc: application reaches outside the process only through a port
+            - pkg: "net/http"
+              desc: application reaches outside the process only through a port
+            - pkg: "database/sql"
+              desc: application reaches outside the process only through a port
+            - pkg: "syscall"
+              desc: application reaches outside the process only through a port
+            - pkg: "io/fs"
+              desc: application reaches outside the process only through a port
+            - pkg: "path/filepath"
+              desc: application reaches outside the process only through a port
+        account-adapters:
+          files: ["**/internal/account/adapters/**"]
+          deny:
+            - pkg: "github.com/gperezmz/wakewire/internal/watch/domain"
+              desc: the watch context's domain is its own; cross through its application
+            - pkg: "github.com/gperezmz/wakewire/internal/watch/adapters"
+              desc: an adapter does not import another context's adapters, the transport or the root
+            - pkg: "github.com/gperezmz/wakewire/internal/cli"
+              desc: an adapter does not import another context's adapters, the transport or the root
+            - pkg: "github.com/gperezmz/wakewire/internal/wiring"
+              desc: an adapter does not import another context's adapters, the transport or the root
+        transport:
+          files: ["**/internal/cli/**"]
+          deny:
+            - pkg: "github.com/gperezmz/wakewire/internal/watch/adapters"
+              desc: the transport mounts what the composition root built
+            - pkg: "github.com/gperezmz/wakewire/internal/account/adapters"
+              desc: the transport mounts what the composition root built
+
+formatters:
+  enable:
+    - gofmt

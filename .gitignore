@@ -11,3 +11,5 @@ apm_modules/
 .claude/hooks/
 .claude/apm-hooks.json
 .claude/settings.json
+bin/
+dist/
