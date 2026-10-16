@@ -246,13 +246,12 @@ func listText(views []application.AccountView) string {
 	}
 	var b strings.Builder
 	w := tabwriter.NewWriter(&b, 0, 4, 2, ' ', 0)
-	_, _ = fmt.Fprintln(w, "NAME\tHOST\tSERVICE\tOWNERS\tTOKEN\tIDENTITY")
+	// USER is the identity override; without one, the account reads as the
+	// token's owner. EMAIL is what a Jira token authenticates with.
+	_, _ = fmt.Fprintln(w, "NAME\tHOST\tSERVICE\tOWNERS\tTOKEN\tEMAIL\tUSER")
 	for _, v := range views {
-		who := v.User
-		if v.Email != "" {
-			who = strings.TrimSpace(v.Email + " " + who)
-		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", v.Name, v.Host, v.Service, strings.Join(v.Owners, ","), v.TokenSource, who)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", v.Name, v.Host, v.Service, strings.Join(v.Owners, ","), v.TokenSource,
+			dash(v.Email), dash(v.User))
 	}
 	_ = w.Flush()
 	return b.String()
@@ -333,4 +332,11 @@ Related: wakewire account list, wakewire doctor.`,
 			return answer(s, cmd, res, head+"\n")
 		},
 	}
+}
+
+func dash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
 }
