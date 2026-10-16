@@ -188,11 +188,12 @@ linters:
       - path: internal/watch/adapters/.*_test\.go
         linters: [depguard]
         text: internal/wiring
-      # The record tests write recordings to fixed testdata paths and edit
-      # files in the sandbox clone they were pointed at.
+      # The record tests write recordings to fixed testdata paths, edit files
+      # in the sandbox clone they were pointed at, and reach the sandbox the
+      # environment names.
       - path: _test\.go
         linters: [gosec]
-        text: G703
+        text: G70[34]
 
 formatters:
   enable:
