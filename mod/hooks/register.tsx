@@ -36,8 +36,6 @@ let watch = ''
 // its turn starts, so a wake queued behind a turn that never ends is
 // offered again to whoever holds the watch next.
 let awaiting: { id: number; text: string; count: number } | undefined
-// The turn a wake started, whose end takes the ✦ off the footer.
-let wokeTurn: string | undefined
 let usable = false
 
 /** The footer label's state: drawn by the SessionMode hook, written by the ticks. */
@@ -66,7 +64,7 @@ function shortWatch(w: string): string {
 
 /** troubleWords names a problem in a few words, for the footer. */
 function troubleWords(p: Problem): string {
-  const service = /not watching ([^:(.]+?)(?: until|[:(.]|$)/.exec(p.text)?.[1]?.trim() ?? 'the service'
+  const service = /not watching (.+?)(?: until| —|[:(.]|$)/.exec(p.text)?.[1]?.trim() ?? 'the service'
   switch (p.code) {
     case 'unreachable':
       return `can't reach ${service}`
@@ -140,7 +138,6 @@ async function quiet($: EngineInterface): Promise<void> {
 function disarm(): void {
   armed = false
   awaiting = undefined
-  wokeTurn = undefined
   timer?.cancel()
   timer = undefined
 }
@@ -227,7 +224,11 @@ async function tick($: EngineInterface): Promise<void> {
       awaiting = undefined // not acknowledged: offered again next tick
       return
     }
-    await setLine($, { woke: batch.count })
+    await update($, line, (prev: WakewireLine | null | undefined): WakewireLine => ({
+      ...EMPTY,
+      ...prev,
+      woke: (prev?.woke ?? 0) + batch.count,
+    }))
   } finally {
     ticking = false
   }
@@ -360,18 +361,18 @@ export const register: Register = on => {
     const w = awaiting
     if (w && e.agentId === undefined && e.text === w.text) {
       awaiting = undefined
-      wokeTurn = e.turnId
       await run($, ['adapter', 'ack', String(w.id), '--json'])
     }
     return r
   })
 
-  // The wake's turn ended: the ✦ comes off.
-  on('turn.complete', async ($, e, next) => {
+  // The person typed: what arrived meanwhile has been seen, and "N new"
+  // comes off.
+  on('prompt.submit', async ($, e, next) => {
     const r = await next(e)
-    if (wokeTurn !== undefined && e.turnId === wokeTurn) {
-      wokeTurn = undefined
-      await setLine($, { woke: 0 })
+    if (e.origin?.kind === 'composer') {
+      const l = await read($, line)
+      if (l && l.woke > 0) await setLine($, { woke: 0 })
     }
     return r
   })

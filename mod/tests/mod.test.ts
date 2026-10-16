@@ -49,8 +49,12 @@ function statuses(_on: any): (string | undefined)[] {
 function submits(on: any, drop = false): string[] {
   const texts: string[] = []
   on('prompt.submit', ($: any, e: any) => {
-    expect(e.origin?.asUser).toBe(true)
-    texts.push(e.text)
+    if (e.origin?.kind === 'plugin' && e.origin?.name === 'wakewire') {
+      expect(e.origin?.asUser).toBe(true)
+      texts.push(e.text)
+    } else {
+      return { text: e.text, origin: e.origin }
+    }
     return drop ? { drop: 'refused by a test' } : { text: e.text, origin: e.origin }
   })
   return texts
@@ -228,9 +232,9 @@ describe('wakewire mod', () => {
     const bin = binary(on)
     await $.session.start(start)
     const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: [] } })
-    bin.state.problems = [{ code: 'token_refused', text: 'not watching GitHub: GitHub refused the token (401).' }]
+    bin.state.problems = [{ code: 'token_refused', text: 'not watching GitHub — GitHub refused the token (401).' }]
     await clock.advance(30_000)
-    expect(seen.at(-1)).toBe('not watching GitHub: GitHub refused the token (401)')
+    expect(seen.at(-1)).toBe('not watching GitHub — GitHub refused the token (401)')
     const dot: any = await footer.find({ type: 'Text', text: '↯' })
     expect(dot?.props?.color).toBe('error')
     expect((await footer.find({ type: 'Text', text: / GitHub refused the token/ })) !== undefined).toBe(true)
@@ -276,7 +280,7 @@ describe('wakewire mod', () => {
     expect(bin.state.acked).toEqual([])
   })
 
-  test('a wake marks the footer until its turn ends, and a poll pulses the dot', async ($, on) => {
+  test('a wake marks the footer until the person next types, and a poll makes the icon bold', async ($, on) => {
     const clock = mock.clock(on)
     world(on)
     const bin = binary(on, { batch: { id: 5, wake: '[wakewire] New activity:', count: 2 } })
@@ -287,9 +291,12 @@ describe('wakewire mod', () => {
     expect((await footer.find({ type: 'Text', text: / 2 new/ })) !== undefined).toBe(true)
     await $.turn.start({ text: sent[0]!, turnId: 't9' } as any)
     await $.turn.complete({ turnId: 't9', answer: 'ok', durationMs: 1, isAborted: false } as any)
+    expect((await footer.find({ type: 'Text', text: / 2 new/ })) !== undefined).toBe(true) // still: not seen yet
     expect(((await footer.find({ type: 'Text', text: '↯' })) as any)?.props?.weight).toBe('bold') // just polled
     await clock.advance(3_000)
     expect(((await footer.find({ type: 'Text', text: '↯' })) as any)?.props?.weight).toBe(undefined)
+    await $.prompt.submit({ text: 'thanks', origin: { kind: 'composer' } } as any)
+    expect((await footer.find({ type: 'Text', text: / 2 new/ })) === undefined).toBe(true)
     expect(bin.state.acked).toEqual([5])
     await footer.unmount()
   })
