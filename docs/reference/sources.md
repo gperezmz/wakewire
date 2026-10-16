@@ -23,30 +23,39 @@ each.
 
 Each carries `If-None-Match` with the last ETag. A `304` does not count
 against the rate limit, so an idle poll costs nothing. The URLs never change
-between polls, which is what lets the ETag match.
+between polls, which is what lets the ETag match. Run against a sandbox, the
+issues list's ETag moved for a label-only change and for a body-only edit,
+and the pull requests list showed a pushed head on the next poll.
 
 From the lists, wakewire keeps to items with the spec label (from requests 1
 and 2, where `assignee` is the identity or nobody) and to pull requests
 authored by the identity, and diffs each against its snapshot: `state`,
 `labels`, `assignees`, `title`, `body`, `comments` (the count),
 `pull_request.merged_at`, `updated_at`, and the head commit from request 3. A
-watched item missing from every list is fetched alone, once, to see why.
+watched item missing from every list is fetched alone, once, to see why. A
+list answered with `304` keeps the items it held last time, so an item is
+missing only when no list holds it. Where the tracker is Jira, request 1 is
+not sent.
 
 ### Per item that moved
 
 | Request | Gives |
 |---|---|
-| `GET /repos/{o}/{r}/issues/{n}/timeline?per_page=100` | Who added or removed a label, assigned, closed, reopened, renamed, merged; reviews; commits |
-| `GET /repos/{o}/{r}/issues/{n}/comments?since=<last seen>` | Conversation comments, with `user` and `created_at` |
-| `GET /repos/{o}/{r}/pulls/{n}/comments?since=<last seen>` | Inline comments, with `path`, `line` and `diff_hunk` |
-| `GET /repos/{o}/{r}/pulls/{n}/reviews` | Reviews, with `state` and `submitted_at` |
+| `GET /repos/{o}/{r}/issues/{n}/timeline?per_page=100` | Who added or removed a label, assigned, closed, reopened, renamed, merged; conversation comments with their bodies (`commented`); reviews with `state`, body and `submitted_at` (`reviewed`) |
+| `GET /repos/{o}/{r}/pulls/{n}/comments?per_page=100` | Inline comments, with `path`, `line` and `diff_hunk` |
+| `GET /repos/{o}/{r}/pulls/{n}/commits?per_page=100` | When the head moved: the commits after the head last seen, each with its author's login, or the commit's author email where GitHub links no account |
 
-About 2 requests per issue and 4 per pull request that moved. Comments and
-reviews already recorded are skipped by their ids.
+The timeline carries conversation comments and reviews, so the separate
+comments and reviews requests are not needed. Each list follows its `next`
+link, up to 10 pages. About 1 request per issue and 2 or 3 per pull request
+that moved; on the watch's first poll none, since what is there then is no
+change. Entries already recorded are skipped by their ids. A review of state
+`commented` with no body only carries inline comments, which are read on
+their own, so it is skipped.
 
 ### Identity, limits
 
-- Identity: `GET /user` gives `login` and `id`; changes are matched on `id`.
+- Identity: `GET /user` gives `login`; changes are matched on the login.
 - 5,000 requests an hour per token; `x-ratelimit-remaining` and
   `x-ratelimit-reset` are read on every response.
 - Not used: the repository events API, which "is not built to serve real-time

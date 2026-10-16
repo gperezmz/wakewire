@@ -10,16 +10,32 @@ timeout, so several sessions' binaries can read and write it at once.
 |---|---|---|
 | `watches` | Repository and identity | Tracker, labels as registered, interval, `paused_until` |
 | `registrations` | Watch | Harness, session id, process id and start time, `heard_at`, `ended_at` and its reason |
-| `adapters` | Session with a loaded adapter | Session id, process id, `hello_at`; what `register` reads to report `adapter: loaded` |
+| `adapters` | Session with a loaded adapter | Session id, process id and start time, `hello_at`, `heard_at`, the protocol it speaks; what `register` reads to report `adapter: loaded` and `doctor` to compare protocols |
 | `snapshots` | Watched item | The diffed fields, the ids of comments, reviews and events already recorded, `held_edit` while an edit settles |
 | `changes` | Change found | Item, kind, by, at, the batch fields, and its status: `pending`, `held`, `delivered` or `ignored` with the reason. This table is the ledger |
-| `batches` | Batch | Watch, the changes in it, `offered_at`, `acked_at` |
-| `problems` | Problem | Watch, source, code, `since`, `delivered_at`, `cleared_at` |
+| `batches` | Batch | Watch, `offered_at`, `acked_at`; its changes are in `batch_changes` |
+| `batch_changes` | Change in a batch | Batch and change, so a batch keeps its changes after another takes its place |
+| `problems` | Problem | Watch, source, code, text, the fix, `since`, `delivered_at`, `cleared_at` |
+| `source_state` | Watch and source | The source's own state between polls (ETags, the items each list held, pull request heads), unreachable polls in a row, the rate-limit budget, `skip_until` |
 | `leases` | Watch being polled | Process id and start time, `expires_at` |
 | `meta` | — | Schema version, `pruned_at` |
 
 A poll writes a source's changes and its snapshots in one transaction, so a
-change is stored exactly when its snapshot moves past it.
+change is stored exactly when its snapshot moves past it. A test kills a real
+process with SIGKILL in the middle of a poll, once while it waits on the
+service and once inside that transaction before it commits, and shows the
+next poll still finds the change.
+
+The binary migrates `state.db` when it opens it; a database newer than the
+binary is refused, naming the fix: update wakewire.
+
+## Batches
+
+At most one batch per watch is offered at a time. A batch the adapter has
+not acknowledged is offered again as it is on the next tick. When new changes
+arrive before it is acknowledged, a new batch holding everything pending
+takes its place, so one wake says it all; the old batch keeps its changes and
+can still be read with `wakewire changes`.
 
 ## Liveness
 

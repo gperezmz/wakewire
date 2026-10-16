@@ -70,8 +70,8 @@ service strips or converts HTML, as Jira's Atlassian Document Format may.
 
 | Key | Required | Meaning |
 |---|---|---|
-| `name` | yes | Unique; the key of the account's entry in `credentials.toml` |
-| `host` | yes | `github.com`, a GitLab host, or a Jira Cloud site |
+| `name` | yes | Unique; the key of the account's entry in `credentials.toml`. `account add` takes letters, digits, `-` and `_` |
+| `host` | yes | `github.com`, a GitLab host, or a Jira Cloud site. The service is known by the host: `github.com` is GitHub, a host ending `.atlassian.net` is Jira Cloud, any other is GitLab |
 | `owners` | forge accounts | The organizations, users or groups whose repositories this account reads |
 | `email` | Jira accounts | The email the Jira API token belongs to |
 | `token` | yes | Where the token comes from (below) |
@@ -81,7 +81,7 @@ service strips or converts HTML, as Jira's Atlassian Document Format may.
 |---|---|
 | `stored` | `credentials.toml`, under the account's name |
 | `env:<VAR>` | The environment variable `<VAR>` |
-| `gh:<login>` | `gh auth token --hostname <host> --user <login>`, run when needed; `gh` 2.40 and later hold several logins per host |
+| `gh:<login>` | `gh auth token --hostname <host> --user <login>`, run when needed; `gh` 2.40 and later hold several logins per host. The login must be one `gh auth login` stored: a token `gh` only reads from `GH_TOKEN` is not one, and `gh` runs with `GH_TOKEN`, `GITHUB_TOKEN` and their enterprise forms removed, so the named login's own token comes back |
 
 **Choosing an account.** A repository `<host>/<owner>/<repo>` reads through
 the account whose `host` matches and whose `owners` lists `<owner>`. A Jira

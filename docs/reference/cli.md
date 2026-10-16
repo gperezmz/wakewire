@@ -1,8 +1,8 @@
 # wakewire CLI
 
-Every command, its flags, what it prints and how it exits. This is the
-planned v1 surface; the binary's `--help` becomes the source of truth once it
-exists, and this page then holds only what `--help` does not.
+Every command, its flags, what it prints and how it exits, as v1 builds
+them. Each command's `--help` says the same for that command, with
+examples.
 
 ## Rules every command keeps
 
@@ -18,6 +18,8 @@ exists, and this page then holds only what `--help` does not.
 - **Safe to repeat**: a command run twice leaves the state it left once.
 - **`--dry-run`** on every command that changes state shows what it would do
   and changes nothing.
+- **Durations** are Go durations (`90s`, `30m`, `2h`) or a number of days
+  (`7d`).
 - **`--help`** on every command says what it does, when to use it, its flags,
   examples, exit codes and the related commands.
 - **No token is ever printed**, in any output or error, not even a prefix.
@@ -43,6 +45,10 @@ exists, and this page then holds only what `--help` does not.
 | `no_account` | 3 | No account covers the repository's host and owner, or the tracker's host |
 | `no_stored_token` | 3 | An account says `token = "stored"` and `credentials.toml` has no entry for it |
 | `config_invalid` | 3 | `config.toml` or `credentials.toml` does not parse, or two accounts share a name or a host and owner |
+| `no_token` | 3 | An account's `env:<VAR>` is empty or unset, or `gh` gives no token for its `gh:<login>` |
+| `account_exists` | 2 | `account add` names an account that exists with other settings |
+| `account_conflict` | 2 | `account add` claims a host and owner another account already covers |
+| `no_such_account` | 2 | `account rename` names no account |
 | `held` | 2 | Another live session holds the watch |
 | `not_registered` | 2 | The command names a watch that has no registration |
 | `token_refused` | 4 | A service answered 401 or 403 |
@@ -74,26 +80,33 @@ wakewire register [--harness <claude-code>] [--session <id>] [--repo <host/path>
 | `--marker` | `[echo] marker` in `config.toml` | The line that ends every comment the agents write; see [the marker](configuration.md#the-marker) |
 | `--take-over` | off | Take the watch from a live holder |
 
-The process id and its start time come from `$CLAUDE_PID`. With `--dry-run`
-it prints what it read and from which file and line:
+The process id and its start time come from `$CLAUDE_PID`. Without `$CLAUDE_PID` it takes its own
+parent process. It prints what it read and from which file and line, with
+`--dry-run` as `would register`:
 
 ```text
 $ wakewire register --dry-run
-read AGENTS.md, section "Forge and tracker" (line 42)
-  tracker      jira:acme.atlassian.net/PROJ   (line 44)
-  spec         type::spec                       (line 48)
-  ready        ready-for-dev                    (line 49)
-  in-progress  in-progress                      (line 50)
-  needs-input  needs-input                      (line 51)
-forge   github.com/acme/x as jdoe (account work-github)
-tracker acme.atlassian.net/PROJ as 5b10ac8d82e05b22cc7d4ef5 (account work-jira)
-would register claude-code:23f698be-… (pid 3327216)
+read AGENTS.md, section "Forge and tracker" (line 5)
+  tracker      github-issues  (line 7)
+  spec         type::spec     (line 11)
+  ready        ready-for-dev  (line 12)
+  in-progress  in-progress    (line 13)
+  needs-input  needs-input    (line 14)
+forge   github.com/gperezmz/wakewire-sandbox as gperezmz (account personal)
+tracker github-issues
+would register claude-code:3f1c2a9e-7b4d-4e2a-9c1f-5a8b6d0e2f41 (pid 3681747)
+adapter: not loaded. Nothing in this session will poll until the wakewire mod is installed and enabled.
 ```
 
-Outcomes under `--json`: `{"outcome": "registered" | "refreshed" | "taken-over", "watch": …, "watched": true|false, "notWatched": [{code, text}], "adapter": "loaded" | "not-loaded", "paused": null | "<since>"}`.
+Where the tracker is Jira, the tracker line reads
+`tracker <site>/<KEY> as <display name> (account <name>)`.
+
+Under `--json` it prints `{"outcome": "registered" | "refreshed" | "taken-over", "dryRun", "watch", "identity", "tracker", "forge", "trackerAs", "holder", "pid", "watched": true|false, "notWatched": [{code, text}], "adapter": "loaded" | "not-loaded", "paused": null | "<since>", "source": {file, heading, headingLine, values}, "replaced"}`;
+`replaced` names the session a takeover took the watch from.
 `adapter: not-loaded` means nothing in this session will poll: the mod is not
 installed or not enabled. A live holder exits 2 with `held`, naming the
-holder's session, process and when it was last heard from.
+holder's session, process and when it was last heard from. A session holds
+one watch: registering another ends its earlier registration.
 
 ### `wakewire unregister`
 
@@ -108,18 +121,20 @@ needs it; a session's end only makes its registration dormant.
 ### `wakewire pause` and `wakewire resume`
 
 ```text
-wakewire pause  [<repo>] [--for <duration>] [--json]
-wakewire resume [<repo>] [--json]
+wakewire pause  [<repo>] [--for <duration>] [--identity <id>] [--dry-run] [--json]
+wakewire resume [<repo>] [--identity <id>] [--dry-run] [--json]
 ```
 
 Pausing keeps polling and storing changes but delivers none. Resuming, or the
 end of `--for`, delivers everything held as one wake. Without `<repo>`, the
-watch of the current repository.
+watch of the current repository. `--identity` picks one of two identities
+watching one repository; without it, the watch the calling session holds is
+preferred.
 
 ### `wakewire status`
 
 ```text
-wakewire status [<repo>] [--session <id>] [--json]
+wakewire status [<repo>] [--session <id>] [--identity <id>] [--json]
 ```
 
 Every watch, or one: its holder and whether it is alive, held or dormant,
@@ -128,19 +143,21 @@ write, the remaining rate-limit budget per account, pause, pending changes and
 problems. `--session` answers for the watch a session holds, if any.
 
 ```text
-github.com/acme/x as jdoe        tracker jira:acme.atlassian.net/PROJ
-  held by   claude-code:23f6… (pid 3327216, heard 20s ago)
-  polled    14:02:10, every 2m, next 14:04:10
-  forge     GitHub · work-github (gh:jdoe, can write) · 4,871/5,000 left
-  tracker   Jira · work-jira (stored) · ok
-  pending   0 · paused no
+github.com/gperezmz/wakewire-sandbox as gperezmz	tracker github-issues
+  held by   claude-code:60f9edbc-2694-4e83-9c36-00da6b36cc3c (pid 3921642, heard 15s ago)
+  polled    22:58:33, every 30s, next 22:59:03
+  forge     GitHub · personal (stored, can write) · 4840/5000 left
+  pending   0 · held 0 · paused no
   problems  none
 ```
+
+A watch whose tracker is Jira has a `tracker` line too. An open problem is
+shown as `problem <code> since <time>: <text>`, with a `fix` line under it.
 
 ### `wakewire ledger`
 
 ```text
-wakewire ledger [<repo>] [--since <duration>] [--item <ref>] [--json]
+wakewire ledger [<repo>] [--since <duration>] [--item <ref>] [--identity <id>] [--json]
 ```
 
 Every change stored for a watch and what was done with it: delivered (with
@@ -160,7 +177,7 @@ reads a batch.
 ### `wakewire interval`
 
 ```text
-wakewire interval [<repo>] <duration|default> [--json]
+wakewire interval [<repo>] <duration|default> [--identity <id>] [--dry-run] [--json]
 ```
 
 How often a watch is polled, from `30s`; `default` returns it to the
@@ -172,16 +189,20 @@ configuration's value. Takes effect on the next tick.
 wakewire account add <name> --host <host> [--owner <owner>]... [--email <email>]
                      [--user <identity>] [--token stored|env:<VAR>|gh:<login>]
 wakewire account list [--json]
-wakewire account rename <old> <new>
-wakewire account remove <name>
+wakewire account rename <old> <new> [--dry-run] [--json]
+wakewire account remove <name> [--dry-run] [--json]
 ```
 
 `add` writes the account to `config.toml`. With `--token stored`, the
 default, it reads the token from a hidden prompt, or from stdin when stdin is
 not a terminal, never from a flag. It checks whose the token is, that it can
 read what the account covers and whether it can write, and stores it in
-`credentials.toml` only then. `rename` changes both files together. `remove`
-deletes the account and its stored token.
+`credentials.toml` only then. Run again with the same flags, it changes
+nothing; run for an existing account with `--token stored` and another
+token, it replaces the stored token, which is how a refused token is
+replaced. `rename` changes both files together. `remove` deletes the account
+and its stored token, and of a name no account has, any stored token left
+under it.
 
 ### `wakewire doctor`
 
@@ -193,7 +214,13 @@ Checks, in order, and names the fix for each failure: the configuration
 parses; every account's token resolves, belongs to its identity and can read
 what it covers; this repository's source section parses; the binary and the
 mod speak the same protocol; no stored token is unused; the rate-limit budget
-is not nearly spent. The first command to run when anything looks wrong.
+is not nearly spent; and no watch has a problem open. The first command to
+run when anything looks wrong.
+
+It prints each check as `ok`, `warn` or `FAIL` with the fix, or under
+`--json` `{"ok": true|false, "checks": [{name, ok, skipped, detail, code, fix}]}`,
+and exits 0 when every check passed or only warned, 3 when something is not
+set up, and 4 when a service failed.
 
 ### `wakewire paths`, `wakewire prune`, `wakewire version`
 
@@ -210,7 +237,7 @@ their own heading saying so.
 
 | Command | Does |
 |---|---|
-| `wakewire adapter hello --session <id>` | Records that an adapter is loaded for a session, with its parent process as the session's process; answers whether the session holds a watch and the protocol number |
-| `wakewire adapter next --session <id>` | The tick: records the adapter as heard from, polls if due within a 60 s budget, and returns the pending batch if any |
+| `wakewire adapter hello --session <id> [--protocol <n>]` | Records that an adapter is loaded for a session, with its parent process as the session's process and the protocol it speaks; answers whether the session holds a watch, the binary's protocol and the status line's facts |
+| `wakewire adapter next --session <id>` | The tick: records the adapter as heard from, polls if due within a 60 s budget, and returns `{"state": "armed" \| "idle" \| "taken-over", "by", "polled", "batch": null \| {id, wake, count}, "status"}` |
 | `wakewire adapter ack <batch>` | Marks a batch delivered |
 | `wakewire adapter ended --session <id> --reason <reason>` | Records that the session ended, making its registration dormant |
