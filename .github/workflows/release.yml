@@ -21,6 +21,12 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      # Claude Code updates an installed mod only when its version moves, so
+      # each release carries its own.
+      - name: the mod's version is the tag's
+        run: |
+          MOD=$(jq -r .version mod/.claude-plugin/plugin.json)
+          [ "v$MOD" = "$GITHUB_REF_NAME" ] || { echo "mod/.claude-plugin/plugin.json is $MOD, the tag is $GITHUB_REF_NAME"; exit 1; }
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod

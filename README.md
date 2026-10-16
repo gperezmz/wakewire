@@ -72,6 +72,9 @@ go install github.com/gperezmz/wakewire/cmd/wakewire@latest
 claude plugin install wakewire --marketplace gperezmz/wakewire
 ```
 
+After a release, `claude plugin update wakewire@wakewire` brings the mod up
+to it; a session takes it when it next starts.
+
 The mod is a Claude Code plugin whose hooks module runs inside the session;
 it needs function hooks enabled, and the `wakewire` binary on `PATH`. In a
 session, the footer shows `● wakewire` while the session holds a watch, and
@@ -148,4 +151,6 @@ hold and release wakes, and `wakewire ledger` says why a wake came or did not.
 the tests with `-race`, GoReleaser's check, and the mod's typecheck,
 `claude plugin validate .` and `claude plugin test mod`. CI runs the Go tests
 on Linux and macOS and the mod's tests with Claude Code from npm, on every
-push and pull request. A semver tag makes CI publish a release.
+push and pull request. A semver tag makes CI publish a release; the mod's
+version in `mod/.claude-plugin/plugin.json` is set to the tag's first, and
+the release fails where they differ.

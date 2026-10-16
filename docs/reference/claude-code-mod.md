@@ -90,3 +90,5 @@ the marketplace it installs from. It is tested with `claude plugin test mod`
 and typechecked with `tsc -p mod` against `mod/typings/claude-code.d.ts`, the
 declarations Claude Code 2.1.302 writes for mods, copied in so that CI can
 typecheck without a session. It needs the `wakewire` binary on `PATH`.
+Its `version` is the release's, since Claude Code updates an installed
+plugin only when that moves.
