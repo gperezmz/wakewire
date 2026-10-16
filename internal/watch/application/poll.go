@@ -116,7 +116,8 @@ func (s *Service) pollOne(ctx context.Context, w Watch, src BoundSource, firstPo
 			state.SkipUntil = out.Rate.ResetAt
 			if err := s.raise(tx, w, src.Name, "rate_limited", fmt.Sprintf(
 				"not watching %s until %s: its rate limit is nearly spent (%d of %d left).",
-				src.Source.Service(), out.Rate.ResetAt.Local().Format("15:04"), out.Rate.Remaining, out.Rate.Limit), paused); err != nil {
+				src.Source.Service(), out.Rate.ResetAt.Local().Format("15:04"), out.Rate.Remaining, out.Rate.Limit),
+				"wait for the reset, or lengthen the interval: `wakewire interval 5m`", paused); err != nil {
 				return err
 			}
 		} else if err := s.clear(tx, w.ID, src.Name); err != nil {
@@ -146,6 +147,7 @@ func (s *Service) store1(tx Tx, watchID int64, source SourceName, cs []domain.Ch
 func (s *Service) recordFailure(ctx context.Context, w Watch, name SourceName, service string, failure error) error {
 	var c interface {
 		Code() string
+		Hint() string
 		Error() string
 	}
 	if !errors.As(failure, &c) {
@@ -174,7 +176,7 @@ func (s *Service) recordFailure(ctx context.Context, w Watch, name SourceName, s
 		}
 		if raise {
 			text := fmt.Sprintf("not watching %s. %s.", service, trimDot(c.Error()))
-			if err := s.raise(tx, *cur, name, c.Code(), text, cur.PausedSince != nil); err != nil {
+			if err := s.raise(tx, *cur, name, c.Code(), text, c.Hint(), cur.PausedSince != nil); err != nil {
 				return err
 			}
 		}
@@ -184,7 +186,7 @@ func (s *Service) recordFailure(ctx context.Context, w Watch, name SourceName, s
 
 // raise records a problem once: a new problem is stored as a change of its
 // own, delivered once; one already open is left as it is.
-func (s *Service) raise(tx Tx, w Watch, name SourceName, code, text string, paused bool) error {
+func (s *Service) raise(tx Tx, w Watch, name SourceName, code, text, hint string, paused bool) error {
 	open, err := tx.OpenProblems(w.ID)
 	if err != nil {
 		return err
@@ -195,7 +197,7 @@ func (s *Service) raise(tx Tx, w Watch, name SourceName, code, text string, paus
 		}
 	}
 	now := s.clock.Now()
-	if err := tx.AddProblem(&Problem{WatchID: w.ID, Source: name, Code: code, Text: text, Since: now}); err != nil {
+	if err := tx.AddProblem(&Problem{WatchID: w.ID, Source: name, Code: code, Text: text, Hint: hint, Since: now}); err != nil {
 		return err
 	}
 	ch := domain.Change{Item: w.Repo.String(), URL: "https://" + w.Repo.String(), Kind: domain.KindProblem, At: now, Code: code, Text: text,

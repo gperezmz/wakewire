@@ -1,7 +1,7 @@
 package sqlitestore
 
 // schemaVersion is meta's schema_version once migrate has run.
-const schemaVersion = 1
+const schemaVersion = 2
 
 // migrations[i] takes the schema from version i to i+1.
 var migrations = []string{`
@@ -106,4 +106,7 @@ CREATE TABLE leases (
   pid_start TEXT NOT NULL,
   expires_at TEXT NOT NULL
 );
-`}
+`,
+	// 2: a problem keeps the command or setting that fixes it.
+	`ALTER TABLE problems ADD COLUMN hint TEXT NOT NULL DEFAULT '';`,
+}

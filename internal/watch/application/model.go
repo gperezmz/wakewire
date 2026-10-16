@@ -82,6 +82,7 @@ type Problem struct {
 	Source      SourceName
 	Code        string
 	Text        string
+	Hint        string // the command or setting that fixes it
 	Since       time.Time
 	DeliveredAt *time.Time
 	ClearedAt   *time.Time

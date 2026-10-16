@@ -50,6 +50,7 @@ type ProblemView struct {
 	Source    SourceName `json:"source"`
 	Code      string     `json:"code"`
 	Text      string     `json:"text"`
+	Fix       string     `json:"fix"`
 	Since     time.Time  `json:"since"`
 	ClearedAt *time.Time `json:"clearedAt,omitempty"`
 }
@@ -141,7 +142,7 @@ func (s *Service) status1(ctx context.Context, tx Tx, w Watch) (WatchStatus, err
 		return st, err
 	}
 	for _, p := range probs {
-		st.Problems = append(st.Problems, ProblemView{Source: p.Source, Code: p.Code, Text: p.Text, Since: p.Since})
+		st.Problems = append(st.Problems, ProblemView{Source: p.Source, Code: p.Code, Text: p.Text, Fix: p.Hint, Since: p.Since})
 	}
 	return st, nil
 }

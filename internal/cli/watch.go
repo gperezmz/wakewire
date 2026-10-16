@@ -462,6 +462,9 @@ func statusText(all []application.WatchStatus) string {
 		}
 		for _, p := range st.Problems {
 			fmt.Fprintf(tw, "  problem\t%s since %s: %s\n", p.Code, clock(p.Since), p.Text)
+			if p.Fix != "" {
+				fmt.Fprintf(tw, "  fix\t%s\n", p.Fix)
+			}
 		}
 		_ = tw.Flush()
 	}

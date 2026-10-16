@@ -201,6 +201,19 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 	}
 
 	if all, err := w.Status(ctx, nil); err == nil {
+		clear := true
+		for _, st := range all {
+			for _, p := range st.Problems {
+				clear = false
+				c.list = append(c.list, Check{Name: "watch " + st.Watch, Detail: p.Text, Code: p.Code, Fix: p.Fix})
+				if exit == 0 {
+					exit = exitFor[p.Code]
+				}
+			}
+		}
+		if clear {
+			c.ok("watches", fmt.Sprintf("%d watch(es), no problem open", len(all)))
+		}
 		low := false
 		for _, st := range all {
 			for _, src := range st.Sources {

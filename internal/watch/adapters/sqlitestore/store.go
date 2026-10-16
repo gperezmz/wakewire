@@ -516,7 +516,7 @@ func (x *tx) SaveBatch(b application.Batch) error {
 // ---- problems
 
 func (x *tx) OpenProblems(watchID int64) ([]application.Problem, error) {
-	rows, err := x.t.Query(`SELECT id, watch_id, source, code, text, since, delivered_at, cleared_at FROM problems
+	rows, err := x.t.Query(`SELECT id, watch_id, source, code, text, hint, since, delivered_at, cleared_at FROM problems
 		WHERE watch_id=? AND cleared_at IS NULL ORDER BY id`, watchID)
 	if err != nil {
 		return nil, err
@@ -527,7 +527,7 @@ func (x *tx) OpenProblems(watchID int64) ([]application.Problem, error) {
 		var p application.Problem
 		var source string
 		var since, delivered, cleared sql.NullString
-		if err := rows.Scan(&p.ID, &p.WatchID, &source, &p.Code, &p.Text, &since, &delivered, &cleared); err != nil {
+		if err := rows.Scan(&p.ID, &p.WatchID, &source, &p.Code, &p.Text, &p.Hint, &since, &delivered, &cleared); err != nil {
 			return nil, err
 		}
 		p.Source, p.Since, p.DeliveredAt, p.ClearedAt = application.SourceName(source), parseTS(since), parseTSP(delivered), parseTSP(cleared)
@@ -537,8 +537,8 @@ func (x *tx) OpenProblems(watchID int64) ([]application.Problem, error) {
 }
 
 func (x *tx) AddProblem(p *application.Problem) error {
-	res, err := x.t.Exec(`INSERT INTO problems(watch_id, source, code, text, since, delivered_at, cleared_at) VALUES(?,?,?,?,?,?,?)`,
-		p.WatchID, string(p.Source), p.Code, p.Text, ts(p.Since), tsp(p.DeliveredAt), tsp(p.ClearedAt))
+	res, err := x.t.Exec(`INSERT INTO problems(watch_id, source, code, text, hint, since, delivered_at, cleared_at) VALUES(?,?,?,?,?,?,?,?)`,
+		p.WatchID, string(p.Source), p.Code, p.Text, p.Hint, ts(p.Since), tsp(p.DeliveredAt), tsp(p.ClearedAt))
 	if err != nil {
 		return err
 	}
