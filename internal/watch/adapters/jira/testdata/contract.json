@@ -1,0 +1,3118 @@
+{
+  "service": "Jira",
+  "note": "Recorded by record_test.go against the KAN project of wwsite.atlassian.net on 2026-10-16",
+  "interactions": [
+    {
+      "name": "first poll: what is there is no change",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/search/jql",
+        "body": {
+          "fields": [
+            "summary",
+            "description",
+            "labels",
+            "assignee",
+            "reporter",
+            "status",
+            "resolution",
+            "comment",
+            "updated"
+          ],
+          "jql": "project = \"KAN\" AND labels = \"type::spec\" AND (assignee = \"wwaccount\" OR (reporter = \"wwaccount\" AND assignee is EMPTY)) ORDER BY updated DESC",
+          "maxResults": 100
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:14 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "issues": [
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:10:57.193+0200"
+              },
+              "id": "10004",
+              "key": "KAN-5",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a new spec in the partition",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/search/jql",
+        "body": {
+          "fields": [
+            "summary",
+            "description",
+            "labels",
+            "assignee",
+            "reporter",
+            "status",
+            "resolution",
+            "comment",
+            "updated"
+          ],
+          "jql": "(project = \"KAN\" AND labels = \"type::spec\" AND (assignee = \"wwaccount\" OR (reporter = \"wwaccount\" AND assignee is EMPTY))) OR issuekey in (\"KAN-5\") ORDER BY updated DESC",
+          "maxResults": 100,
+          "reconcileIssues": [
+            10004
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:20 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "issues": [
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Export as CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10000",
+                  "name": "To Do",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10000",
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/2"
+                  }
+                },
+                "summary": "Spec: export the report",
+                "updated": "2026-10-16T23:12:15.477+0200"
+              },
+              "id": "10005",
+              "key": "KAN-6",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:10:57.193+0200"
+              },
+              "id": "10004",
+              "key": "KAN-5",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a new spec in the partition",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/changelog/bulkfetch",
+        "body": {
+          "issueIdsOrKeys": [
+            "KAN-6"
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:20 GMT"
+        },
+        "body": {
+          "issueChangeLogs": []
+        }
+      }
+    },
+    {
+      "name": "a new spec in the partition",
+      "request": {
+        "method": "GET",
+        "path": "/rest/api/3/issue/KAN-6/comment",
+        "query": {
+          "maxResults": "100",
+          "orderBy": "created",
+          "startAt": "0"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:20 GMT"
+        },
+        "body": {
+          "comments": [],
+          "maxResults": 100,
+          "startAt": 0,
+          "total": 0
+        }
+      }
+    },
+    {
+      "name": "ready label, agent label, a comment and an echo",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/search/jql",
+        "body": {
+          "fields": [
+            "summary",
+            "description",
+            "labels",
+            "assignee",
+            "reporter",
+            "status",
+            "resolution",
+            "comment",
+            "updated"
+          ],
+          "jql": "(project = \"KAN\" AND labels = \"type::spec\" AND (assignee = \"wwaccount\" OR (reporter = \"wwaccount\" AND assignee is EMPTY))) OR issuekey in (\"KAN-5\", \"KAN-6\") ORDER BY updated DESC",
+          "maxResults": 100,
+          "reconcileIssues": [
+            10004,
+            10005
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:26 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "issues": [
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Please also support XLSX.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.504+0200",
+                      "id": "10002",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10002",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.504+0200"
+                    },
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Started on it.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          },
+                          {
+                            "content": [
+                              {
+                                "text": "🤖 unattendish agent",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.800+0200",
+                      "id": "10003",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10003",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.800+0200"
+                    }
+                  ],
+                  "maxResults": 2,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment",
+                  "startAt": 0,
+                  "total": 2
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Export as CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "in-progress",
+                  "ready-for-dev",
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10000",
+                  "name": "To Do",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10000",
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/2"
+                  }
+                },
+                "summary": "Spec: export the report",
+                "updated": "2026-10-16T23:12:21.800+0200"
+              },
+              "id": "10005",
+              "key": "KAN-6",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:10:57.193+0200"
+              },
+              "id": "10004",
+              "key": "KAN-5",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "ready label, agent label, a comment and an echo",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/changelog/bulkfetch",
+        "body": {
+          "issueIdsOrKeys": [
+            "KAN-6"
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:26 GMT"
+        },
+        "body": {
+          "issueChangeLogs": [
+            {
+              "changeHistories": [
+                {
+                  "author": {
+                    "accountId": "wwaccount",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "displayName": "Wakewire User",
+                    "emailAddress": "ww@example.com",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                  },
+                  "created": 1792185141128,
+                  "id": "10014",
+                  "items": [
+                    {
+                      "field": "labels",
+                      "fieldId": "labels",
+                      "fieldtype": "jira",
+                      "fromString": "type::spec",
+                      "toString": "in-progress ready-for-dev type::spec"
+                    }
+                  ]
+                }
+              ],
+              "issueId": "10005"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "ready label, agent label, a comment and an echo",
+      "request": {
+        "method": "GET",
+        "path": "/rest/api/3/issue/KAN-6/changelog",
+        "query": {
+          "maxResults": "100",
+          "startAt": "0"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:26 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "maxResults": 100,
+          "self": "https://wwsite.atlassian.net/rest/api/3/issue/KAN-6/changelog?maxResults=100\u0026startAt=0",
+          "startAt": 0,
+          "total": 1,
+          "values": [
+            {
+              "author": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "created": "2026-10-16T23:12:21.128+0200",
+              "id": "10014",
+              "items": [
+                {
+                  "field": "labels",
+                  "fieldId": "labels",
+                  "fieldtype": "jira",
+                  "from": null,
+                  "fromString": "type::spec",
+                  "to": null,
+                  "toString": "in-progress ready-for-dev type::spec"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "ready label, agent label, a comment and an echo",
+      "request": {
+        "method": "GET",
+        "path": "/rest/api/3/issue/KAN-6/comment",
+        "query": {
+          "maxResults": "100",
+          "orderBy": "created",
+          "startAt": "0"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:26 GMT"
+        },
+        "body": {
+          "comments": [
+            {
+              "author": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "body": {
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Please also support XLSX.",
+                        "type": "text"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "type": "doc",
+                "version": 1
+              },
+              "created": "2026-10-16T23:12:21.504+0200",
+              "id": "10002",
+              "jsdPublic": true,
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10002",
+              "updateAuthor": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "updated": "2026-10-16T23:12:21.504+0200"
+            },
+            {
+              "author": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "body": {
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Started on it.",
+                        "type": "text"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "content": [
+                      {
+                        "text": "🤖 unattendish agent",
+                        "type": "text"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "type": "doc",
+                "version": 1
+              },
+              "created": "2026-10-16T23:12:21.800+0200",
+              "id": "10003",
+              "jsdPublic": true,
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10003",
+              "updateAuthor": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "updated": "2026-10-16T23:12:21.800+0200"
+            }
+          ],
+          "maxResults": 100,
+          "startAt": 0,
+          "total": 2
+        }
+      }
+    },
+    {
+      "name": "a description edit, held",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/search/jql",
+        "body": {
+          "fields": [
+            "summary",
+            "description",
+            "labels",
+            "assignee",
+            "reporter",
+            "status",
+            "resolution",
+            "comment",
+            "updated"
+          ],
+          "jql": "(project = \"KAN\" AND labels = \"type::spec\" AND (assignee = \"wwaccount\" OR (reporter = \"wwaccount\" AND assignee is EMPTY))) OR issuekey in (\"KAN-5\", \"KAN-6\") ORDER BY updated DESC",
+          "maxResults": 100,
+          "reconcileIssues": [
+            10004,
+            10005
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:31 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "issues": [
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Please also support XLSX.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.504+0200",
+                      "id": "10002",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10002",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.504+0200"
+                    },
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Started on it.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          },
+                          {
+                            "content": [
+                              {
+                                "text": "🤖 unattendish agent",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.800+0200",
+                      "id": "10003",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10003",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.800+0200"
+                    }
+                  ],
+                  "maxResults": 2,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment",
+                  "startAt": 0,
+                  "total": 2
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Export as CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    },
+                    {
+                      "content": [
+                        {
+                          "text": "And XLSX.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "in-progress",
+                  "ready-for-dev",
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10000",
+                  "name": "To Do",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10000",
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/2"
+                  }
+                },
+                "summary": "Spec: export the report",
+                "updated": "2026-10-16T23:12:27.156+0200"
+              },
+              "id": "10005",
+              "key": "KAN-6",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:10:57.193+0200"
+              },
+              "id": "10004",
+              "key": "KAN-5",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a description edit, held",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/changelog/bulkfetch",
+        "body": {
+          "issueIdsOrKeys": [
+            "KAN-6"
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:32 GMT"
+        },
+        "body": {
+          "issueChangeLogs": [
+            {
+              "changeHistories": [
+                {
+                  "author": {
+                    "accountId": "wwaccount",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "displayName": "Wakewire User",
+                    "emailAddress": "ww@example.com",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                  },
+                  "created": 1792185147156,
+                  "id": "10015",
+                  "items": [
+                    {
+                      "field": "description",
+                      "fieldId": "description",
+                      "fieldtype": "jira",
+                      "fromString": "Export as CSV.",
+                      "toString": "Export as CSV.\n\nAnd XLSX."
+                    }
+                  ]
+                },
+                {
+                  "author": {
+                    "accountId": "wwaccount",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "displayName": "Wakewire User",
+                    "emailAddress": "ww@example.com",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                  },
+                  "created": 1792185141128,
+                  "id": "10014",
+                  "items": [
+                    {
+                      "field": "labels",
+                      "fieldId": "labels",
+                      "fieldtype": "jira",
+                      "fromString": "type::spec",
+                      "toString": "in-progress ready-for-dev type::spec"
+                    }
+                  ]
+                }
+              ],
+              "issueId": "10005"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a description edit, held",
+      "request": {
+        "method": "GET",
+        "path": "/rest/api/3/issue/KAN-6/changelog",
+        "query": {
+          "maxResults": "100",
+          "startAt": "0"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:32 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "maxResults": 100,
+          "self": "https://wwsite.atlassian.net/rest/api/3/issue/KAN-6/changelog?maxResults=100\u0026startAt=0",
+          "startAt": 0,
+          "total": 2,
+          "values": [
+            {
+              "author": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "created": "2026-10-16T23:12:21.128+0200",
+              "id": "10014",
+              "items": [
+                {
+                  "field": "labels",
+                  "fieldId": "labels",
+                  "fieldtype": "jira",
+                  "from": null,
+                  "fromString": "type::spec",
+                  "to": null,
+                  "toString": "in-progress ready-for-dev type::spec"
+                }
+              ]
+            },
+            {
+              "author": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "created": "2026-10-16T23:12:27.156+0200",
+              "id": "10015",
+              "items": [
+                {
+                  "field": "description",
+                  "fieldId": "description",
+                  "fieldtype": "jira",
+                  "from": null,
+                  "fromString": "Export as CSV.",
+                  "to": null,
+                  "toString": "Export as CSV.\n\nAnd XLSX."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "the edit holds still: reported",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/search/jql",
+        "body": {
+          "fields": [
+            "summary",
+            "description",
+            "labels",
+            "assignee",
+            "reporter",
+            "status",
+            "resolution",
+            "comment",
+            "updated"
+          ],
+          "jql": "(project = \"KAN\" AND labels = \"type::spec\" AND (assignee = \"wwaccount\" OR (reporter = \"wwaccount\" AND assignee is EMPTY))) OR issuekey in (\"KAN-5\", \"KAN-6\") ORDER BY updated DESC",
+          "maxResults": 100,
+          "reconcileIssues": [
+            10004,
+            10005
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:36 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "issues": [
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Please also support XLSX.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.504+0200",
+                      "id": "10002",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10002",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.504+0200"
+                    },
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Started on it.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          },
+                          {
+                            "content": [
+                              {
+                                "text": "🤖 unattendish agent",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.800+0200",
+                      "id": "10003",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10003",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.800+0200"
+                    }
+                  ],
+                  "maxResults": 2,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment",
+                  "startAt": 0,
+                  "total": 2
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Export as CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    },
+                    {
+                      "content": [
+                        {
+                          "text": "And XLSX.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "in-progress",
+                  "ready-for-dev",
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10000",
+                  "name": "To Do",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10000",
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/2"
+                  }
+                },
+                "summary": "Spec: export the report",
+                "updated": "2026-10-16T23:12:27.156+0200"
+              },
+              "id": "10005",
+              "key": "KAN-6",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:10:57.193+0200"
+              },
+              "id": "10004",
+              "key": "KAN-5",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "nothing moved",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/search/jql",
+        "body": {
+          "fields": [
+            "summary",
+            "description",
+            "labels",
+            "assignee",
+            "reporter",
+            "status",
+            "resolution",
+            "comment",
+            "updated"
+          ],
+          "jql": "(project = \"KAN\" AND labels = \"type::spec\" AND (assignee = \"wwaccount\" OR (reporter = \"wwaccount\" AND assignee is EMPTY))) OR issuekey in (\"KAN-5\", \"KAN-6\") ORDER BY updated DESC",
+          "maxResults": 100,
+          "reconcileIssues": [
+            10004,
+            10005
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:40 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "issues": [
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Please also support XLSX.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.504+0200",
+                      "id": "10002",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10002",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.504+0200"
+                    },
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Started on it.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          },
+                          {
+                            "content": [
+                              {
+                                "text": "🤖 unattendish agent",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.800+0200",
+                      "id": "10003",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10003",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.800+0200"
+                    }
+                  ],
+                  "maxResults": 2,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment",
+                  "startAt": 0,
+                  "total": 2
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Export as CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    },
+                    {
+                      "content": [
+                        {
+                          "text": "And XLSX.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "in-progress",
+                  "ready-for-dev",
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10000",
+                  "name": "To Do",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10000",
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/2"
+                  }
+                },
+                "summary": "Spec: export the report",
+                "updated": "2026-10-16T23:12:27.156+0200"
+              },
+              "id": "10005",
+              "key": "KAN-6",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:10:57.193+0200"
+              },
+              "id": "10004",
+              "key": "KAN-5",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a second spec",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/search/jql",
+        "body": {
+          "fields": [
+            "summary",
+            "description",
+            "labels",
+            "assignee",
+            "reporter",
+            "status",
+            "resolution",
+            "comment",
+            "updated"
+          ],
+          "jql": "(project = \"KAN\" AND labels = \"type::spec\" AND (assignee = \"wwaccount\" OR (reporter = \"wwaccount\" AND assignee is EMPTY))) OR issuekey in (\"KAN-5\", \"KAN-6\") ORDER BY updated DESC",
+          "maxResults": 100,
+          "reconcileIssues": [
+            10004,
+            10005
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:46 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "issues": [
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10006/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10000",
+                  "name": "To Do",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10000",
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/2"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:12:41.231+0200"
+              },
+              "id": "10006",
+              "key": "KAN-7",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10006"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Please also support XLSX.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.504+0200",
+                      "id": "10002",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10002",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.504+0200"
+                    },
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Started on it.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          },
+                          {
+                            "content": [
+                              {
+                                "text": "🤖 unattendish agent",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.800+0200",
+                      "id": "10003",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10003",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.800+0200"
+                    }
+                  ],
+                  "maxResults": 2,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment",
+                  "startAt": 0,
+                  "total": 2
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Export as CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    },
+                    {
+                      "content": [
+                        {
+                          "text": "And XLSX.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "in-progress",
+                  "ready-for-dev",
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10000",
+                  "name": "To Do",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10000",
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/2"
+                  }
+                },
+                "summary": "Spec: export the report",
+                "updated": "2026-10-16T23:12:27.156+0200"
+              },
+              "id": "10005",
+              "key": "KAN-6",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:10:57.193+0200"
+              },
+              "id": "10004",
+              "key": "KAN-5",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a second spec",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/changelog/bulkfetch",
+        "body": {
+          "issueIdsOrKeys": [
+            "KAN-7"
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:46 GMT"
+        },
+        "body": {
+          "issueChangeLogs": []
+        }
+      }
+    },
+    {
+      "name": "a second spec",
+      "request": {
+        "method": "GET",
+        "path": "/rest/api/3/issue/KAN-7/comment",
+        "query": {
+          "maxResults": "100",
+          "orderBy": "created",
+          "startAt": "0"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:46 GMT"
+        },
+        "body": {
+          "comments": [],
+          "maxResults": 100,
+          "startAt": 0,
+          "total": 0
+        }
+      }
+    },
+    {
+      "name": "the first spec leaves the partition",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/search/jql",
+        "body": {
+          "fields": [
+            "summary",
+            "description",
+            "labels",
+            "assignee",
+            "reporter",
+            "status",
+            "resolution",
+            "comment",
+            "updated"
+          ],
+          "jql": "(project = \"KAN\" AND labels = \"type::spec\" AND (assignee = \"wwaccount\" OR (reporter = \"wwaccount\" AND assignee is EMPTY))) OR issuekey in (\"KAN-5\", \"KAN-6\", \"KAN-7\") ORDER BY updated DESC",
+          "maxResults": 100,
+          "reconcileIssues": [
+            10004,
+            10005,
+            10006
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:52 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "issues": [
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": null,
+                "comment": {
+                  "comments": [
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Please also support XLSX.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.504+0200",
+                      "id": "10002",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10002",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.504+0200"
+                    },
+                    {
+                      "author": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "body": {
+                        "content": [
+                          {
+                            "content": [
+                              {
+                                "text": "Started on it.",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          },
+                          {
+                            "content": [
+                              {
+                                "text": "🤖 unattendish agent",
+                                "type": "text"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "type": "doc",
+                        "version": 1
+                      },
+                      "created": "2026-10-16T23:12:21.800+0200",
+                      "id": "10003",
+                      "jsdPublic": true,
+                      "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment/10003",
+                      "updateAuthor": {
+                        "accountId": "wwaccount",
+                        "accountType": "atlassian",
+                        "active": true,
+                        "displayName": "Wakewire User",
+                        "emailAddress": "ww@example.com",
+                        "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                      },
+                      "updated": "2026-10-16T23:12:21.800+0200"
+                    }
+                  ],
+                  "maxResults": 2,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005/comment",
+                  "startAt": 0,
+                  "total": 2
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Export as CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    },
+                    {
+                      "content": [
+                        {
+                          "text": "And XLSX.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "in-progress",
+                  "ready-for-dev"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10000",
+                  "name": "To Do",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10000",
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/2"
+                  }
+                },
+                "summary": "Spec: export the report",
+                "updated": "2026-10-16T23:12:47.566+0200"
+              },
+              "id": "10005",
+              "key": "KAN-6",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10005"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10006/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10000",
+                  "name": "To Do",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10000",
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/2"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:12:41.231+0200"
+              },
+              "id": "10006",
+              "key": "KAN-7",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10006"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:10:57.193+0200"
+              },
+              "id": "10004",
+              "key": "KAN-5",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "the first spec leaves the partition",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/changelog/bulkfetch",
+        "body": {
+          "issueIdsOrKeys": [
+            "KAN-6"
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:52 GMT"
+        },
+        "body": {
+          "issueChangeLogs": [
+            {
+              "changeHistories": [
+                {
+                  "author": {
+                    "accountId": "wwaccount",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "displayName": "Wakewire User",
+                    "emailAddress": "ww@example.com",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                  },
+                  "created": 1792185167566,
+                  "id": "10018",
+                  "items": [
+                    {
+                      "field": "labels",
+                      "fieldId": "labels",
+                      "fieldtype": "jira",
+                      "fromString": "in-progress ready-for-dev type::spec",
+                      "toString": "in-progress ready-for-dev"
+                    }
+                  ]
+                },
+                {
+                  "author": {
+                    "accountId": "wwaccount",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "displayName": "Wakewire User",
+                    "emailAddress": "ww@example.com",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                  },
+                  "created": 1792185167030,
+                  "id": "10017",
+                  "items": [
+                    {
+                      "field": "assignee",
+                      "fieldId": "assignee",
+                      "fieldtype": "jira",
+                      "from": "wwaccount",
+                      "fromString": "Wakewire User",
+                      "tmpFromAccountId": "wwaccount"
+                    }
+                  ]
+                },
+                {
+                  "author": {
+                    "accountId": "wwaccount",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "displayName": "Wakewire User",
+                    "emailAddress": "ww@example.com",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                  },
+                  "created": 1792185147156,
+                  "id": "10015",
+                  "items": [
+                    {
+                      "field": "description",
+                      "fieldId": "description",
+                      "fieldtype": "jira",
+                      "fromString": "Export as CSV.",
+                      "toString": "Export as CSV.\n\nAnd XLSX."
+                    }
+                  ]
+                },
+                {
+                  "author": {
+                    "accountId": "wwaccount",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "displayName": "Wakewire User",
+                    "emailAddress": "ww@example.com",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                  },
+                  "created": 1792185141128,
+                  "id": "10014",
+                  "items": [
+                    {
+                      "field": "labels",
+                      "fieldId": "labels",
+                      "fieldtype": "jira",
+                      "fromString": "type::spec",
+                      "toString": "in-progress ready-for-dev type::spec"
+                    }
+                  ]
+                }
+              ],
+              "issueId": "10005"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "the first spec leaves the partition",
+      "request": {
+        "method": "GET",
+        "path": "/rest/api/3/issue/KAN-6/changelog",
+        "query": {
+          "maxResults": "100",
+          "startAt": "0"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:52 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "maxResults": 100,
+          "self": "https://wwsite.atlassian.net/rest/api/3/issue/KAN-6/changelog?maxResults=100\u0026startAt=0",
+          "startAt": 0,
+          "total": 4,
+          "values": [
+            {
+              "author": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "created": "2026-10-16T23:12:21.128+0200",
+              "id": "10014",
+              "items": [
+                {
+                  "field": "labels",
+                  "fieldId": "labels",
+                  "fieldtype": "jira",
+                  "from": null,
+                  "fromString": "type::spec",
+                  "to": null,
+                  "toString": "in-progress ready-for-dev type::spec"
+                }
+              ]
+            },
+            {
+              "author": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "created": "2026-10-16T23:12:27.156+0200",
+              "id": "10015",
+              "items": [
+                {
+                  "field": "description",
+                  "fieldId": "description",
+                  "fieldtype": "jira",
+                  "from": null,
+                  "fromString": "Export as CSV.",
+                  "to": null,
+                  "toString": "Export as CSV.\n\nAnd XLSX."
+                }
+              ]
+            },
+            {
+              "author": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "created": "2026-10-16T23:12:47.030+0200",
+              "id": "10017",
+              "items": [
+                {
+                  "field": "assignee",
+                  "fieldId": "assignee",
+                  "fieldtype": "jira",
+                  "from": "wwaccount",
+                  "fromString": "Wakewire User",
+                  "tmpFromAccountId": "wwaccount",
+                  "tmpToAccountId": null,
+                  "to": null,
+                  "toString": null
+                }
+              ]
+            },
+            {
+              "author": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "created": "2026-10-16T23:12:47.566+0200",
+              "id": "10018",
+              "items": [
+                {
+                  "field": "labels",
+                  "fieldId": "labels",
+                  "fieldtype": "jira",
+                  "from": null,
+                  "fromString": "in-progress ready-for-dev type::spec",
+                  "to": null,
+                  "toString": "in-progress ready-for-dev"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "the second spec done",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/search/jql",
+        "body": {
+          "fields": [
+            "summary",
+            "description",
+            "labels",
+            "assignee",
+            "reporter",
+            "status",
+            "resolution",
+            "comment",
+            "updated"
+          ],
+          "jql": "(project = \"KAN\" AND labels = \"type::spec\" AND (assignee = \"wwaccount\" OR (reporter = \"wwaccount\" AND assignee is EMPTY))) OR issuekey in (\"KAN-5\", \"KAN-7\") ORDER BY updated DESC",
+          "maxResults": 100,
+          "reconcileIssues": [
+            10004,
+            10006
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:57 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "issues": [
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10006/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": {
+                  "description": "",
+                  "id": "10000",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/resolution/10000"
+                },
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:12:52.921+0200"
+              },
+              "id": "10006",
+              "key": "KAN-7",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10006"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:10:57.193+0200"
+              },
+              "id": "10004",
+              "key": "KAN-5",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "the second spec done",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/changelog/bulkfetch",
+        "body": {
+          "issueIdsOrKeys": [
+            "KAN-7"
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:57 GMT"
+        },
+        "body": {
+          "issueChangeLogs": [
+            {
+              "changeHistories": [
+                {
+                  "author": {
+                    "accountId": "wwaccount",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "displayName": "Wakewire User",
+                    "emailAddress": "ww@example.com",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                  },
+                  "created": 1792185172921,
+                  "id": "10019",
+                  "items": [
+                    {
+                      "field": "resolution",
+                      "fieldId": "resolution",
+                      "fieldtype": "jira",
+                      "to": "10000",
+                      "toString": "Done"
+                    },
+                    {
+                      "field": "status",
+                      "fieldId": "status",
+                      "fieldtype": "jira",
+                      "from": "10000",
+                      "fromString": "To Do",
+                      "to": "10003",
+                      "toString": "Done"
+                    }
+                  ]
+                }
+              ],
+              "issueId": "10006"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "the second spec done",
+      "request": {
+        "method": "GET",
+        "path": "/rest/api/3/issue/KAN-7/changelog",
+        "query": {
+          "maxResults": "100",
+          "startAt": "0"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:12:58 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "maxResults": 100,
+          "self": "https://wwsite.atlassian.net/rest/api/3/issue/KAN-7/changelog?maxResults=100\u0026startAt=0",
+          "startAt": 0,
+          "total": 1,
+          "values": [
+            {
+              "author": {
+                "accountId": "wwaccount",
+                "accountType": "atlassian",
+                "active": true,
+                "displayName": "Wakewire User",
+                "emailAddress": "ww@example.com",
+                "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+              },
+              "created": "2026-10-16T23:12:52.921+0200",
+              "id": "10019",
+              "items": [
+                {
+                  "field": "status",
+                  "fieldId": "status",
+                  "fieldtype": "jira",
+                  "from": "10000",
+                  "fromString": "To Do",
+                  "to": "10003",
+                  "toString": "Done"
+                },
+                {
+                  "field": "resolution",
+                  "fieldId": "resolution",
+                  "fieldtype": "jira",
+                  "from": null,
+                  "fromString": null,
+                  "to": "10000",
+                  "toString": "Done"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "nothing moved again",
+      "request": {
+        "method": "POST",
+        "path": "/rest/api/3/search/jql",
+        "body": {
+          "fields": [
+            "summary",
+            "description",
+            "labels",
+            "assignee",
+            "reporter",
+            "status",
+            "resolution",
+            "comment",
+            "updated"
+          ],
+          "jql": "(project = \"KAN\" AND labels = \"type::spec\" AND (assignee = \"wwaccount\" OR (reporter = \"wwaccount\" AND assignee is EMPTY))) OR issuekey in (\"KAN-5\", \"KAN-7\") ORDER BY updated DESC",
+          "maxResults": 100,
+          "reconcileIssues": [
+            10004,
+            10006
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Date": "Fri, 16 Oct 2026 21:13:02 GMT"
+        },
+        "body": {
+          "isLast": true,
+          "issues": [
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10006/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": {
+                  "description": "",
+                  "id": "10000",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/resolution/10000"
+                },
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:12:52.921+0200"
+              },
+              "id": "10006",
+              "key": "KAN-7",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10006"
+            },
+            {
+              "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+              "fields": {
+                "assignee": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "comment": {
+                  "comments": [],
+                  "maxResults": 0,
+                  "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004/comment",
+                  "startAt": 0,
+                  "total": 0
+                },
+                "description": {
+                  "content": [
+                    {
+                      "content": [
+                        {
+                          "text": "Import from CSV.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "paragraph"
+                    }
+                  ],
+                  "type": "doc",
+                  "version": 1
+                },
+                "labels": [
+                  "type::spec"
+                ],
+                "reporter": {
+                  "accountId": "wwaccount",
+                  "accountType": "atlassian",
+                  "active": true,
+                  "displayName": "Wakewire User",
+                  "emailAddress": "ww@example.com",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/user?accountId=wwaccount"
+                },
+                "resolution": null,
+                "status": {
+                  "description": "",
+                  "iconUrl": "https://wwsite.atlassian.net/images/icons/statuses/generic.png",
+                  "id": "10003",
+                  "name": "Done",
+                  "self": "https://wwsite.atlassian.net/rest/api/3/status/10003",
+                  "statusCategory": {
+                    "colorName": "green",
+                    "id": 3,
+                    "key": "done",
+                    "name": "Done",
+                    "self": "https://wwsite.atlassian.net/rest/api/3/statuscategory/3"
+                  }
+                },
+                "summary": "Spec: import the report",
+                "updated": "2026-10-16T23:10:57.193+0200"
+              },
+              "id": "10004",
+              "key": "KAN-5",
+              "self": "https://wwsite.atlassian.net/rest/api/3/issue/10004"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

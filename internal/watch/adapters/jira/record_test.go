@@ -5,6 +5,7 @@ package jira_test
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -28,7 +29,8 @@ import (
 // scrubber replaces the sandbox's site, account and the names and email
 // Jira and git hold for the person recording.
 func scrubber(sb *sandbox) contract.Scrubber {
-	replace := [][2]string{{realSiteTag, "wwsite"}, {sb.accountID, account}, {sb.email, "ww@example.com"}}
+	replace := [][2]string{{realSiteTag, "wwsite"}, {sb.accountID, account}, {url.QueryEscape(sb.accountID), account},
+		{sb.email, "ww@example.com"}}
 	names := []string{sb.displayName}
 	if out, err := exec.Command("git", "config", "user.name").Output(); err == nil {
 		names = append(names, strings.TrimSpace(string(out)))

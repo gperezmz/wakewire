@@ -89,6 +89,7 @@ loaded by `claude --plugin-dir`; the service claims against the sandboxes.
 | `/clear` is seen by the mod | `session.end` fires with `reason: 'clear'` and the old session id, and later Bash commands see the new `CLAUDE_CODE_SESSION_ID` while `CLAUDE_PID` stays the same |
 | `adapter next` every 30 s is unnoticeable in the session | It is. Over two sessions of about fifteen minutes the ticks added no transcript row and no prompt; the status line alone changed |
 | Plain pushes to a pull request change its head in the list responses on time | On GitHub, yes: the pull requests list showed the pushed head on the next poll. On GitLab 17.11, no: the merge requests list kept a merge request's old `sha` and comment count for over ten minutes after a push or a comment, so the GitLab source reads each open merge request alone on every poll; see [sources](../reference/sources.md#gitlab) |
+| Jira's `comment` field reports a total on `search/jql` | It does: `comment.total` comes with every issue, `maxResults` 0, so comments are read only when the total moved |
 | GitHub's list responses change their ETag when only a label or the body changes | They do: a label-only change and a body-only edit each gave a `200` with a new ETag on the next poll, and idle polls answered `304`, so conditional requests stay |
 
 ## Not proven until it runs
@@ -98,6 +99,5 @@ settles, with what changes if it fails:
 
 | Claim | If false |
 |---|---|
-| Jira's `comment` field reports a total on `search/jql` | Fetch comments for every watched issue whose `updated` moved, and accept a comment that moves nothing as missed |
 | Who made a plain push can be named | Report the commits' authors instead, as v1 does |
 | Mods load inside bb's Claude Code sessions | The bb adapter is a bb plugin, as planned anyway |

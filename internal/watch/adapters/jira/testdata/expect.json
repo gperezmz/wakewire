@@ -1,0 +1,42 @@
+[
+  {
+    "name": "first poll: what is there is no change",
+    "wake": ""
+  },
+  {
+    "name": "a new spec in the partition",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 21:12 (batch 3)\n- KAN-6: label \"type::spec\" added\nWhat each person wrote is in batch 3: mcp__wakewire__changes or `wakewire changes 3`."
+  },
+  {
+    "name": "ready label, agent label, a comment and an echo",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 2 changes since 21:12 (batch 8)\n- KAN-6: label \"ready-for-dev\" added by Wakewire\n- KAN-6: comment by Wakewire\nWhat each person wrote is in batch 8: mcp__wakewire__changes or `wakewire changes 8`."
+  },
+  {
+    "name": "a description edit, held",
+    "wake": ""
+  },
+  {
+    "name": "the edit holds still: reported",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 21:12 (batch 10)\n- KAN-6: description edited by Wakewire\nWhat each person wrote is in batch 10: mcp__wakewire__changes or `wakewire changes 10`."
+  },
+  {
+    "name": "nothing moved",
+    "wake": ""
+  },
+  {
+    "name": "a second spec",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 21:12 (batch 12)\n- KAN-7: label \"type::spec\" added\nWhat each person wrote is in batch 12: mcp__wakewire__changes or `wakewire changes 12`."
+  },
+  {
+    "name": "the first spec leaves the partition",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 2 changes since 21:12 (batch 15)\n- KAN-6: label \"type::spec\" removed by Wakewire\n- KAN-6: unassigned by Wakewire\nWhat each person wrote is in batch 15: mcp__wakewire__changes or `wakewire changes 15`."
+  },
+  {
+    "name": "the second spec done",
+    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 21:12 (batch 17)\n- KAN-7: closed by Wakewire\nWhat each person wrote is in batch 17: mcp__wakewire__changes or `wakewire changes 17`."
+  },
+  {
+    "name": "nothing moved again",
+    "wake": ""
+  }
+]
