@@ -61,8 +61,10 @@ func (s *Source) Poll(ctx context.Context, in application.PollInput) (applicatio
 	}
 
 	watched := make([]string, 0, len(in.Snapshots))
-	for ref := range in.Snapshots {
-		watched = append(watched, ref)
+	for ref, snap := range in.Snapshots {
+		if !snap.OffList { // gone or hidden already: not asked about again, which Jira may answer with a 400
+			watched = append(watched, ref)
+		}
 	}
 	slices.Sort(watched)
 	var reconcile []int64

@@ -169,7 +169,7 @@ func TestBulkChangelogFailureFallsBackToOneRequestEach(t *testing.T) {
 }
 
 func TestSameFieldsAreNoObservationAndAGoneIssueIsReportedOnce(t *testing.T) {
-	src, _ := newSource(t, map[string]func(map[string]any) (int, string){"POST /rest/api/3/search/jql": answer(page(spec))})
+	src, f := newSource(t, map[string]func(map[string]any) (int, string){"POST /rest/api/3/search/jql": answer(page(spec))})
 	var i issue
 	_ = json.Unmarshal([]byte(spec), &i)
 	snaps := map[string]domain.Snapshot{"KAN-1": {Item: i.item("x.atlassian.net")}, "KAN-2": {Item: domain.Item{Ref: "KAN-2"}}}
@@ -183,6 +183,13 @@ func TestSameFieldsAreNoObservationAndAGoneIssueIsReportedOnce(t *testing.T) {
 	snaps["KAN-2"] = domain.Snapshot{Item: domain.Item{Ref: "KAN-2"}, OffList: true}
 	if out, _ = src.Poll(context.Background(), application.PollInput{Rules: rules, Snapshots: snaps}); len(out.Observations) != 0 {
 		t.Fatalf("asked about again: %+v", out.Observations)
+	}
+	// Jira may answer 400 for a deleted key: an off-list issue is left out of the query.
+	if jql := f.bodies[len(f.bodies)-1]["jql"].(string); strings.Contains(jql, "KAN-2") || !strings.Contains(jql, "KAN-1") {
+		t.Errorf("the query asks about an off-list issue: %s", jql)
+	}
+	if ids, _ := f.bodies[len(f.bodies)-1]["reconcileIssues"].([]any); len(ids) != 0 {
+		t.Errorf("reconcileIssues: %v", ids)
 	}
 }
 
