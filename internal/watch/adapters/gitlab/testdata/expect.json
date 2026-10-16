@@ -1,0 +1,46 @@
+[
+  {
+    "name": "first poll: what is there is no change",
+    "wake": ""
+  },
+  {
+    "name": "a new spec in the partition",
+    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 1 change since 21:07 (batch 3)\n- #5: label \"type::spec\" added by wwuser\nWhat each person wrote is in batch 3: mcp__wakewire__changes or `wakewire changes 3`."
+  },
+  {
+    "name": "ready label, agent label, a comment and an echo",
+    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 2 changes since 21:07 (batch 8)\n- #5: label \"ready-for-dev\" added by wwuser\n- #5: comment by wwuser\nWhat each person wrote is in batch 8: mcp__wakewire__changes or `wakewire changes 8`."
+  },
+  {
+    "name": "a description edit, held",
+    "wake": ""
+  },
+  {
+    "name": "the edit holds still: reported",
+    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 1 change since 21:07 (batch 10)\n- #5: description edited by wwuser\nWhat each person wrote is in batch 10: mcp__wakewire__changes or `wakewire changes 10`."
+  },
+  {
+    "name": "nothing moved: every list answers 304",
+    "wake": ""
+  },
+  {
+    "name": "a new merge request of the identity's",
+    "wake": ""
+  },
+  {
+    "name": "a comment, an inline comment and an approval",
+    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 3 changes since 21:08 (batch 14)\n- !5: inline comment by wwuser\n- !5: comment by wwuser\n- !5: review, approved, by wwuser\nWhat each person wrote is in batch 14: mcp__wakewire__changes or `wakewire changes 14`."
+  },
+  {
+    "name": "a push with someone else's commit",
+    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 1 change since 21:08 (batch 16)\n- !5: pushed commit by ada@example.com\nWhat each person wrote is in batch 16: mcp__wakewire__changes or `wakewire changes 16`."
+  },
+  {
+    "name": "merged, which closes the spec it names",
+    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 2 changes since 21:08 (batch 19)\n- !5: merged by wwuser\n- #5: closed by wwuser\nWhat each person wrote is in batch 19: mcp__wakewire__changes or `wakewire changes 19`."
+  },
+  {
+    "name": "nothing moved: the lists answer 304 again",
+    "wake": ""
+  }
+]

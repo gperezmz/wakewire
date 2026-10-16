@@ -148,11 +148,14 @@ func TestRecordScenario(t *testing.T) {
 	poll("nothing moved: every list answers 304")
 
 	branch := fmt.Sprintf("ww-%d", time.Now().Unix())
+	// A file of the run's own, so its first line is in the diff whatever an
+	// earlier run merged.
+	file := branch + ".txt"
 	sh(t, clone, "", "git", "checkout", "-q", "-B", branch, "origin/main")
-	if err := os.WriteFile(filepath.Join(clone, "report.txt"), []byte("csv\n"), 0o600); err != nil { //nolint:gosec // the recorder writes its own testdata and the sandbox clone it was told
+	if err := os.WriteFile(filepath.Join(clone, file), []byte("csv\n"), 0o600); err != nil { //nolint:gosec // the recorder writes its own testdata and the sandbox clone it was told
 		t.Fatal(err)
 	}
-	sh(t, clone, "", "git", "add", "report.txt")
+	sh(t, clone, "", "git", "add", file)
 	sh(t, clone, "", "git", "commit", "-qm", "feat: export as CSV")
 	sh(t, clone, "", "git", "push", "-q", "origin", branch)
 	mr := a.do("POST", a.proj+"/merge_requests", map[string]any{"source_branch": branch, "target_branch": "main",
@@ -172,11 +175,11 @@ func TestRecordScenario(t *testing.T) {
 	a.do("POST", a.proj+"/merge_requests/"+m+"/notes", map[string]any{"body": "Looks good so far."})
 	a.do("POST", a.proj+"/merge_requests/"+m+"/discussions", map[string]any{"body": "Name this file export.csv.",
 		"position": map[string]any{"position_type": "text", "base_sha": refs["base_sha"], "start_sha": refs["start_sha"], "head_sha": head,
-			"new_path": "report.txt", "old_path": "report.txt", "new_line": 1}})
+			"new_path": file, "old_path": file, "new_line": 1}})
 	a.do("POST", a.proj+"/merge_requests/"+m+"/approve", nil)
 	poll("a comment, an inline comment and an approval")
 
-	if err := os.WriteFile(filepath.Join(clone, "report.txt"), []byte("csv\nxlsx\n"), 0o600); err != nil { //nolint:gosec // the recorder writes its own testdata and the sandbox clone it was told
+	if err := os.WriteFile(filepath.Join(clone, file), []byte("csv\nxlsx\n"), 0o600); err != nil { //nolint:gosec // the recorder writes its own testdata and the sandbox clone it was told
 		t.Fatal(err)
 	}
 	sh(t, clone, "", "git", "commit", "-qam", "feat: export as XLSX", "--author", "Ada Reviewer <ada@example.com>")
