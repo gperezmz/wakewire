@@ -120,6 +120,9 @@ func (a Account) Validate() error {
 			return &Violation{Field: "owners", Message: fmt.Sprintf("%q is not an owner", o)}
 		}
 	}
+	if a.Token.Kind == "" {
+		return &Violation{Field: "token", Message: "the token source is missing or not one of stored, env:<VAR>, gh:<login>"}
+	}
 	if a.Service() == Jira {
 		if len(a.Owners) > 0 {
 			return &Violation{Field: "owners", Message: "a Jira account has no owners: its host is the site it covers"}

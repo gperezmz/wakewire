@@ -71,6 +71,7 @@ func TestValidate(t *testing.T) {
 		{"owners", func(a Account) Account { a.Owners = []string{"o"}; return a }, jira},
 		{"email", func(a Account) Account { a.Email = ""; return a }, jira},
 		{"name", func(a Account) Account { a.Name = ""; return a }, jira},
+		{"token", func(a Account) Account { a.Token = TokenSource{}; return a }, jira},
 	}
 	for i, c := range cases {
 		var v *Violation

@@ -125,12 +125,10 @@ linters:
               desc: a domain does not reach outside the process
         account-application:
           files: ["**/internal/account/application/**"]
+          # The allow list is the contract for the module and for vendors: a deny
+          # on github.com/ would also refuse the context's own domain.
           allow: ["$gostd", "github.com/gperezmz/wakewire/internal/account/domain", "github.com/gperezmz/wakewire/internal/account/application"]
           deny:
-            - pkg: "github.com/gperezmz/wakewire/internal"
-              desc: application imports only its own context's domain
-            - pkg: "github.com/"
-              desc: application names no vendor package
             - pkg: "golang.org/x/"
               desc: application names no vendor package
             - pkg: "modernc.org/"
