@@ -192,3 +192,11 @@ func object(t *testing.T, out string) map[string]any {
 	}
 	return m
 }
+
+// errorCode answers the code of the error object under --json.
+func errorCode(t *testing.T, out string) string {
+	t.Helper()
+	e, _ := object(t, out)["error"].(map[string]any)
+	code, _ := e["code"].(string)
+	return code
+}

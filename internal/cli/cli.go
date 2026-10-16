@@ -28,6 +28,7 @@ const (
 // exitFor maps an error code to its exit code.
 var exitFor = map[string]int{
 	"invalid_value":     exitUsage,
+	"internal":          exitUsage,
 	"no_session":        exitNotSetUp,
 	"no_source":         exitNotSetUp,
 	"source_incomplete": exitNotSetUp,
@@ -96,7 +97,8 @@ func report(s streams, asJSON bool, err error) int {
 	}
 	var c coded
 	if !errors.As(err, &c) {
-		c = usageError(err.Error(), "wakewire --help lists the commands and their flags")
+		c = &Failure{code: "internal", message: err.Error(),
+			hint: "this is a bug in wakewire: report it with the command and its output"}
 	}
 	code, ok := exitFor[c.Code()]
 	if !ok {

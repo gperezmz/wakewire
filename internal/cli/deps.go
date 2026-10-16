@@ -56,7 +56,13 @@ type Deps struct {
 
 // DefaultDeps are the real world's.
 func DefaultDeps(build wiring.Build) Deps {
-	paths := func() (home.Paths, error) { return home.Resolve(os.Getenv) }
+	paths := func() (home.Paths, error) {
+		p, err := home.Resolve(os.Getenv)
+		if err != nil {
+			return p, usageError(err.Error(), "set WAKEWIRE_HOME to the folder wakewire keeps its files in")
+		}
+		return p, nil
+	}
 	return Deps{
 		Build:  build,
 		Getenv: os.Getenv,

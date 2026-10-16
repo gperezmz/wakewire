@@ -30,7 +30,7 @@ examples.
 | Code | Meaning |
 |---|---|
 | `0` | Done, including "already in that state" |
-| `1` | Usage: an unknown flag, a missing argument, an invalid value |
+| `1` | Usage: an unknown flag, a missing argument, an invalid value; also `internal`, a bug in wakewire |
 | `2` | Refused: the request is valid but the state forbids it, such as a watch held by a live session |
 | `3` | Not set up: no source section, no matching account, no stored token |
 | `4` | A service failed: refused the token, did not answer, or rate-limited |
@@ -40,6 +40,7 @@ examples.
 | Code | Exit | When |
 |---|---|---|
 | `invalid_value` | 1 | A flag's value is outside its form |
+| `internal` | 1 | An error no rule above names: a bug in wakewire; the hint says to report it with the command and its output |
 | `no_session` | 3 | No harness session was found: `CLAUDE_CODE_SESSION_ID` is unset and no `--session` was given |
 | `no_source` | 3 | No file in the source template's `files` has its section |
 | `source_incomplete` | 3 | The section lacks the tracker line or a label row; the message names which |
