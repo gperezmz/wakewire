@@ -1,5 +1,7 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
 
+import { sparkline } from '../hooks/register'
+
 // A fake wakewire binary: answers each argv the mod runs, and records them.
 function binary(
   on: any,
@@ -87,7 +89,8 @@ describe('wakewire mod', () => {
     expect(bin.calls.map(c => c.slice(1, 3).join(' '))).toEqual(['version --json', 'adapter hello'])
     expect(seen.at(-1)).toBe(undefined) // all is well: nothing on the status line
     const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: ['focus'] } })
-    expect((await footer.find({ type: 'Text', text: 'watching' })) !== undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: '↯' })) !== undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: /^ ▁{8}$/ })) !== undefined).toBe(true) // no activity yet
     expect((await footer.find({ type: 'Text', text: /focus/ })) !== undefined).toBe(true)
     await footer.unmount()
     await clock.advance(30_000)
@@ -148,9 +151,9 @@ describe('wakewire mod', () => {
     const bin = binary(on)
     await $.session.start(start)
     const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: [] } })
-    expect((await footer.find({ type: 'Text', text: /wakewire/ })) !== undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: '↯' })) !== undefined).toBe(true)
     await $.session.end({ reason: 'clear', sessionId: 'sess-1', resume: { sessionId: 'sess-1' } } as any)
-    expect((await footer.find({ type: 'Text', text: /wakewire/ })) === undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: '↯' })) === undefined).toBe(true)
     await footer.unmount()
     const ended = bin.calls.find(c => c[2] === 'ended')
     expect(ended).toEqual(['wakewire', 'adapter', 'ended', '--session', 'sess-1', '--reason', 'clear', '--json'])
@@ -228,13 +231,13 @@ describe('wakewire mod', () => {
     bin.state.problems = [{ code: 'token_refused', text: 'not watching GitHub: GitHub refused the token (401).' }]
     await clock.advance(30_000)
     expect(seen.at(-1)).toBe('not watching GitHub: GitHub refused the token (401)')
-    const dot: any = await footer.find({ type: 'Text', text: '●' })
+    const dot: any = await footer.find({ type: 'Text', text: '↯' })
     expect(dot?.props?.color).toBe('error')
-    expect((await footer.find({ type: 'Text', text: 'GitHub refused the token' })) !== undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: / GitHub refused the token/ })) !== undefined).toBe(true)
     bin.state.problems = []
     await clock.advance(30_000)
     expect(seen.at(-1)).toBe(undefined)
-    expect(((await footer.find({ type: 'Text', text: /^[●◉]$/ })) as any)?.props?.color).toBe('success')
+    expect(((await footer.find({ type: 'Text', text: '↯' })) as any)?.props?.color).toBe('success')
     await footer.unmount()
   })
 
@@ -281,13 +284,12 @@ describe('wakewire mod', () => {
     await $.session.start(start)
     const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: [] } })
     await clock.advance(30_000)
-    expect((await footer.find({ type: 'Text', text: '2 new' })) !== undefined).toBe(true)
+    expect((await footer.find({ type: 'Text', text: / 2 new/ })) !== undefined).toBe(true)
     await $.turn.start({ text: sent[0]!, turnId: 't9' } as any)
     await $.turn.complete({ turnId: 't9', answer: 'ok', durationMs: 1, isAborted: false } as any)
-    expect((await footer.find({ type: 'Text', text: 'watching' })) !== undefined).toBe(true)
-    expect((await footer.find({ type: 'Text', text: '◉' })) !== undefined).toBe(true)
+    expect(((await footer.find({ type: 'Text', text: '↯' })) as any)?.props?.weight).toBe('bold') // just polled
     await clock.advance(3_000)
-    expect((await footer.find({ type: 'Text', text: '●' })) !== undefined).toBe(true)
+    expect(((await footer.find({ type: 'Text', text: '↯' })) as any)?.props?.weight).toBe(undefined)
     expect(bin.state.acked).toEqual([5])
     await footer.unmount()
   })
@@ -299,5 +301,10 @@ describe('wakewire mod', () => {
     await $.session.start(start)
     const r: any = await $.classic.SessionStart({ source: 'compact' } as any)
     expect(String(r.additionalContext ?? '')).toContain('holds the wakewire watch for github.com/o/x')
+  })
+
+  test('the sparkline scales to the busiest hour', () => {
+    expect(sparkline([0, 0, 1, 0, 4, 0, 0, 2])).toBe('▁▁▃▁█▁▁▅')
+    expect(sparkline([0, 0, 0])).toBe('▁▁▁')
   })
 })

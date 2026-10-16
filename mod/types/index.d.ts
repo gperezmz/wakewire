@@ -14,6 +14,8 @@ export type WakewireLine = {
   woke: number
   /** a poll just ran */
   pulse: boolean
+  /** changes found per hour over the last hours, oldest first */
+  activity: number[]
 }
 
 declare module 'claude-code' {

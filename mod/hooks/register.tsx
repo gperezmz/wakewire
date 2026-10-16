@@ -21,6 +21,7 @@ type LineState = {
   held: number
   pending: number
   problems: Problem[]
+  activity?: number[]
 }
 type Answer = { ok: boolean; json?: any; text: string; missing?: boolean }
 
@@ -82,7 +83,15 @@ function troubleWords(p: Problem): string {
   return `not watching ${service}`
 }
 
-const EMPTY: WakewireLine = { watch: '', paused: false, held: 0, trouble: null, woke: 0, pulse: false }
+const EMPTY: WakewireLine = { watch: '', paused: false, held: 0, trouble: null, woke: 0, pulse: false, activity: [] }
+
+const BARS = '▁▂▃▄▅▆▇█'
+
+/** sparkline draws counts as bars, the highest full; an empty hour is the lowest bar. */
+export function sparkline(counts: readonly number[]): string {
+  const top = Math.max(0, ...counts)
+  return counts.map(n => (top === 0 || n === 0 ? BARS[0] : BARS[Math.min(7, Math.ceil((n / top) * 7))])).join('')
+}
 
 /** setLine changes some of the footer's state; the drawing follows. */
 async function setLine($: EngineInterface, patch: Partial<WakewireLine>): Promise<void> {
@@ -105,6 +114,7 @@ async function show($: EngineInterface, l: LineState | undefined, polled = false
     held: l.held,
     trouble: problem ? troubleWords(problem) : null,
     pulse: polled,
+    activity: l.activity ?? [],
   })
   if (polled) $.clock.after(PULSE_MS, () => void setLine($, { pulse: false }).catch(() => undefined))
 }
@@ -308,25 +318,33 @@ export const register: Register = on => {
 
   // The footer label: a colored dot and the watch, beside Claude Code's own
   // mode labels, drawn as they are, dim.
+  // The footer label: ↯ for wakewire, colored by its state, and beside it
+  // the last hours' activity, or what needs the person.
   on('ui.render', { component: 'SessionMode' }, async ($, e, next) => {
     const l = await read($, line)
     if (!l) return next(e)
     const { Box, Text } = $.ui.resolve(e)
-    const [mark, color, words] = l.trouble
-      ? ['●', 'error', l.trouble]
+    const [color, words] = l.trouble
+      ? ['error', l.trouble]
       : l.woke > 0
-        ? ['✦', 'claude', `${l.woke} new`]
+        ? ['claude', `${l.woke} new`]
         : l.paused
-          ? ['⏸', 'warning', `paused · ${l.held} held`]
-          : [l.pulse ? '◉' : '●', 'success', 'watching']
+          ? ['warning', `paused · ${l.held} held`]
+          : ['success', null]
     return (
       <Box>
         {e.props.modes.length > 0 && <Text dimColor>{e.props.modes.join(' & ')} · </Text>}
-        <Text color={color}>{mark}</Text>
-        <Text dimColor> wakewire </Text>
-        <Text color={l.trouble || l.woke > 0 ? color : undefined} dimColor={!l.trouble && l.woke === 0}>
-          {words}
+        <Text color={color} weight={l.pulse ? 'bold' : undefined}>
+          ↯
         </Text>
+        {words === null ? (
+          <Text dimColor> {sparkline(l.activity.length > 0 ? l.activity : new Array(8).fill(0))}</Text>
+        ) : (
+          <Text color={l.trouble || l.woke > 0 ? color : undefined} dimColor={!l.trouble && l.woke === 0}>
+            {' '}
+            {words}
+          </Text>
+        )}
       </Box>
     )
   })
