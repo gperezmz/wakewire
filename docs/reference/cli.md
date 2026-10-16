@@ -17,7 +17,8 @@ examples.
   a terminal.
 - **Safe to repeat**: a command run twice leaves the state it left once.
 - **`--dry-run`** on every command that changes state shows what it would do
-  and changes nothing.
+  and changes nothing: it runs no clean-up, and where `state.db` does not
+  exist yet it makes neither the file nor the folder.
 - **Durations** are Go durations (`90s`, `30m`, `2h`) or a number of days
   (`7d`).
 - **`--help`** on every command says what it does, when to use it, its flags,

@@ -44,12 +44,13 @@ type DoctorAccounts interface {
 // Deps are what a run needs from the world, built only when a command
 // asks for them, so `version` opens nothing.
 type Deps struct {
-	Build    wiring.Build
-	Getenv   func(string) string
-	Getwd    func() (string, error)
-	PPID     func() int
-	Paths    func() (home.Paths, error)
-	Watch    func(ctx context.Context) (WatchAPI, error)
+	Build  wiring.Build
+	Getenv func(string) string
+	Getwd  func() (string, error)
+	PPID   func() int
+	Paths  func() (home.Paths, error)
+	// Watch opens the watch service; a dry run asks for one that creates nothing.
+	Watch    func(ctx context.Context, dryRun bool) (WatchAPI, error)
 	Accounts func() (DoctorAccounts, error)
 }
 
@@ -62,12 +63,12 @@ func DefaultDeps(build wiring.Build) Deps {
 		Getwd:  os.Getwd,
 		PPID:   os.Getppid,
 		Paths:  paths,
-		Watch: func(ctx context.Context) (WatchAPI, error) {
+		Watch: func(ctx context.Context, dryRun bool) (WatchAPI, error) {
 			p, err := paths()
 			if err != nil {
 				return nil, err
 			}
-			return wiring.NewWatch(ctx, p, os.Getenv, wiring.WatchOptions{})
+			return wiring.NewWatch(ctx, p, os.Getenv, wiring.WatchOptions{DryRun: dryRun})
 		},
 		Accounts: func() (DoctorAccounts, error) {
 			p, err := paths()

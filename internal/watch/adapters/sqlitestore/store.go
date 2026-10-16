@@ -31,6 +31,22 @@ func Open(ctx context.Context, path string) (*Store, error) {
 		return nil, err
 	}
 	_ = f.Close()
+	s, err := open(ctx, "file:"+path+"?"+pragmas().Encode(), 0)
+	if err != nil {
+		return nil, fmt.Errorf("state.db at %s: %w", path, err)
+	}
+	return s, nil
+}
+
+// OpenMemory opens an empty state.db that lives in memory and leaves
+// nothing on disk, for a command that must change no state on a machine
+// where there is none yet.
+func OpenMemory(ctx context.Context) (*Store, error) {
+	// One connection: each connection to :memory: is a database of its own.
+	return open(ctx, "file::memory:?"+pragmas().Encode(), 1)
+}
+
+func pragmas() url.Values {
 	q := url.Values{}
 	q.Add("_pragma", "busy_timeout(10000)")
 	q.Add("_pragma", "foreign_keys(1)")
@@ -38,14 +54,21 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	q.Add("_pragma", "journal_mode(wal)")
 	q.Add("_pragma", "synchronous(normal)")
 	q.Set("_txlock", "immediate")
-	db, err := sql.Open("sqlite", "file:"+path+"?"+q.Encode())
+	return q
+}
+
+func open(ctx context.Context, dsn string, maxConns int) (*Store, error) {
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
+	}
+	if maxConns > 0 {
+		db.SetMaxOpenConns(maxConns)
 	}
 	s := &Store{db: db}
 	if err := s.migrate(ctx); err != nil {
 		_ = db.Close()
-		return nil, fmt.Errorf("state.db at %s: %w", path, err)
+		return nil, err
 	}
 	return s, nil
 }

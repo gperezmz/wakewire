@@ -2,6 +2,8 @@ package wiring
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"net/http"
 	"os"
 	"time"
@@ -23,6 +25,10 @@ type WatchOptions struct {
 	Account   AccountOptions
 	Clock     application.Clock
 	Processes application.Processes
+	// DryRun: the command changes nothing, so it creates nothing either.
+	// Where state.db does not exist yet, the service runs over an empty
+	// one in memory, and no folder or file is made.
+	DryRun bool
 	// Self is this binary's own process, which holds the poll lease; the
 	// zero value is the running process.
 	Self application.Process
@@ -45,8 +51,10 @@ func (w *Watch) Close() error { return w.Store.Close() }
 // NewWatch builds the watch service over state.db, the configuration, the
 // accounts and the services.
 func NewWatch(ctx context.Context, paths home.Paths, getenv func(string) string, o WatchOptions) (*Watch, error) {
-	if err := paths.Ensure(); err != nil {
-		return nil, err
+	if !o.DryRun {
+		if err := paths.Ensure(); err != nil {
+			return nil, err
+		}
 	}
 	cfg, err := config.Load(paths.Config)
 	if err != nil {
@@ -60,7 +68,7 @@ func NewWatch(ctx context.Context, paths home.Paths, getenv func(string) string,
 	if err != nil {
 		return nil, err
 	}
-	store, err := sqlitestore.Open(ctx, paths.State)
+	store, err := openState(ctx, paths, o.DryRun)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +97,17 @@ func NewWatch(ctx context.Context, paths home.Paths, getenv func(string) string,
 		Endpoints: sources.Endpoints{GitHub: o.Account.GitHubAPI, Origin: o.Account.Origin}}
 	svc := application.New(store, src, acl, gitrepo.Repos{}, procs, clock, settings, application.WithSelf(self))
 	return &Watch{Service: svc, Store: store, Settings: settings}, nil
+}
+
+// openState opens state.db. A dry run over a home with no state.db opens an
+// empty one in memory instead of creating the file.
+func openState(ctx context.Context, paths home.Paths, dryRun bool) (*sqlitestore.Store, error) {
+	if dryRun {
+		if _, err := os.Stat(paths.State); errors.Is(err, fs.ErrNotExist) {
+			return sqlitestore.OpenMemory(ctx)
+		}
+	}
+	return sqlitestore.Open(ctx, paths.State)
 }
 
 // Settings maps the configuration's values onto the watch context's.

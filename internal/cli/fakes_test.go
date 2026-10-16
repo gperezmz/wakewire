@@ -148,10 +148,11 @@ func (f *fakeAccounts) UnusedStored() ([]string, error) { return f.unused, f.unu
 // world is what a run of the CLI sees: the environment, the watch service
 // and the accounts.
 type fakeWorld struct {
-	env   map[string]string
-	watch *fakeWatch
-	acc   *fakeAccounts
-	opens int // how many times a command opened the watch service
+	env     map[string]string
+	watch   *fakeWatch
+	acc     *fakeAccounts
+	opens   int // how many times a command opened the watch service
+	openDry []bool
 }
 
 func newFakeWorld() *fakeWorld {
@@ -165,8 +166,9 @@ func (w *fakeWorld) deps() Deps {
 		Getwd:  func() (string, error) { return "/repo", nil },
 		PPID:   func() int { return 4242 },
 		Paths:  func() (home.Paths, error) { return home.Paths{Home: "/h"}, nil },
-		Watch: func(context.Context) (WatchAPI, error) {
+		Watch: func(_ context.Context, dryRun bool) (WatchAPI, error) {
 			w.opens++
+			w.openDry = append(w.openDry, dryRun)
 			return w.watch, nil
 		},
 		Accounts: func() (DoctorAccounts, error) { return w.acc, nil },

@@ -69,8 +69,9 @@ func lazyAccountCommand(deps Deps, s streams) *ucli.Command {
 }
 
 // withWatch opens the watch service for one command and closes it after.
-func withWatch(ctx context.Context, deps Deps, fn func(WatchAPI) error) error {
-	w, err := deps.Watch(ctx)
+// A dry run opens one that creates nothing.
+func withWatch(ctx context.Context, deps Deps, dryRun bool, fn func(WatchAPI) error) error {
+	w, err := deps.Watch(ctx, dryRun)
 	if err != nil {
 		return err
 	}
@@ -199,7 +200,7 @@ Related: wakewire status, wakewire unregister, wakewire doctor.`,
 				}
 				in.Labels[m] = label
 			}
-			return withWatch(ctx, deps, func(w WatchAPI) error {
+			return withWatch(ctx, deps, cmd.Bool("dry-run"), func(w WatchAPI) error {
 				r, err := w.Register(ctx, in)
 				if err != nil {
 					return err
@@ -270,7 +271,7 @@ Exit codes: 0 forgotten or already gone; 1 invalid value.
 Related: wakewire register, wakewire status.`,
 		Flags: []ucli.Flag{identityFlag, dryRunFlag, jsonFlag},
 		Action: func(ctx context.Context, cmd *ucli.Command) error {
-			return withWatch(ctx, deps, func(w WatchAPI) error {
+			return withWatch(ctx, deps, cmd.Bool("dry-run"), func(w WatchAPI) error {
 				r, err := w.Unregister(ctx, selector(deps, cmd), cmd.Bool("dry-run"))
 				if err != nil {
 					return err
@@ -312,7 +313,7 @@ Related: wakewire resume, wakewire status.`,
 					return err
 				}
 			}
-			return withWatch(ctx, deps, func(w WatchAPI) error {
+			return withWatch(ctx, deps, cmd.Bool("dry-run"), func(w WatchAPI) error {
 				r, err := w.Pause(ctx, selector(deps, cmd), d, cmd.Bool("dry-run"))
 				if err != nil {
 					return err
@@ -347,7 +348,7 @@ Exit codes: 0 resumed or not paused; 1 invalid value; 2 no such watch.
 Related: wakewire pause, wakewire status.`,
 		Flags: []ucli.Flag{identityFlag, dryRunFlag, jsonFlag},
 		Action: func(ctx context.Context, cmd *ucli.Command) error {
-			return withWatch(ctx, deps, func(w WatchAPI) error {
+			return withWatch(ctx, deps, cmd.Bool("dry-run"), func(w WatchAPI) error {
 				r, err := w.Resume(ctx, selector(deps, cmd), cmd.Bool("dry-run"))
 				if err != nil {
 					return err
@@ -380,7 +381,7 @@ Exit codes: 0; 1 invalid value; 2 no such watch.
 Related: wakewire ledger, wakewire doctor.`,
 		Flags: []ucli.Flag{&ucli.StringFlag{Name: "session", Usage: "the session whose watch to show"}, identityFlag, jsonFlag},
 		Action: func(ctx context.Context, cmd *ucli.Command) error {
-			return withWatch(ctx, deps, func(w WatchAPI) error {
+			return withWatch(ctx, deps, false, func(w WatchAPI) error {
 				var sel *application.Selector
 				if cmd.Args().Present() || cmd.String("identity") != "" {
 					v := selector(deps, cmd)
@@ -501,7 +502,7 @@ Related: wakewire changes, wakewire status.`,
 					return err
 				}
 			}
-			return withWatch(ctx, deps, func(w WatchAPI) error {
+			return withWatch(ctx, deps, false, func(w WatchAPI) error {
 				r, err := w.Ledger(ctx, selector(deps, cmd), since, cmd.String("item"))
 				if err != nil {
 					return err
@@ -558,7 +559,7 @@ Related: wakewire ledger.`,
 			if err != nil || id <= 0 {
 				return usageError(fmt.Sprintf("%q is not a batch number", args[0]), "the wake names its batch, as `wakewire changes 193`")
 			}
-			return withWatch(ctx, deps, func(w WatchAPI) error {
+			return withWatch(ctx, deps, false, func(w WatchAPI) error {
 				v, err := w.Changes(ctx, id)
 				if err != nil {
 					return err
@@ -633,7 +634,7 @@ Related: wakewire status.`,
 					return err
 				}
 			}
-			return withWatch(ctx, deps, func(w WatchAPI) error {
+			return withWatch(ctx, deps, cmd.Bool("dry-run"), func(w WatchAPI) error {
 				r, err := w.SetInterval(ctx, sel, d, cmd.Bool("dry-run"))
 				if err != nil {
 					return err
@@ -661,7 +662,7 @@ Exit codes: 0.
 Related: wakewire ledger.`,
 		Flags: []ucli.Flag{dryRunFlag, jsonFlag},
 		Action: func(ctx context.Context, cmd *ucli.Command) error {
-			return withWatch(ctx, deps, func(w WatchAPI) error {
+			return withWatch(ctx, deps, cmd.Bool("dry-run"), func(w WatchAPI) error {
 				c, err := w.Prune(ctx, cmd.Bool("dry-run"))
 				if err != nil {
 					return err
@@ -729,7 +730,7 @@ Related: docs/reference/claude-code-mod.md.`,
 				Name: "hello", Usage: "record that an adapter is loaded for a session",
 				Flags: []ucli.Flag{session, pid, &ucli.IntFlag{Name: "protocol", Usage: "the wake contract the adapter speaks"}, jsonFlag},
 				Action: func(ctx context.Context, cmd *ucli.Command) error {
-					return withWatch(ctx, deps, func(w WatchAPI) error {
+					return withWatch(ctx, deps, false, func(w WatchAPI) error {
 						r, err := w.Hello(ctx, cmd.String("session"), proc(cmd), cmd.Int("protocol"))
 						if err != nil {
 							return err
@@ -747,7 +748,7 @@ Related: docs/reference/claude-code-mod.md.`,
 					if err != nil {
 						return err
 					}
-					return withWatch(ctx, deps, func(w WatchAPI) error {
+					return withWatch(ctx, deps, false, func(w WatchAPI) error {
 						r, err := w.Next(ctx, cmd.String("session"), proc(cmd), reader)
 						if err != nil {
 							return err
@@ -772,7 +773,7 @@ Related: docs/reference/claude-code-mod.md.`,
 					if err != nil {
 						return usageError(fmt.Sprintf("%q is not a batch number", args[0]), "`wakewire adapter ack 193`")
 					}
-					return withWatch(ctx, deps, func(w WatchAPI) error {
+					return withWatch(ctx, deps, false, func(w WatchAPI) error {
 						r, err := w.Ack(ctx, id)
 						if err != nil {
 							return err
@@ -785,7 +786,7 @@ Related: docs/reference/claude-code-mod.md.`,
 				Name: "ended", Usage: "record that the session ended",
 				Flags: []ucli.Flag{session, &ucli.StringFlag{Name: "reason", Usage: "why, as session.end gives it"}, jsonFlag},
 				Action: func(ctx context.Context, cmd *ucli.Command) error {
-					return withWatch(ctx, deps, func(w WatchAPI) error {
+					return withWatch(ctx, deps, false, func(w WatchAPI) error {
 						r, err := w.Ended(ctx, cmd.String("session"), cmd.String("reason"))
 						if err != nil {
 							return err

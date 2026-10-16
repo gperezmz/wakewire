@@ -76,8 +76,10 @@ func (s *Service) Register(ctx context.Context, in RegisterInput) (RegisterResul
 	if in.Harness != "claude-code" {
 		return RegisterResult{}, domain.Invalid(fmt.Sprintf("harness %q has no adapter", in.Harness), "use --harness claude-code")
 	}
-	if err := s.pruneIfDue(ctx); err != nil {
-		return RegisterResult{}, err
+	if !in.DryRun { // the daily clean-up is a change of state
+		if err := s.pruneIfDue(ctx); err != nil {
+			return RegisterResult{}, err
+		}
 	}
 	repo, err := s.selectRepo(ctx, Selector{Repo: in.Repo, Dir: in.Dir})
 	if err != nil {

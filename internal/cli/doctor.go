@@ -153,7 +153,7 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 		c.ok(name, detail)
 	}
 
-	w, err := deps.Watch(ctx)
+	w, err := deps.Watch(ctx, false)
 	if err != nil {
 		c.fail("state", err)
 		failed(err)
