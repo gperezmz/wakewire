@@ -3,12 +3,19 @@ name: release
 on:
   push:
     tags: ["v*"]
+  # Installs an existing release again, by each channel, to check it.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The release to check, as v1.2.3"
+        required: true
 
 permissions:
   contents: write
 
 jobs:
   release:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -23,3 +30,46 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Installs the published release as a person would, by each channel, on
+  # Linux and macOS, and runs it.
+  install:
+    needs: release
+    if: always() && (needs.release.result == 'success' || github.event_name == 'workflow_dispatch')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.tag }}
+    steps:
+      - name: the release archive, checked against checksums.txt
+        run: |
+          VERSION="${TAG#v}"
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          ARCH=$(uname -m); [ "$ARCH" = x86_64 ] && ARCH=amd64; [ "$ARCH" = aarch64 ] && ARCH=arm64
+          ARCHIVE="wakewire_${VERSION}_${OS}_${ARCH}.tar.gz"
+          curl -fsSLO "https://github.com/gperezmz/wakewire/releases/download/$TAG/$ARCHIVE"
+          curl -fsSLO "https://github.com/gperezmz/wakewire/releases/download/$TAG/checksums.txt"
+          if command -v sha256sum >/dev/null; then sha256sum --check --ignore-missing checksums.txt; else shasum -a 256 --check --ignore-missing checksums.txt; fi
+          tar -xzf "$ARCHIVE" wakewire
+          ./wakewire version --json | tee version.json
+          grep -q "\"version\":\"$TAG\"" version.json
+      - name: Homebrew, from this repository's tap
+        run: |
+          eval "$(brew shellenv 2>/dev/null || /home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew tap gperezmz/wakewire https://github.com/gperezmz/wakewire
+          brew install --cask wakewire
+          wakewire version --json | tee brew.json
+          grep -q "\"version\":\"$TAG\"" brew.json
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27.2"
+      - name: go install
+        run: |
+          GOBIN="$PWD/gobin" go install "github.com/gperezmz/wakewire/cmd/wakewire@$TAG"
+          ./gobin/wakewire version --json | tee go.json
+          grep -q "\"version\":\"$TAG\"" go.json
