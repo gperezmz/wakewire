@@ -17,6 +17,12 @@ import (
 // Keep are not recorded at all.
 type Scrubber struct {
 	Replace [][2]string // real, placeholder; longest first is applied first
+	// Numbers maps a real number, such as a user's or a repository's numeric
+	// id, to its placeholder. It replaces a JSON number that equals it, and
+	// the digits of a string where nothing but a non-word character touches
+	// them (an id in a URL or in a noreply address), but never part of a
+	// longer number.
+	Numbers map[string]string
 	// KeepRequest are the request headers the contract matches on.
 	KeepRequest []string
 	// KeepResponse are the response headers the client reads.
@@ -37,6 +43,9 @@ func (s Scrubber) Text(v string) string {
 			v = strings.ReplaceAll(v, p[0], p[1])
 		}
 	}
+	for from, to := range s.Numbers {
+		v = replaceWhole(v, from, to)
+	}
 	return email.ReplaceAllStringFunc(v, func(m string) string {
 		if strings.HasSuffix(m, "@example.com") || strings.HasSuffix(m, "noreply.github.com") {
 			return m
@@ -45,8 +54,40 @@ func (s Scrubber) Text(v string) string {
 	})
 }
 
+// replaceWhole replaces each from in v that is not part of a longer word.
+func replaceWhole(v, from, to string) string {
+	if from == "" {
+		return v
+	}
+	word := func(b byte) bool {
+		return b == '_' || b >= '0' && b <= '9' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z'
+	}
+	var out strings.Builder
+	for {
+		i := strings.Index(v, from)
+		if i < 0 {
+			break
+		}
+		end := i + len(from)
+		out.WriteString(v[:i])
+		if (i > 0 && word(v[i-1])) || (end < len(v) && word(v[end])) {
+			out.WriteString(from)
+		} else {
+			out.WriteString(to)
+		}
+		v = v[end:]
+	}
+	out.WriteString(v)
+	return out.String()
+}
+
 func (s Scrubber) value(v any) any {
 	switch x := v.(type) {
+	case json.Number:
+		if to, ok := s.Numbers[x.String()]; ok {
+			return json.Number(to)
+		}
+		return x
 	case string:
 		return s.Text(x)
 	case []any:

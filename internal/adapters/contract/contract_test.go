@@ -27,6 +27,16 @@ func TestScrubberRemovesPeopleAndKeepsShape(t *testing.T) {
 	}
 }
 
+func TestScrubberReplacesNumericIDsWholeOnly(t *testing.T) {
+	s := Scrubber{Numbers: map[string]string{"4242": "1"}}
+	got := string(s.Body([]byte(`{"id":4242,"other":42421,"list":[4242],"n":{"actor":{"id":4242}},` +
+		`"mail":"4242+me@users.noreply.github.com","url":"https://x/user/4242/repos","ts":"x14242"}`)))
+	want := `{"id":1,"list":[1],"mail":"1+me@users.noreply.github.com","n":{"actor":{"id":1}},"other":42421,"ts":"x14242","url":"https://x/user/1/repos"}`
+	if got != want {
+		t.Fatal(got)
+	}
+}
+
 func TestServeReplaysInOrderAndFailsOnStrangers(t *testing.T) {
 	c := Contract{Service: "x", Interactions: []Interaction{
 		{Request: Request{Method: "GET", Path: "/a", Query: map[string]string{"q": "1"}}, Response: Response{Status: 200, Headers: map[string]string{"Etag": `"1"`}, Body: json.RawMessage(`[1]`)}},

@@ -39,8 +39,9 @@ func sh(t *testing.T, dir string, name string, args ...string) string {
 
 func gh(t *testing.T, args ...string) string { return sh(t, "", "gh", args...) }
 
-// scrubber replaces the sandbox's owner and the names and email git and
-// GitHub hold for the person recording.
+// scrubber replaces the sandbox's owner, the numeric ids of the owner and of
+// the repository, and the names and email git and GitHub hold for the person
+// recording. The ids come from the API at run time, never from the code.
 func scrubber(t *testing.T) contract.Scrubber {
 	replace := [][2]string{{"gperezmz", "wwuser"}}
 	for _, v := range []string{gh(t, "api", "user", "--jq", ".name"), sh(t, "", "git", "config", "user.name")} {
@@ -49,7 +50,11 @@ func scrubber(t *testing.T) contract.Scrubber {
 		}
 	}
 	return contract.Scrubber{
-		Replace:      replace,
+		Replace: replace,
+		Numbers: map[string]string{
+			gh(t, "api", "user", "--jq", ".id"):                                               "1001",
+			gh(t, "api", "repos/"+strings.TrimPrefix(realRepo, "github.com/"), "--jq", ".id"): "1002",
+		},
 		KeepRequest:  []string{"If-None-Match"},
 		KeepResponse: []string{"Etag", "Link", "Date", "X-Ratelimit-Limit", "X-Ratelimit-Remaining", "X-Ratelimit-Reset"},
 		// Fields that name a person the client never reads.
