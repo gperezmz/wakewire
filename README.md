@@ -44,10 +44,12 @@ install -m 755 wakewire ~/.local/bin/wakewire      # any folder on PATH
 wakewire version
 ```
 
-With Homebrew, on macOS or Linux; this repository is its own tap:
+With Homebrew, on macOS or Linux; this repository is its own tap, which
+Homebrew asks you to trust once:
 
 ```sh
 brew tap gperezmz/wakewire https://github.com/gperezmz/wakewire
+brew trust gperezmz/wakewire
 brew install --cask wakewire
 ```
 
