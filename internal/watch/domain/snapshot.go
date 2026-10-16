@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -256,9 +257,7 @@ func (d *differ) consumeAll(k Kind) {
 // for one poll, then reports it from before the first edit to after the last.
 func (d *differ) edits(before, now Item) {
 	d.held = map[string]HeldEdit{}
-	for f, h := range d.prev.Held {
-		d.held[f] = h
-	}
+	maps.Copy(d.held, d.prev.Held)
 	for _, f := range []struct {
 		name          string
 		before, after string

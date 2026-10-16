@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -58,9 +59,7 @@ func (f *fakeJira) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unexpected", 500)
 		return
 	}
-	for k, v := range f.header {
-		w.Header()[k] = v
-	}
+	maps.Copy(w.Header(), f.header)
 	status, resp := h(body)
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(resp))

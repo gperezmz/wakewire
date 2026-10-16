@@ -40,7 +40,7 @@ func scrubber(sb *sandbox) contract.Scrubber {
 			continue
 		}
 		replace = append(replace, [2]string{n, person})
-		for _, part := range strings.Fields(n) {
+		for part := range strings.FieldsSeq(n) {
 			if len(part) >= 4 {
 				replace = append(replace, [2]string{part, "Wakewire"})
 			}

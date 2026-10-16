@@ -92,7 +92,7 @@ var nextLink = regexp.MustCompile(`<([^>]+)>;\s*rel="next"`)
 // page's items into out.
 func getAll[T any](ctx context.Context, c *client, path string, query url.Values, pages int) ([]T, error) {
 	var all []T
-	for i := 0; i < pages; i++ {
+	for range pages {
 		resp, err := c.get(ctx, path, query, "")
 		if err != nil {
 			return nil, err

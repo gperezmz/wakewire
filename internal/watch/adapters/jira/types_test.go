@@ -9,15 +9,14 @@ import (
 	"github.com/gperezmz/wakewire/internal/watch/domain"
 )
 
-func str(s string) *string { return &s }
-
+//go:fix inline
 func TestLabelChangesAreReadJoinedOrOneToALabel(t *testing.T) {
 	joined := history{ID: "10", Author: &person{DisplayName: "Ada"}, Created: "2026-10-16T10:41:07.123+0000", Items: []changelogItem{
-		{Field: "labels", FromString: str("type::spec old"), ToString: str("type::spec ready-for-dev")},
+		{Field: "labels", FromString: new("type::spec old"), ToString: new("type::spec ready-for-dev")},
 	}}
 	each := history{ID: "11", Created: "2026-10-16T10:41:07.123+0000", Items: []changelogItem{
-		{Field: "labels", FromString: nil, ToString: str("in-progress")},
-		{Field: "labels", FromString: str("old"), ToString: str("")},
+		{Field: "labels", FromString: nil, ToString: new("in-progress")},
+		{Field: "labels", FromString: new("old"), ToString: new("")},
 	}}
 	var got []string
 	for _, a := range append(joined.activities(nil), each.activities(nil)...) {
@@ -37,7 +36,7 @@ func TestLabelChangesAreReadJoinedOrOneToALabel(t *testing.T) {
 func TestStatusChangesCloseAndReopenByCategory(t *testing.T) {
 	statuses := map[string]string{"1": "new", "2": "indeterminate", "3": "done", "name:Done": "done", "name:To Do": "new"}
 	kind := func(from, to string, fromName, toName string) domain.Kind {
-		h := history{ID: "1", Items: []changelogItem{{Field: "status", From: str(from), To: str(to), FromString: str(fromName), ToString: str(toName)}}}
+		h := history{ID: "1", Items: []changelogItem{{Field: "status", From: new(from), To: new(to), FromString: new(fromName), ToString: new(toName)}}}
 		if as := h.activities(statuses); len(as) == 1 {
 			return as[0].Kind
 		}
@@ -59,7 +58,7 @@ func TestStatusChangesCloseAndReopenByCategory(t *testing.T) {
 
 func TestAssignmentAndEditsCarryTheActor(t *testing.T) {
 	h := history{ID: "7", Author: &person{AccountID: "a1", DisplayName: "Ada Reviewer"}, Created: "2026-10-16T10:41:07.000+0200", Items: []changelogItem{
-		{Field: "assignee", From: str("a1"), To: str("a2")},
+		{Field: "assignee", From: new("a1"), To: new("a2")},
 		{Field: "summary"}, {Field: "description"}, {Field: "Rank"},
 	}}
 	as := h.activities(nil)

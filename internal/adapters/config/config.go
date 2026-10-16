@@ -100,8 +100,7 @@ func Load(path string) (File, error) {
 func parse(path, text string) (File, error) {
 	f := Defaults()
 	if _, err := toml.Decode(text, &f); err != nil {
-		var pe toml.ParseError
-		if errors.As(err, &pe) {
+		if pe, ok := errors.AsType[toml.ParseError](err); ok {
 			return File{}, NewError(fmt.Sprintf("%s does not parse: %s (line %d)", path, pe.Message, pe.Position.Line),
 				fmt.Sprintf("fix line %d of %s, or move the file aside to start from the defaults", pe.Position.Line, path))
 		}

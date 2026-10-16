@@ -21,11 +21,11 @@ func startOf(pid int) (string, bool, error) {
 		return "", false, err
 	}
 	s := string(b)
-	end := strings.LastIndexByte(s, ')')
-	if end < 0 {
+	_, after, ok := strings.CutLast(s, ")")
+	if !ok {
 		return "", false, fmt.Errorf("/proc/%d/stat: no command name", pid)
 	}
-	fields := strings.Fields(s[end+1:])
+	fields := strings.Fields(after)
 	// fields[0] is field 3 (state), so field 22 is fields[19].
 	if len(fields) < 20 {
 		return "", false, fmt.Errorf("/proc/%d/stat: %d fields", pid, len(fields)+2)

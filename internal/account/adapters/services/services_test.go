@@ -69,10 +69,10 @@ func TestGitHubProbeReadsTheLoginAndTheClassicScopes(t *testing.T) {
 		scopes       *string
 		known, write bool
 	}{
-		"repo":         {ptr("gist, repo, read:org"), true, true},
-		"public_repo":  {ptr("public_repo"), true, true},
-		"read only":    {ptr("read:org"), true, false},
-		"empty":        {ptr(""), true, false},
+		"repo":         {new("gist, repo, read:org"), true, true},
+		"public_repo":  {new("public_repo"), true, true},
+		"read only":    {new("read:org"), true, false},
+		"empty":        {new(""), true, false},
 		"fine grained": {nil, false, false},
 	}
 	for name, c := range cases {
@@ -92,8 +92,7 @@ func TestGitHubProbeReadsTheLoginAndTheClassicScopes(t *testing.T) {
 	}
 }
 
-func ptr(s string) *string { return &s }
-
+//go:fix inline
 func TestGitHubOwnersAndUsers(t *testing.T) {
 	p, seen := serve(t, map[string]http.HandlerFunc{
 		"/users/acme":    reply(`{"login":"acme","id":1,"type":"Organization"}`),

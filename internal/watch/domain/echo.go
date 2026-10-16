@@ -2,6 +2,7 @@ package domain
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -28,8 +29,8 @@ func EndsWithMarker(body, marker string) bool {
 		return false
 	}
 	lines := strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n")
-	for i := len(lines) - 1; i >= 0; i-- {
-		if line := normalizeLine(lines[i]); line != "" {
+	for _, line := range slices.Backward(lines) {
+		if line := normalizeLine(line); line != "" {
 			return line == want
 		}
 	}

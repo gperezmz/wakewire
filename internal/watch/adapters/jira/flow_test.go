@@ -79,7 +79,7 @@ func TestWakesFromAHandWrittenJira(t *testing.T) {
 		got := r.poll()
 		// Drop the header line's times and batch number: only the lines are judged.
 		var lines []string
-		for _, l := range strings.Split(got, "\n") {
+		for l := range strings.SplitSeq(got, "\n") {
 			if strings.HasPrefix(l, "- ") {
 				lines = append(lines, l)
 			}

@@ -6,6 +6,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/gperezmz/wakewire/internal/account/domain"
 )
@@ -19,10 +20,6 @@ const (
 	GitLab = domain.GitLab
 	Jira   = domain.Jira
 )
-
-// KindForHost: "github.com" is GitHub, a host ending ".atlassian.net" is
-// Jira, any other host is GitLab.
-func KindForHost(host string) ServiceKind { return domain.KindForHost(host) }
 
 // Credential is everything needed to call one service as one account.
 type Credential struct {
@@ -145,15 +142,16 @@ type Ports struct {
 }
 
 func addCommand(a domain.Account, tokenFlag string) string {
-	s := fmt.Sprintf("wakewire account add %s --host %s", a.Name, a.Host)
+	var s strings.Builder
+	fmt.Fprintf(&s, "wakewire account add %s --host %s", a.Name, a.Host)
 	for _, o := range a.Owners {
-		s += " --owner " + o
+		s.WriteString(" --owner " + o)
 	}
 	if a.Email != "" {
-		s += " --email " + a.Email
+		s.WriteString(" --email " + a.Email)
 	}
 	if a.User != "" {
-		s += " --user " + a.User
+		s.WriteString(" --user " + a.User)
 	}
-	return s + " --token " + tokenFlag
+	return s.String() + " --token " + tokenFlag
 }

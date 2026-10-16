@@ -50,8 +50,7 @@ var flagFor = map[string]string{
 
 func invalid(err error) error {
 	field := "name"
-	var v *domain.Violation
-	if errors.As(err, &v) {
+	if v, ok := errors.AsType[*domain.Violation](err); ok {
 		field = v.Field
 	}
 	return NewError(CodeInvalidValue, err.Error(), fmt.Sprintf("correct %s; `wakewire account add --help` shows the form of each flag", flagFor[field]))

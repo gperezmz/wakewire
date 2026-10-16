@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/url"
 	"reflect"
 	"slices"
@@ -89,9 +90,7 @@ func (s *Source) Poll(ctx context.Context, in application.PollInput) (applicatio
 		{"creator": {login}},
 	} {
 		q := url.Values{"state": {"all"}, "sort": {"updated"}, "direction": {"desc"}, "per_page": {"100"}}
-		for k, v := range filter {
-			q[k] = v
-		}
+		maps.Copy(q, filter)
 		if !in.IncludeIssues && filter.Has("assignee") {
 			continue // specs live on another tracker; pull requests are found by their author
 		}

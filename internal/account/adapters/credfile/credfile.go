@@ -42,8 +42,7 @@ func (v *Vault) read() (map[string]entry, error) {
 	if _, err := toml.Decode(string(data), &entries); err != nil {
 		// Only the line is named: the parser's message may quote a token.
 		line := 0
-		var pe toml.ParseError
-		if errors.As(err, &pe) {
+		if pe, ok := errors.AsType[toml.ParseError](err); ok {
 			line = pe.Position.Line
 		}
 		return nil, application.NewError(application.CodeConfigInvalid,

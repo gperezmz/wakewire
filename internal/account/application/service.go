@@ -36,8 +36,7 @@ func (s *Service) accounts() ([]domain.Account, error) {
 	for _, a := range accounts {
 		if err := a.Validate(); err != nil {
 			field := "name"
-			var v *domain.Violation
-			if errors.As(err, &v) {
+			if v, ok := errors.AsType[*domain.Violation](err); ok {
 				field = v.Field
 			}
 			return nil, NewError(CodeConfigInvalid, fmt.Sprintf("account %q: %s", a.Name, err),

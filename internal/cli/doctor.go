@@ -33,8 +33,7 @@ func (c *checks) skip(name, detail string) {
 
 func (c *checks) fail(name string, err error) {
 	ch := Check{Name: name, Detail: err.Error()}
-	var cd coded
-	if errors.As(err, &cd) {
+	if cd, ok := errors.AsType[coded](err); ok {
 		ch.Code, ch.Fix = cd.Code(), cd.Hint()
 	}
 	c.list = append(c.list, ch)

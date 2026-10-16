@@ -70,7 +70,7 @@ func (r Repos) sshHost(ctx context.Context, alias string) string {
 	if err != nil {
 		return ""
 	}
-	for _, line := range strings.Split(out, "\n") {
+	for line := range strings.SplitSeq(out, "\n") {
 		if h, ok := strings.CutPrefix(line, "hostname "); ok {
 			return strings.TrimSpace(h)
 		}

@@ -91,8 +91,7 @@ func RunWith(ctx context.Context, args []string, deps Deps, stdin io.Reader, std
 }
 
 func report(s streams, asJSON bool, err error) int {
-	var only *exitOnly
-	if errors.As(err, &only) {
+	if only, ok := errors.AsType[*exitOnly](err); ok {
 		return only.code
 	}
 	var c coded

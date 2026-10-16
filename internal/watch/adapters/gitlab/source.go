@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/url"
 	"reflect"
 	"slices"
@@ -97,9 +98,7 @@ func (s *Source) Poll(ctx context.Context, in application.PollInput) (applicatio
 	seen := map[string]domain.Item{}
 	for _, r := range requests {
 		q := url.Values{"state": {"all"}, "order_by": {"updated_at"}, "sort": {"desc"}, "per_page": {"100"}}
-		for k, v := range r.filter {
-			q[k] = v
-		}
+		maps.Copy(q, r.filter)
 		body, err := p.list(ctx, r.path, q)
 		if err != nil {
 			return application.PollOutput{}, err
