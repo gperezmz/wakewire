@@ -41,7 +41,7 @@ is dropped once that change is recorded.
 
 | Change | Why |
 |---|---|
-| A comment ending with the marker, `— wakewire` | An echo: the holding session's own comment. Every comment an agent writes on a watched item ends with this line |
+| A comment ending with the [marker](configuration.md#the-marker), by default run-fleet's `<kbd>🤖 unattendish agent</kbd>` | An echo: the holding session's own comment. Agents acting as the identity cannot be told apart from it by author, so every comment an agent writes on a watched item ends with this line |
 | Any change to the in-progress or needs-input label | An echo: only agents set them, and an agent acting as the identity cannot be told apart from the identity |
 | Items outside both sets | Not the watch's |
 | Comment edits and deletions | Not recorded in v1 |

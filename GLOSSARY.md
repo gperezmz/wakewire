@@ -78,8 +78,9 @@ needs-input label.
 _Avoid_: Self-event, own action
 
 **Marker**:
-The fixed line that ends every comment an agent writes on a watched item, by
-which wakewire knows the comment is an echo.
+The line that ends every comment an agent writes on a watched item, by which
+wakewire knows the comment is an echo. It defaults to the closing line of
+run-fleet's comment templates.
 _Avoid_: Signature, footer, suffix
 
 **Ledger**:

@@ -61,7 +61,7 @@ registration and keeps everything waiting.
 ```text
 wakewire register [--harness <claude-code>] [--session <id>] [--repo <host/path>]
                   [--tracker <spec>] [--label <meaning>=<label>]...
-                  [--take-over] [--dry-run] [--json]
+                  [--marker <line>] [--take-over] [--dry-run] [--json]
 ```
 
 | Flag | Default | Meaning |
@@ -71,6 +71,7 @@ wakewire register [--harness <claude-code>] [--session <id>] [--repo <host/path>
 | `--repo` | the `origin` remote, as `<host>/<path>` | The repository to watch |
 | `--tracker` | the source template's tracker line | `github-issues`, `gitlab-issues` or `jira:<site>/<project key>` |
 | `--label` | the source template's table | One label, as `spec=type::spec`; repeatable; meanings are `spec`, `ready`, `in-progress`, `needs-input` |
+| `--marker` | `[echo] marker` in `config.toml` | The line that ends every comment the agents write; see [the marker](configuration.md#the-marker) |
 | `--take-over` | off | Take the watch from a live holder |
 
 The process id and its start time come from `$CLAUDE_PID`. With `--dry-run`

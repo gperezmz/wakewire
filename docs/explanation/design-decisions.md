@@ -51,7 +51,8 @@ contract keep that risk inside the adapter.
 | **`~/.wakewire/`, moved by `WAKEWIRE_HOME`** | The XDG directories | One folder, like `~/.claude` and `~/.bb` |
 | **Tokens stored in `credentials.toml` (mode 600)**, or from `gh` or an environment variable | Never storing tokens; an OS keyring | `gh` stores its tokens the same way. A separate file keeps tokens out of a configuration people share. A keyring is more than v1 needs |
 | **No `glab` token source** | Borrowing `glab`'s login | `glab` 1.114.0 has no command that prints a token, and keeps it in the OS keyring by default |
-| **Fixed marker and poll defaults** | Configurable wake settings | Nothing yet calls for changing them |
+| **The marker is run-fleet's existing closing line, configurable** | A marker of wakewire's own | run-fleet's templates already end every comment on `<kbd>🤖 unattendish agent</kbd>` and its review rounds rely on it; a second marker would change run-fleet for nothing |
+| **Fixed poll defaults** | Configurable wake settings | Nothing yet calls for changing them |
 
 ## What a wake carries
 

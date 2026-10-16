@@ -25,6 +25,9 @@ dotfiles never holds a token.
 [poll]
 interval = "2m"                      # default for every watch; 30s minimum
 
+[echo]
+marker = "🤖 unattendish agent"      # the line ending every comment the agents write
+
 [[accounts]]
 name   = "work-github"             # required, unique: the key into credentials.toml
 host   = "github.com"
@@ -52,6 +55,16 @@ token  = "stored"
 ```
 
 Every section and key is optional except the accounts a watch needs.
+
+### The marker
+
+A comment is an echo when its last non-empty line, with HTML tags and
+Markdown emphasis removed and whitespace trimmed, equals `[echo] marker`. The
+default is the line run-fleet's comment templates already end on,
+`<kbd>🤖 unattendish agent</kbd>`, which reads as `🤖 unattendish agent` once
+the tags are removed. Removing them also lets the line be recognised where a
+service strips or converts HTML, as Jira's Atlassian Document Format may.
+`register --marker` overrides it for one watch.
 
 ### Accounts
 
@@ -150,7 +163,6 @@ read it.
 
 | Setting | Value |
 |---|---|
-| Marker | `— wakewire` ending a comment, after trailing whitespace is trimmed |
 | Tick | 30 s |
 | Poll budget | 60 s per `adapter next`; 15 s per request |
 | Dormant after | 3 intervals without the adapter heard from |
