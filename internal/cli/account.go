@@ -14,14 +14,6 @@ import (
 	"github.com/gperezmz/wakewire/internal/account/application"
 )
 
-func init() {
-	// The codes the account commands add to cli.md's table.
-	exitFor[application.CodeNoToken] = exitNotSetUp
-	exitFor[application.CodeAccountExists] = exitRefused
-	exitFor[application.CodeAccountClash] = exitRefused
-	exitFor[application.CodeNoSuchAccount] = exitRefused
-}
-
 // AccountsAPI is what the account commands call; *application.Service is it.
 type AccountsAPI interface {
 	Add(ctx context.Context, r application.AddRequest) (application.AddResult, error)
