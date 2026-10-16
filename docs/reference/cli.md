@@ -182,8 +182,8 @@ reads a batch.
 wakewire interval [<repo>] <duration|default> [--identity <id>] [--dry-run] [--json]
 ```
 
-How often a watch is polled, from `30s`; `default` returns it to the
-configuration's value. Takes effect on the next tick.
+How often a watch is polled, from `30s`, as a duration such as `90s`, `2m`,
+`1h` or `1d`; `default` returns it to the configuration's value. Takes effect on the next tick.
 
 ### `wakewire account`
 

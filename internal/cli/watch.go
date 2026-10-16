@@ -97,15 +97,10 @@ func selector(deps Deps, cmd *ucli.Command) application.Selector {
 
 var identityFlag = &ucli.StringFlag{Name: "identity", Usage: "the identity whose watch, where two watch one repository"}
 
-// parseDuration reads a Go duration, or a number of days as `30d`.
+// parseDuration reads a Go duration, or a number of days as 30d.
 func parseDuration(flag, s string) (time.Duration, error) {
-	if n, ok := strings.CutSuffix(s, "d"); ok {
-		if days, err := strconv.Atoi(n); err == nil && days > 0 {
-			return time.Duration(days) * 24 * time.Hour, nil
-		}
-	}
-	d, err := time.ParseDuration(s)
-	if err != nil || d <= 0 {
+	d, ok := domain.ParseDuration(s)
+	if !ok {
 		return 0, usageError(fmt.Sprintf("%s %q is not a duration", flag, s), "use a duration such as 90s, 30m, 2h or 7d")
 	}
 	return d, nil
@@ -607,8 +602,9 @@ func intervalCommand(deps Deps, s streams) *ucli.Command {
 		Name:      "interval",
 		Usage:     "set how often a watch is polled",
 		ArgsUsage: "[<repo>] <duration|default>",
-		Description: `How often a watch is polled, from 30s; default returns it to the
-configuration's [poll] interval. It takes effect on the next tick.
+		Description: `How often a watch is polled, from 30s, as a duration such as 90s, 2m,
+1h or 1d; default returns it to the configuration's [poll] interval. It takes
+effect on the next tick.
 
 Examples:
   wakewire interval 1m
