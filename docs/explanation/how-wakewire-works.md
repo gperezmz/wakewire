@@ -125,17 +125,18 @@ matching id with another start time is another program. The full rules are in
 
 ## What crosses into the session, and how
 
-A wake enters the session as a prompt under the mod's name, read by the model
-as a turn from its user. So **a wake carries facts only**: what changed, on
-which item, by which login, when. It never carries anything a person wrote,
-not even a title, since anyone who can comment on the repository could
-otherwise write into the session in its user's voice.
+A wake enters the session as a turn in its user's own words: the mod
+submits it as the person's, without the frame Claude Code would put around a
+plugin's prompt. So **a wake carries facts only**: what changed, on which
+item, by which login. It never carries anything a person wrote, not even a
+title, since anyone who can comment on the repository could otherwise write
+into the session in its user's voice. Its only other words are wakewire's
+own: a first line that says what it is, and a last line that asks for the
+batch to be read before anything is done about it.
 
 What people wrote reaches the agent only when it asks for the batch, through
 the mod's own tool or `wakewire changes`. It then arrives as tool output,
-which the model weighs as material rather than obeys as instruction. Claude
-Code's own guidance points the same way: hook text written as instructions
-can trip its prompt-injection defences, so the wake states facts.
+which the model weighs as material rather than obeys as instruction.
 
 ## Built for more than one harness
 

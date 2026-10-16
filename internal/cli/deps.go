@@ -8,6 +8,7 @@ import (
 	accountapp "github.com/gperezmz/wakewire/internal/account/application"
 	"github.com/gperezmz/wakewire/internal/adapters/home"
 	"github.com/gperezmz/wakewire/internal/watch/application"
+	"github.com/gperezmz/wakewire/internal/watch/domain"
 	"github.com/gperezmz/wakewire/internal/wiring"
 )
 
@@ -23,7 +24,7 @@ type WatchAPI interface {
 	SetInterval(ctx context.Context, sel application.Selector, d time.Duration, dryRun bool) (application.IntervalResult, error)
 	Prune(ctx context.Context, dryRun bool) (application.PruneCounts, error)
 	Hello(ctx context.Context, session string, proc, protocol int) (application.HelloResult, error)
-	Next(ctx context.Context, session string, proc int) (application.NextResult, error)
+	Next(ctx context.Context, session string, proc int, reader domain.Reader) (application.NextResult, error)
 	Ack(ctx context.Context, batch int64) (application.AckResult, error)
 	Ended(ctx context.Context, session, reason string) (application.EndedResult, error)
 	SourceCheck(ctx context.Context, dir string) (application.SourceFound, error)

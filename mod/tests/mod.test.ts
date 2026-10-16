@@ -13,6 +13,7 @@ function binary(on: any, opts: { protocol?: number; holds?: boolean; batch?: { i
     if (cmd === 'version') return out({ version: 'v1.0.0', commit: 'abc', protocol: opts.protocol ?? 1 })
     if (cmd === 'adapter' && sub === 'hello') return out({ protocol: 1, holds: state.holds, watch: 'github.com/o/x', status })
     if (cmd === 'adapter' && sub === 'next') {
+      expect(argv.slice(5, 7)).toEqual(['--reader', 'tool'])
       const batch = state.batch
       return out({ state: state.holds ? 'armed' : 'idle', polled: true, batch, status })
     }
@@ -39,6 +40,7 @@ function statuses(_on: any): (string | undefined)[] {
 function submits(on: any, drop = false): string[] {
   const texts: string[] = []
   on('prompt.submit', ($: any, e: any) => {
+    expect(e.origin?.asUser).toBe(true)
     texts.push(e.text)
     return drop ? { drop: 'refused by a test' } : { text: e.text, origin: e.origin }
   })
@@ -109,14 +111,15 @@ describe('wakewire mod', () => {
     expect(bin.calls.length).toBe(2)
   })
 
-  test('the session end is reported', async ($, on) => {
+  test('the session end is reported and the status line cleared', async ($, on) => {
     mock.clock(on)
     world(on)
     const bin = binary(on)
     await $.session.start(start)
-    await $.session.end({ reason: 'prompt_input_exit', sessionId: 'sess-1', resume: { sessionId: 'sess-1' } } as any)
+    await $.session.end({ reason: 'clear', sessionId: 'sess-1', resume: { sessionId: 'sess-1' } } as any)
+    expect(seen.at(-1)).toBe(undefined)
     const ended = bin.calls.find(c => c[2] === 'ended')
-    expect(ended).toEqual(['wakewire', 'adapter', 'ended', '--session', 'sess-1', '--reason', 'prompt_input_exit', '--json'])
+    expect(ended).toEqual(['wakewire', 'adapter', 'ended', '--session', 'sess-1', '--reason', 'clear', '--json'])
   })
 
   test('the changes tool answers with the batch', async ($, on) => {

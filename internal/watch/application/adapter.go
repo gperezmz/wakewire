@@ -112,7 +112,7 @@ func (s *Service) held(tx Tx, session string) (*Watch, *Registration, error) {
 
 // Next is the tick: it records the adapter as heard from, polls if due
 // within the poll budget, and offers the pending batch if any.
-func (s *Service) Next(ctx context.Context, session string, proc int) (NextResult, error) {
+func (s *Service) Next(ctx context.Context, session string, proc int, reader domain.Reader) (NextResult, error) {
 	res := NextResult{State: "idle"}
 	start, _, err := s.processes.StartOf(proc)
 	if err != nil {
@@ -159,7 +159,7 @@ func (s *Service) Next(ctx context.Context, session string, proc int) (NextResul
 		return res, err
 	}
 	if !w.PolledAt.IsZero() && now.Sub(w.PolledAt) < s.interval(*w) {
-		return s.offer(ctx, w.ID, res)
+		return s.offer(ctx, w.ID, res, reader)
 	}
 	var taken bool
 	err = s.store.Tx(ctx, func(tx Tx) error {
@@ -181,7 +181,7 @@ func (s *Service) Next(ctx context.Context, session string, proc int) (NextResul
 		}
 		res.Polled = true
 	}
-	return s.offer(ctx, w.ID, res)
+	return s.offer(ctx, w.ID, res, reader)
 }
 
 // leaseFree says whether a lease can be taken: its expiry passed or its
@@ -195,7 +195,7 @@ func (s *Service) leaseFree(l Lease) bool {
 }
 
 // offer builds or re-offers the watch's batch, unless it is paused.
-func (s *Service) offer(ctx context.Context, watchID int64, res NextResult) (NextResult, error) {
+func (s *Service) offer(ctx context.Context, watchID int64, res NextResult, reader domain.Reader) (NextResult, error) {
 	err := s.store.Tx(ctx, func(tx Tx) error {
 		w, err := tx.Watch(watchID)
 		if err != nil || w == nil {
@@ -241,7 +241,7 @@ func (s *Service) offer(ctx context.Context, watchID int64, res NextResult) (Nex
 		for i, c := range pending {
 			changes[i] = c.Change
 		}
-		res.Batch = &Offer{ID: b.ID, Wake: domain.Wake(w.Repo.String(), b.ID, changes, time.Local), Count: len(changes)}
+		res.Batch = &Offer{ID: b.ID, Wake: domain.Wake(b.ID, changes, reader), Count: len(changes)}
 		return nil
 	})
 	return res, err

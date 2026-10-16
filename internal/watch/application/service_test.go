@@ -52,7 +52,7 @@ func (h *harness) mustRegister(session string, pid int) application.RegisterResu
 
 func (h *harness) next(session string, pid int) application.NextResult {
 	h.t.Helper()
-	r, err := h.svc.Next(h.ctx, session, pid)
+	r, err := h.svc.Next(h.ctx, session, pid, domain.ReaderTool)
 	if err != nil {
 		h.t.Fatal(err)
 	}
@@ -181,7 +181,7 @@ func TestACrashBeforeTheCommitLosesNothing(t *testing.T) {
 	moved := domain.Observation{Item: issue("ready"), At: h.clock.Now()}
 	h.observe(h.clock.Now(), moved)
 	h.store.FailCommit = true // the poll's write never commits
-	if _, err := h.svc.Next(h.ctx, "s1", 100); err == nil {
+	if _, err := h.svc.Next(h.ctx, "s1", 100, domain.ReaderTool); err == nil {
 		t.Fatal("expected the crash")
 	}
 	h.clock.Advance(3 * time.Minute)
@@ -240,7 +240,7 @@ func TestAProblemIsDeliveredOnceAndClears(t *testing.T) {
 	h.mustRegister("s1", 100)
 	h.fail("token_refused", "GitHub refused the token (401)")
 	n := h.next("s1", 100)
-	if n.Batch == nil || !strings.Contains(n.Batch.Wake, "not watching GitHub. GitHub refused the token (401).") {
+	if n.Batch == nil || !strings.Contains(n.Batch.Wake, "Not watching GitHub: GitHub refused the token (401).") {
 		t.Fatalf("%+v", n.Batch)
 	}
 	if _, err := h.svc.Ack(h.ctx, n.Batch.ID); err != nil {
@@ -341,12 +341,12 @@ func TestALeaseHeldByALiveProcessSkipsThePollButStillOffers(t *testing.T) {
 	h.observe(h.clock.Now(), domain.Observation{Item: issue("ready"), At: h.clock.Now()})
 	h.procs.Start(300, "s300")
 	done := make(chan application.NextResult)
-	go func() { r, _ := h.svc.Next(h.ctx, "s1", 100); done <- r }()
+	go func() { r, _ := h.svc.Next(h.ctx, "s1", 100, domain.ReaderTool); done <- r }()
 	for h.source.PollCount() < 2 {
 		time.Sleep(time.Millisecond)
 	}
 	// A second tick from another process while the first polls.
-	second, err := h.svc.Next(h.ctx, "s1", 300)
+	second, err := h.svc.Next(h.ctx, "s1", 300, domain.ReaderTool)
 	if err != nil || second.Polled {
 		t.Fatalf("polled twice at once: %+v %v", second, err)
 	}

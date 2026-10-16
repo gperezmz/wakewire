@@ -175,7 +175,7 @@ func (s *Service) recordFailure(ctx context.Context, w Watch, name SourceName, s
 			}
 		}
 		if raise {
-			text := fmt.Sprintf("not watching %s. %s.", service, trimDot(c.Error()))
+			text := fmt.Sprintf("not watching %s: %s.", service, trimDot(c.Error()))
 			if err := s.raise(tx, *cur, name, c.Code(), text, c.Hint(), cur.PausedSince != nil); err != nil {
 				return err
 			}

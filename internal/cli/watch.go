@@ -718,7 +718,7 @@ func adapterCommand(deps Deps, s streams) *ucli.Command {
 by an agent or a person. Each prints one JSON object under --json.
 
   hello --session <id> [--protocol <n>]  records that an adapter is loaded for a session
-  next --session <id>                    the tick: polls if due, offers the pending batch
+  next --session <id> [--reader tool|cli] the tick: polls if due, offers the pending batch
   ack <batch>                            marks a batch delivered
   ended --session <id> --reason <why>    records that the session ended
 
@@ -740,10 +740,15 @@ Related: docs/reference/claude-code-mod.md.`,
 			},
 			{
 				Name: "next", Usage: "the tick: record the adapter heard, poll if due, offer the pending batch",
-				Flags: []ucli.Flag{session, pid, jsonFlag},
+				Flags: []ucli.Flag{session, pid, &ucli.StringFlag{Name: "reader", Value: "cli",
+					Usage: "how the wake says to read a batch: tool (the adapter's own tool) or cli (wakewire changes)"}, jsonFlag},
 				Action: func(ctx context.Context, cmd *ucli.Command) error {
+					reader, err := domain.ParseReader(cmd.String("reader"))
+					if err != nil {
+						return err
+					}
 					return withWatch(ctx, deps, func(w WatchAPI) error {
-						r, err := w.Next(ctx, cmd.String("session"), proc(cmd))
+						r, err := w.Next(ctx, cmd.String("session"), proc(cmd), reader)
 						if err != nil {
 							return err
 						}

@@ -87,7 +87,7 @@ func (s staticSources) For(_ context.Context, w application.Watch) ([]applicatio
 func (r *runner) poll() string {
 	r.t.Helper()
 	r.clock.Advance(31 * time.Second)
-	n, err := r.svc.Next(context.Background(), "s", 1)
+	n, err := r.svc.Next(context.Background(), "s", 1, domain.ReaderTool)
 	if err != nil {
 		r.t.Fatal(err)
 	}
@@ -119,9 +119,26 @@ func TestRecordedScenarioGivesTheSameWakes(t *testing.T) {
 	}
 	srv := contract.Serve(t, c)
 	r := newRunner(t, site, account, srv.URL, nil, "ww@example.com", "replayed")
-	for _, s := range want {
-		if got := r.poll(); got != s.Wake {
+	// WAKEWIRE_UPDATE_EXPECT=1 writes the wakes the replay gives as the
+	// expected ones, for when the wake's text changes but not what was read.
+	update := os.Getenv("WAKEWIRE_UPDATE_EXPECT") == "1"
+	for i, s := range want {
+		got := r.poll()
+		if update {
+			want[i].Wake = got
+			continue
+		}
+		if got != s.Wake {
 			t.Errorf("%s:\ngot  %q\nwant %q", s.Name, got, s.Wake)
+		}
+	}
+	if update {
+		b, err := json.MarshalIndent(want, "", "  ")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(expectFile, append(b, '\n'), 0o600); err != nil {
+			t.Fatal(err)
 		}
 	}
 }

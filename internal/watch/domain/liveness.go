@@ -17,10 +17,10 @@ type HolderFacts struct {
 // it is dormant.
 func Liveness(f HolderFacts) (holds bool, why string) {
 	switch {
+	case f.Ended: // the adapter said so: the truest reason, so it comes first
+		return false, "its session ended"
 	case !f.ProcessRunning:
 		return false, "its process is gone"
-	case f.Ended:
-		return false, "its session ended"
 	case f.Cleared:
 		return false, "its session was cleared"
 	case f.Now.Sub(f.HeardAt) > time.Duration(DormantAfter)*f.Interval:

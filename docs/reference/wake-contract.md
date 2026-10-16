@@ -51,29 +51,39 @@ Ignored changes are still stored, with the reason, in the ledger.
 
 ## The wake
 
-One prompt per batch. Facts only: the item, the kind, the login, never a
-title or anything a person wrote. Illustrative:
+One prompt per batch. Its first and last lines are wakewire's own fixed
+words; the lines between are facts only: the item, the kind, the login,
+never a title or anything a person wrote. As the binary writes it for the
+Claude Code mod:
 
 ```text
-[wakewire] github.com/acme/x: 3 changes since 09:02 (batch 193)
+[wakewire] New activity:
 - PR #41: review, changes requested, by alice
 - PR #41: 2 inline comments by alice
 - PROJ-12: label "ready-for-dev" added by jdoe
-What each person wrote is in batch 193: mcp__wakewire__changes or `wakewire changes 193`.
+Read batch 193 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough.
 ```
 
-- It opens with `[wakewire]`, the watch and the batch id, so a skill tells a
-  wake from its user typing.
+- It opens with `[wakewire]`, so a skill tells a wake from its user typing.
+  It names no repository, since a session holds one watch, and no time,
+  since the batch has each change's `at`.
+- The last line names the batch once and the one way to read it, which the
+  adapter chooses with `adapter next --reader`: `tool` names the mod's
+  `mcp__wakewire__changes`, `cli` names `wakewire changes 193`. It asks for
+  the batch to be read before anything is done about it, and a short reply
+  when nothing in it needs the session; what needs it is the session's own
+  workflow to judge.
 - Changes to one item and kind are counted on one line.
 - A reassignment reads `reassigned` or `unassigned`, without who from and
   to: Jira names people by account ID, no word for a wake. The batch has
   `from` and `to`.
-- At most 20 lines; past that, `- and N more` and the batch holds them all.
-- After a long absence the lines become counts per item.
-- A problem's wake names the problem and the command that shows its fix:
+- At most 20 lines; past that, the lines become counts per item, then
+  `- and N more`, and the batch holds them all.
+- A wake of problems alone is one line per problem, naming the command that
+  shows its fix:
 
 ```text
-[wakewire] github.com/acme/x: not watching GitHub. The token for jdoe was refused (401). `wakewire status` shows the fix.
+[wakewire] Not watching GitHub: GitHub refused the token (401). Run `wakewire status` for the fix.
 ```
 
 ## The batch

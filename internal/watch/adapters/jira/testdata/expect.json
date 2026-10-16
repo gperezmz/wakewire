@@ -5,11 +5,11 @@
   },
   {
     "name": "a new spec in the partition",
-    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 21:12 (batch 3)\n- KAN-6: label \"type::spec\" added\nWhat each person wrote is in batch 3: mcp__wakewire__changes or `wakewire changes 3`."
+    "wake": "[wakewire] New activity:\n- KAN-6: label \"type::spec\" added\nRead batch 3 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "ready label, agent label, a comment and an echo",
-    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 2 changes since 21:12 (batch 8)\n- KAN-6: label \"ready-for-dev\" added by Wakewire\n- KAN-6: comment by Wakewire\nWhat each person wrote is in batch 8: mcp__wakewire__changes or `wakewire changes 8`."
+    "wake": "[wakewire] New activity:\n- KAN-6: label \"ready-for-dev\" added by Wakewire\n- KAN-6: comment by Wakewire\nRead batch 8 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "a description edit, held",
@@ -17,7 +17,7 @@
   },
   {
     "name": "the edit holds still: reported",
-    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 21:12 (batch 10)\n- KAN-6: description edited by Wakewire\nWhat each person wrote is in batch 10: mcp__wakewire__changes or `wakewire changes 10`."
+    "wake": "[wakewire] New activity:\n- KAN-6: description edited by Wakewire\nRead batch 10 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "nothing moved",
@@ -25,15 +25,15 @@
   },
   {
     "name": "a second spec",
-    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 21:12 (batch 12)\n- KAN-7: label \"type::spec\" added\nWhat each person wrote is in batch 12: mcp__wakewire__changes or `wakewire changes 12`."
+    "wake": "[wakewire] New activity:\n- KAN-7: label \"type::spec\" added\nRead batch 12 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "the first spec leaves the partition",
-    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 2 changes since 21:12 (batch 15)\n- KAN-6: label \"type::spec\" removed by Wakewire\n- KAN-6: unassigned by Wakewire\nWhat each person wrote is in batch 15: mcp__wakewire__changes or `wakewire changes 15`."
+    "wake": "[wakewire] New activity:\n- KAN-6: label \"type::spec\" removed by Wakewire\n- KAN-6: unassigned by Wakewire\nRead batch 15 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "the second spec done",
-    "wake": "[wakewire] github.com/wwuser/wakewire-sandbox: 1 change since 21:12 (batch 17)\n- KAN-7: closed by Wakewire\nWhat each person wrote is in batch 17: mcp__wakewire__changes or `wakewire changes 17`."
+    "wake": "[wakewire] New activity:\n- KAN-7: closed by Wakewire\nRead batch 17 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "nothing moved again",

@@ -5,11 +5,11 @@
   },
   {
     "name": "a new spec in the partition",
-    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 1 change since 21:07 (batch 3)\n- #5: label \"type::spec\" added by wwuser\nWhat each person wrote is in batch 3: mcp__wakewire__changes or `wakewire changes 3`."
+    "wake": "[wakewire] New activity:\n- #5: label \"type::spec\" added by wwuser\nRead batch 3 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "ready label, agent label, a comment and an echo",
-    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 2 changes since 21:07 (batch 8)\n- #5: label \"ready-for-dev\" added by wwuser\n- #5: comment by wwuser\nWhat each person wrote is in batch 8: mcp__wakewire__changes or `wakewire changes 8`."
+    "wake": "[wakewire] New activity:\n- #5: label \"ready-for-dev\" added by wwuser\n- #5: comment by wwuser\nRead batch 8 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "a description edit, held",
@@ -17,7 +17,7 @@
   },
   {
     "name": "the edit holds still: reported",
-    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 1 change since 21:07 (batch 10)\n- #5: description edited by wwuser\nWhat each person wrote is in batch 10: mcp__wakewire__changes or `wakewire changes 10`."
+    "wake": "[wakewire] New activity:\n- #5: description edited by wwuser\nRead batch 10 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "nothing moved: every list answers 304",
@@ -29,15 +29,15 @@
   },
   {
     "name": "a comment, an inline comment and an approval",
-    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 3 changes since 21:08 (batch 14)\n- !5: inline comment by wwuser\n- !5: comment by wwuser\n- !5: review, approved, by wwuser\nWhat each person wrote is in batch 14: mcp__wakewire__changes or `wakewire changes 14`."
+    "wake": "[wakewire] New activity:\n- !5: inline comment by wwuser\n- !5: comment by wwuser\n- !5: review, approved, by wwuser\nRead batch 14 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "a push with someone else's commit",
-    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 1 change since 21:08 (batch 16)\n- !5: pushed commit by ada@example.com\nWhat each person wrote is in batch 16: mcp__wakewire__changes or `wakewire changes 16`."
+    "wake": "[wakewire] New activity:\n- !5: pushed commit by ada@example.com\nRead batch 16 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "merged, which closes the spec it names",
-    "wake": "[wakewire] gitlab.example.com/wwuser/wakewire-sandbox: 2 changes since 21:08 (batch 19)\n- !5: merged by wwuser\n- #5: closed by wwuser\nWhat each person wrote is in batch 19: mcp__wakewire__changes or `wakewire changes 19`."
+    "wake": "[wakewire] New activity:\n- !5: merged by wwuser\n- #5: closed by wwuser\nRead batch 19 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough."
   },
   {
     "name": "nothing moved: the lists answer 304 again",

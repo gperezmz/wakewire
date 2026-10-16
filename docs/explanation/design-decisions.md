@@ -37,6 +37,9 @@ contract keep that risk inside the adapter.
 | Decision | Chosen over | Why |
 |---|---|---|
 | **No `$.wakewire` noun in v1** | A noun with `status()`, `recent(n)`, `pause()`, `resume()` and an event per delivered batch, for other mods | No mod reads it yet. A noun is built in `engine.create`, where `$` is still empty, and the mod API has no way for a mod to raise an event of its own, so the per-batch event cannot be built as planned. Other mods and programs read `wakewire status --json` and `ledger --json` |
+| **A wake submitted as the person's words (`asUser`)** | Claude Code's frame, "The wakewire plugin sent a message: …" | A wake may come hundreds of times; the frame adds about forty tokens to each and a nudge, "Address the message above", that is not wakewire's. Its one gain, telling the model the turn is not its user's, is kept small to need: the wake's first and last lines are wakewire's fixed words and the rest are facts only, so a person's words still never speak in the user's voice. The frame's wording cannot be changed, only switched off |
+| **The wake names the batch once, one reader, no repository and no time** | The watch, the time and the batch in the opening line, and both readers at the end | A session holds one watch; the batch has every change's time; the adapter knows which reader its session has. What is left tells the model what the message is and the one thing to do with it |
+| **"If none of it needs you, a one-line reply is enough"** | Leaving the reply to the model | In real sessions a wake that needed nothing drew a ten-to-twenty-line summary and a question; over hundreds of wakes the replies cost more than the wakes. What needs the session stays its workflow's call |
 | **The note after compaction from a function hook** | A `SessionStart` command hook beside the module | One hooks module holds all of the mod; `classic.SessionStart` carries `additionalContext` the same way |
 
 ## Registration

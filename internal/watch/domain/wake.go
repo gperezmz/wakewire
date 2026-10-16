@@ -5,13 +5,38 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"time"
+	"unicode"
 )
+
+// Reader is how the session the wake goes to reads a batch.
+type Reader string
+
+const (
+	// ReaderTool: the harness's adapter serves batches as a tool of its own.
+	ReaderTool Reader = "tool"
+	// ReaderCLI: the agent runs `wakewire changes`.
+	ReaderCLI Reader = "cli"
+)
+
+// ParseReader reads an adapter's --reader.
+func ParseReader(s string) (Reader, error) {
+	switch Reader(s) {
+	case ReaderTool, ReaderCLI:
+		return Reader(s), nil
+	case "":
+		return ReaderCLI, nil
+	}
+	return "", Invalid(fmt.Sprintf("reader %q is neither tool nor cli", s), "pass --reader tool or --reader cli")
+}
+
+// ToolName is the Claude Code mod's tool that serves a batch.
+const ToolName = "mcp__wakewire__changes"
 
 // Wake writes the message that tells a session what changed. It carries
 // facts only: the item, the kind, the login, never a title or anything a
-// person wrote; see the wake contract.
-func Wake(watch string, batch int64, changes []Change, loc *time.Location) string {
+// person wrote; see the wake contract. Its first and last lines are
+// wakewire's own fixed words.
+func Wake(batch int64, changes []Change, reader Reader) string {
 	if len(changes) == 0 {
 		return ""
 	}
@@ -26,23 +51,15 @@ func Wake(watch string, batch int64, changes []Change, loc *time.Location) strin
 	if len(rest) == 0 {
 		var b strings.Builder
 		for _, p := range problems {
-			fmt.Fprintf(&b, "[wakewire] %s: %s `wakewire status` shows the fix.\n", watch, p.Text)
+			fmt.Fprintf(&b, "[wakewire] %s Run `wakewire status` for the fix.\n", sentence(p.Text))
 		}
 		return strings.TrimSuffix(b.String(), "\n")
 	}
-	since := rest[0].At
-	for _, c := range rest {
-		if c.At.Before(since) {
-			since = c.At
-		}
-	}
-	n := len(rest)
 	var b strings.Builder
-	fmt.Fprintf(&b, "[wakewire] %s: %d %s since %s (batch %d)\n", watch, n, plural(n, "change", "changes"),
-		since.In(loc).Format("15:04"), batch)
+	b.WriteString("[wakewire] New activity:\n")
 	lines := make([]string, 0, len(problems))
 	for _, p := range problems {
-		lines = append(lines, "- "+p.Text)
+		lines = append(lines, "- "+sentence(p.Text))
 	}
 	lines = append(lines, grouped(rest)...)
 	if len(lines) > MaxWakeLines {
@@ -58,8 +75,21 @@ func Wake(watch string, batch int64, changes []Change, loc *time.Location) strin
 	for _, l := range lines {
 		b.WriteString(stripCount(l) + "\n")
 	}
-	fmt.Fprintf(&b, "What each person wrote is in batch %d: mcp__wakewire__changes or `wakewire changes %d`.", batch, batch)
+	how := ToolName
+	if reader == ReaderCLI {
+		how = fmt.Sprintf("`wakewire changes %d`", batch)
+	}
+	fmt.Fprintf(&b, "Read batch %d with %s before acting on it. If none of it needs you, a one-line reply is enough.", batch, how)
 	return b.String()
+}
+
+// sentence starts a problem's text with a capital letter.
+func sentence(s string) string {
+	r := []rune(s)
+	if len(r) > 0 {
+		r[0] = unicode.ToUpper(r[0])
+	}
+	return string(r)
 }
 
 // Lines carry their change count after a tab, for "and N more"; the tab
