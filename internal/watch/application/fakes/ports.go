@@ -56,6 +56,8 @@ func (r *Repos) ReadFile(_, name string) (string, bool, error) {
 // Accounts answers one forge identity and one Jira identity.
 type Accounts struct {
 	Forge, Jira application.AccountIdentity
+	// OnDescribe, when set, is called with each account Describe is asked about.
+	OnDescribe func(account string)
 }
 
 func (a *Accounts) ForForge(context.Context, domain.Repo) (application.AccountIdentity, error) {
@@ -69,7 +71,10 @@ func (a *Accounts) ForJira(context.Context, string) (application.AccountIdentity
 	return a.Jira, nil
 }
 
-func (a *Accounts) Describe(context.Context, string) (application.AccountInfo, error) {
+func (a *Accounts) Describe(_ context.Context, account string) (application.AccountInfo, error) {
+	if a.OnDescribe != nil {
+		a.OnDescribe(account)
+	}
 	return application.AccountInfo{TokenSource: "env:TEST"}, nil
 }
 

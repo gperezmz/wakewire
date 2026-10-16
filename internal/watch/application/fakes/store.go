@@ -10,6 +10,7 @@ import (
 	"slices"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gperezmz/wakewire/internal/watch/application"
@@ -48,7 +49,13 @@ type Store struct {
 	s  state
 	// FailCommit, when set, fails the next commit, as a killed process would.
 	FailCommit bool
+	open       atomic.Int32
 }
+
+// InTx says whether a transaction is open now: a transaction holds
+// state.db's write lock, so a call that waits on the network must not be
+// made while it is.
+func (st *Store) InTx() bool { return st.open.Load() > 0 }
 
 // NewStore returns an empty store.
 func NewStore() *Store {
@@ -97,6 +104,8 @@ func (crashed) Error() string { return "the process was killed before the commit
 func (st *Store) Tx(_ context.Context, fn func(application.Tx) error) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
+	st.open.Add(1)
+	defer st.open.Add(-1)
 	var cp state
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(st.s); err != nil {

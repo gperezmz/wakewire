@@ -55,7 +55,9 @@ type ProblemView struct {
 	ClearedAt *time.Time `json:"clearedAt,omitempty"`
 }
 
-// Status answers every watch, or the one sel names.
+// Status answers every watch, or the one sel names. It reads state.db in
+// one transaction and probes the accounts after it commits, so no write
+// lock is held across a request.
 func (s *Service) Status(ctx context.Context, sel *Selector) ([]WatchStatus, error) {
 	var out []WatchStatus
 	err := s.store.Tx(ctx, func(tx Tx) error {
@@ -74,7 +76,7 @@ func (s *Service) Status(ctx context.Context, sel *Selector) ([]WatchStatus, err
 			watches = all
 		}
 		for _, w := range watches {
-			st, err := s.status1(ctx, tx, w)
+			st, err := s.status1(tx, w)
 			if err != nil {
 				return err
 			}
@@ -82,10 +84,21 @@ func (s *Service) Status(ctx context.Context, sel *Selector) ([]WatchStatus, err
 		}
 		return nil
 	})
-	return out, err
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		for j := range out[i].Sources {
+			src := &out[i].Sources[j]
+			if info, err := s.accounts.Describe(ctx, src.Account); err == nil {
+				src.Info = info
+			}
+		}
+	}
+	return out, nil
 }
 
-func (s *Service) status1(ctx context.Context, tx Tx, w Watch) (WatchStatus, error) {
+func (s *Service) status1(tx Tx, w Watch) (WatchStatus, error) {
 	st := WatchStatus{Watch: w.Repo.String(), Identity: w.Identity, Tracker: w.Tracker.String(),
 		Interval: s.interval(w).String(), PausedSince: w.PausedSince, PausedUntil: w.PausedUntil,
 		Sources: []SourceStatus{}, Problems: []ProblemView{}}
@@ -113,10 +126,6 @@ func (s *Service) status1(ctx context.Context, tx Tx, w Watch) (WatchStatus, err
 	for _, h := range halves {
 		if h.Service == "" {
 			h.Service = forgeService(w)
-		}
-		info, err := s.accounts.Describe(ctx, h.Account)
-		if err == nil {
-			h.Info = info
 		}
 		ss, err := tx.SourceState(w.ID, h.Name)
 		if err != nil {

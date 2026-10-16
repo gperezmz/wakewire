@@ -71,8 +71,8 @@ cleared.
 A lease is free when its expiry, 90 s after it was taken, has passed, or when
 its process is gone by rule 1. A second `next` that finds the lease taken
 returns at once, delivering any pending batch without polling. No database
-lock is held across a poll's requests, so one slow service never blocks other
-watches.
+lock is held across a request, neither a poll's nor the probe `status` makes
+of each account, so one slow service never blocks other watches.
 
 ## Pruning
 
