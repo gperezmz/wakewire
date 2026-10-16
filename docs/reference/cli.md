@@ -240,6 +240,6 @@ their own heading saying so.
 | Command | Does |
 |---|---|
 | `wakewire adapter hello --session <id> [--protocol <n>]` | Records that an adapter is loaded for a session, with its parent process as the session's process and the protocol it speaks; answers whether the session holds a watch, the binary's protocol and the status line's facts |
-| `wakewire adapter next --session <id> [--reader tool\|cli]` | The tick: records the adapter as heard from, polls if due within a 60 s budget, and returns `{"state": "armed" \| "idle" \| "taken-over", "by", "polled", "batch": null \| {id, wake, count}, "status"}`. `--reader` says how the wake names reading the batch: `tool`, the mod's tool, or `cli`, the default, `wakewire changes` |
+| `wakewire adapter next --session <id> [--reader tool\|cli]` | The tick: records the adapter as heard from, polls if due within a 60 s budget, and returns `{"state": "armed" \| "idle" \| "taken-over", "by", "polled", "batch": null \| {id, wake, count}, "status": {watch, polledAt, pausedSince, held, pending, problems, lastChangeAt}}`. `--reader` says how the wake names reading the batch: `tool`, the mod's tool, or `cli`, the default, `wakewire changes` |
 | `wakewire adapter ack <batch>` | Marks a batch delivered |
 | `wakewire adapter ended --session <id> --reason <reason>` | Records that the session ended, making its registration dormant |

@@ -21,7 +21,7 @@ type LineState = {
   held: number
   pending: number
   problems: Problem[]
-  activity?: number[]
+  lastChangeAt?: string | null
 }
 type Answer = { ok: boolean; json?: any; text: string; missing?: boolean }
 
@@ -83,14 +83,20 @@ function troubleWords(p: Problem): string {
   return `not watching ${service}`
 }
 
-const EMPTY: WakewireLine = { watch: '', paused: false, held: 0, trouble: null, woke: 0, pulse: false, activity: [] }
+const EMPTY: WakewireLine = { watch: '', paused: false, held: 0, trouble: null, woke: 0, pulse: false, lastChangeAt: null }
 
-const BARS = '▁▂▃▄▅▆▇█'
-
-/** sparkline draws counts as bars, the highest full; an empty hour is the lowest bar. */
-export function sparkline(counts: readonly number[]): string {
-  const top = Math.max(0, ...counts)
-  return counts.map(n => (top === 0 || n === 0 ? BARS[0] : BARS[Math.min(7, Math.ceil((n / top) * 7))])).join('')
+/**
+ * glow is the icon's color while all is well, by how long ago the last
+ * change that matters was found: the theme's accent at first, cooling
+ * through two warm steps to the theme's green after an hour.
+ */
+export function glow(lastChangeAt: string | null, now: number): string {
+  if (!lastChangeAt) return 'success'
+  const minutes = (now - Date.parse(lastChangeAt)) / 60_000
+  if (minutes < 10) return 'claude'
+  if (minutes < 30) return '#d9a05b'
+  if (minutes < 60) return '#a6b35f'
+  return 'success'
 }
 
 /** setLine changes some of the footer's state; the drawing follows. */
@@ -114,7 +120,7 @@ async function show($: EngineInterface, l: LineState | undefined, polled = false
     held: l.held,
     trouble: problem ? troubleWords(problem) : null,
     pulse: polled,
-    activity: l.activity ?? [],
+    lastChangeAt: l.lastChangeAt ?? null,
   })
   if (polled) $.clock.after(PULSE_MS, () => void setLine($, { pulse: false }).catch(() => undefined))
 }
@@ -318,8 +324,9 @@ export const register: Register = on => {
 
   // The footer label: a colored dot and the watch, beside Claude Code's own
   // mode labels, drawn as they are, dim.
-  // The footer label: ↯ for wakewire, colored by its state, and beside it
-  // the last hours' activity, or what needs the person.
+  // The footer label: ↯ for wakewire. While all is well it stands alone,
+  // its color cooling from the accent to green as the last change ages;
+  // otherwise a few words say what needs the person.
   on('ui.render', { component: 'SessionMode' }, async ($, e, next) => {
     const l = await read($, line)
     if (!l) return next(e)
@@ -330,16 +337,14 @@ export const register: Register = on => {
         ? ['claude', `${l.woke} new`]
         : l.paused
           ? ['warning', `paused · ${l.held} held`]
-          : ['success', null]
+          : [glow(l.lastChangeAt, Date.now()), null]
     return (
       <Box>
         {e.props.modes.length > 0 && <Text dimColor>{e.props.modes.join(' & ')} · </Text>}
         <Text color={color} weight={l.pulse ? 'bold' : undefined}>
           ↯
         </Text>
-        {words === null ? (
-          <Text dimColor> {sparkline(l.activity.length > 0 ? l.activity : new Array(8).fill(0))}</Text>
-        ) : (
+        {words !== null && (
           <Text color={l.trouble || l.woke > 0 ? color : undefined} dimColor={!l.trouble && l.woke === 0}>
             {' '}
             {words}

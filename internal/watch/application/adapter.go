@@ -25,6 +25,9 @@ type LineState struct {
 	Held        int        `json:"held"`
 	Pending     int        `json:"pending"`
 	Problems    []Issue    `json:"problems"`
+	// LastChangeAt is when the newest change that was not ignored was found,
+	// within the last day; null when there is none.
+	LastChangeAt *time.Time `json:"lastChangeAt"`
 }
 
 // NextResult is the tick's answer.
@@ -292,6 +295,20 @@ func (s *Service) lineState(tx Tx, w Watch) (*LineState, error) {
 		return nil, err
 	}
 	ls.Held, ls.Pending = len(held), len(pending)
+	recent, err := tx.Changes(ChangeQuery{WatchID: w.ID, Since: s.clock.Now().Add(-24 * time.Hour),
+		Status: []domain.Status{domain.StatusPending, domain.StatusHeld, domain.StatusDelivered}})
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range recent {
+		if c.Change.Kind == domain.KindProblem {
+			continue
+		}
+		if ls.LastChangeAt == nil || c.FoundAt.After(*ls.LastChangeAt) {
+			t := c.FoundAt
+			ls.LastChangeAt = &t
+		}
+	}
 	probs, err := tx.OpenProblems(w.ID)
 	if err != nil {
 		return nil, err

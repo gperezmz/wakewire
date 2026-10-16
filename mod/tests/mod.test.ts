@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
 
-import { sparkline } from '../hooks/register'
+import { glow } from '../hooks/register'
 
 // A fake wakewire binary: answers each argv the mod runs, and records them.
 function binary(
@@ -90,7 +90,7 @@ describe('wakewire mod', () => {
     expect(seen.at(-1)).toBe(undefined) // all is well: nothing on the status line
     const footer = await $.ui.mount({ plugin: 'wakewire', surface: 'terminal', component: 'SessionMode', props: { modes: ['focus'] } })
     expect((await footer.find({ type: 'Text', text: '↯' })) !== undefined).toBe(true)
-    expect((await footer.find({ type: 'Text', text: /^ ▁{8}$/ })) !== undefined).toBe(true) // no activity yet
+    expect((await footer.find({ type: 'Text', text: /▁/ })) === undefined).toBe(true) // the icon stands alone
     expect((await footer.find({ type: 'Text', text: /focus/ })) !== undefined).toBe(true)
     await footer.unmount()
     await clock.advance(30_000)
@@ -303,8 +303,13 @@ describe('wakewire mod', () => {
     expect(String(r.additionalContext ?? '')).toContain('holds the wakewire watch for github.com/o/x')
   })
 
-  test('the sparkline scales to the busiest hour', () => {
-    expect(sparkline([0, 0, 1, 0, 4, 0, 0, 2])).toBe('▁▁▃▁█▁▁▅')
-    expect(sparkline([0, 0, 0])).toBe('▁▁▁')
+  test('the icon cools from the accent to green as the last change ages', () => {
+    const now = Date.parse('2026-10-17T12:00:00Z')
+    const ago = (m: number) => new Date(now - m * 60_000).toISOString()
+    expect(glow(null, now)).toBe('success')
+    expect(glow(ago(2), now)).toBe('claude')
+    expect(glow(ago(20), now)).toBe('#d9a05b')
+    expect(glow(ago(45), now)).toBe('#a6b35f')
+    expect(glow(ago(90), now)).toBe('success')
   })
 })

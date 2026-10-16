@@ -412,3 +412,19 @@ func TestATakenOverOrClearedSessionDoesNotComeBack(t *testing.T) {
 		t.Fatal("a cleared session took the watch back")
 	}
 }
+
+func TestTheStatusLineSaysWhenTheLastChangeWasFound(t *testing.T) {
+	h := newHarness(t)
+	h.mustRegister("s1", 100)
+	h.observe(t0, domain.Observation{Item: issue(), At: t0})
+	if n := h.next("s1", 100); n.Status.LastChangeAt != nil {
+		t.Fatalf("no change yet, but %v", n.Status.LastChangeAt)
+	}
+	h.clock.Advance(3 * time.Minute)
+	found := h.clock.Now()
+	h.observe(found, domain.Observation{Item: issue("ready", "in-progress"), At: found})
+	n := h.next("s1", 100)
+	if n.Status.LastChangeAt == nil || !n.Status.LastChangeAt.Equal(found) {
+		t.Fatalf("%v", n.Status.LastChangeAt)
+	}
+}
