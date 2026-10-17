@@ -34,7 +34,7 @@ From a release, for Linux or macOS on amd64 or arm64; pick the archive for
 your system on the [releases page](https://github.com/gperezmz/wakewire/releases):
 
 ```sh
-VERSION=1.0.2
+VERSION=1.0.3
 OS=linux ARCH=amd64        # or darwin, and arm64
 curl -fsSLO "https://github.com/gperezmz/wakewire/releases/download/v$VERSION/wakewire_${VERSION}_${OS}_${ARCH}.tar.gz"
 curl -fsSLO "https://github.com/gperezmz/wakewire/releases/download/v$VERSION/checksums.txt"
@@ -56,8 +56,8 @@ brew install --cask wakewire
 With Nix, built from source at a release's tag:
 
 ```sh
-nix run github:gperezmz/wakewire/v1.0.2 -- version
-nix profile install github:gperezmz/wakewire/v1.0.2
+nix run github:gperezmz/wakewire/v1.0.3 -- version
+nix profile install github:gperezmz/wakewire/v1.0.3
 ```
 
 Without the tag it builds the default branch, which reports the last
