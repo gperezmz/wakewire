@@ -80,3 +80,8 @@ jobs:
           GOBIN="$PWD/gobin" go install "github.com/gperezmz/wakewire/cmd/wakewire@$TAG"
           ./gobin/wakewire version --json | tee go.json
           grep -q "\"version\":\"$TAG\"" go.json
+      - uses: cachix/install-nix-action@v31
+      - name: Nix, from the tag's flake
+        run: |
+          nix run "github:gperezmz/wakewire/$TAG" -- version --json | tee nix.json
+          grep -q "\"version\":\"$TAG\"" nix.json

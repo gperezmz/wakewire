@@ -34,7 +34,7 @@ From a release, for Linux or macOS on amd64 or arm64; pick the archive for
 your system on the [releases page](https://github.com/gperezmz/wakewire/releases):
 
 ```sh
-VERSION=0.1.0-rc.1
+VERSION=1.0.1
 OS=linux ARCH=amd64        # or darwin, and arm64
 curl -fsSLO "https://github.com/gperezmz/wakewire/releases/download/v$VERSION/wakewire_${VERSION}_${OS}_${ARCH}.tar.gz"
 curl -fsSLO "https://github.com/gperezmz/wakewire/releases/download/v$VERSION/checksums.txt"
@@ -53,12 +53,15 @@ brew trust gperezmz/wakewire
 brew install --cask wakewire
 ```
 
-With Nix, built from source:
+With Nix, built from source at a release's tag:
 
 ```sh
-nix run github:gperezmz/wakewire -- version
-nix profile install github:gperezmz/wakewire
+nix run github:gperezmz/wakewire/v1.0.1 -- version
+nix profile install github:gperezmz/wakewire/v1.0.1
 ```
+
+Without the tag it builds the default branch, which reports the last
+release's version beside its own commit.
 
 Or with Go 1.27.2 or later:
 
@@ -153,6 +156,7 @@ hold and release wakes, and `wakewire ledger` says why a wake came or did not.
 the tests with `-race`, GoReleaser's check, and the mod's typecheck,
 `claude plugin validate .` and `claude plugin test mod`. CI runs the Go tests
 on Linux and macOS and the mod's tests with Claude Code from npm, on every
-push and pull request. A semver tag makes CI publish a release; the mod's
-version in `mod/.claude-plugin/plugin.json` is set to the tag's first, and
-the release fails where they differ.
+push and pull request. A semver tag makes CI publish a release; the version
+in `mod/.claude-plugin/plugin.json` is set to the tag's first, since the mod
+and the Nix flake take theirs from it, and the release fails where they
+differ.
