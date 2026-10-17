@@ -1,6 +1,6 @@
 {
   "name": "wakewire",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Wakes this session when what it waits on changes on GitHub, GitLab or Jira: the Claude Code adapter for the wakewire binary.",
   "author": {
     "name": "gperezmz",
