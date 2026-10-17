@@ -85,7 +85,7 @@ func (s *Service) Register(ctx context.Context, in RegisterInput) (RegisterResul
 	if err != nil {
 		return RegisterResult{}, err
 	}
-	tracker, labels, found, err := s.readSource(ctx, in)
+	src, err := s.readSource(ctx, in)
 	if err != nil {
 		return RegisterResult{}, err
 	}
@@ -93,6 +93,14 @@ func (s *Service) Register(ctx context.Context, in RegisterInput) (RegisterResul
 	if err != nil {
 		return RegisterResult{}, err
 	}
+	if err := domain.CheckForge(src.read, repo, forge.Service); err != nil {
+		return RegisterResult{}, err
+	}
+	tracker, err := s.resolveTracker(in, &src, repo, forge.Service)
+	if err != nil {
+		return RegisterResult{}, err
+	}
+	labels, found := src.labels, src.found
 	trackerAs := forge
 	switch tracker.Kind {
 	case domain.TrackerJira:
@@ -102,12 +110,12 @@ func (s *Service) Register(ctx context.Context, in RegisterInput) (RegisterResul
 	case domain.TrackerGitHub:
 		if forge.Service != "GitHub" {
 			return RegisterResult{}, domain.Refuse("source_incomplete", "the tracker is github-issues but the repository is on "+forge.Service,
-				"fix the Tracker: line, or pass --tracker")
+				"fix the tracker in the section, or pass --tracker")
 		}
 	case domain.TrackerGitLab:
 		if forge.Service != "GitLab" {
 			return RegisterResult{}, domain.Refuse("source_incomplete", "the tracker is gitlab-issues but the repository is on "+forge.Service,
-				"fix the Tracker: line, or pass --tracker")
+				"fix the tracker in the section, or pass --tracker")
 		}
 	}
 	start, running, err := s.processes.StartOf(in.Process)
@@ -199,12 +207,19 @@ func (s *Service) Register(ctx context.Context, in RegisterInput) (RegisterResul
 	return res, err
 }
 
-// readSource reads the tracker and labels from the source template, with
-// the flags over it.
-func (s *Service) readSource(ctx context.Context, in RegisterInput) (domain.Tracker, domain.Labels, SourceFound, error) {
+// source is what register read from the repository, before the tracker is
+// decided, which takes the forge.
+type source struct {
+	read   domain.SourceRead
+	labels domain.Labels
+	found  SourceFound
+}
+
+// readSource reads the labels from the source template, with the flags over
+// it, and keeps what it read for the tracker.
+func (s *Service) readSource(ctx context.Context, in RegisterInput) (source, error) {
 	labels := domain.Labels{}
 	var found SourceFound
-	trackerText, trackerLine := in.Tracker, 0
 	needFile := in.Tracker == ""
 	for _, m := range domain.Meanings {
 		if in.Labels[m] == "" {
@@ -215,13 +230,13 @@ func (s *Service) readSource(ctx context.Context, in RegisterInput) (domain.Trac
 	if needFile {
 		root, err := s.repos.Root(ctx, in.Dir)
 		if err != nil {
-			return domain.Tracker{}, nil, found, err
+			return source{}, err
 		}
 		ok := false
 		for _, f := range s.settings.Template.Files {
 			text, exists, err := s.repos.ReadFile(root, f)
 			if err != nil {
-				return domain.Tracker{}, nil, found, err
+				return source{}, err
 			}
 			if !exists {
 				continue
@@ -231,25 +246,12 @@ func (s *Service) readSource(ctx context.Context, in RegisterInput) (domain.Trac
 			}
 		}
 		if !ok {
-			return domain.Tracker{}, nil, found, domain.Refuse("no_source",
+			return source{}, domain.Refuse("no_source",
 				fmt.Sprintf("no file of %s has a %q section", strings.Join(s.settings.Template.Files, ", "), s.settings.Template.Heading),
 				"add the section that set-up-unattendish writes to AGENTS.md, or pass --tracker and every --label")
 		}
 		found.File, found.Heading, found.HeadingLine = read.File, read.Heading, read.HeadingLine
-		if trackerText == "" {
-			trackerText, trackerLine = read.Tracker, read.TrackerLine
-		}
 	}
-	if trackerText == "" {
-		return domain.Tracker{}, nil, found, domain.Refuse("source_incomplete",
-			fmt.Sprintf("the %q section in %s has no %s line", found.Heading, found.File, s.settings.Template.Tracker),
-			fmt.Sprintf("add `%s github-issues` (or gitlab-issues, jira:<site>/<KEY>) to the section, or pass --tracker", s.settings.Template.Tracker))
-	}
-	tracker, err := domain.ParseTracker(trackerText)
-	if err != nil {
-		return domain.Tracker{}, nil, found, err
-	}
-	found.Values = append(found.Values, ReadLine{Name: "tracker", Value: tracker.String(), Line: trackerLine})
 	var missing []string
 	for _, m := range domain.Meanings {
 		v, line := in.Labels[m], 0
@@ -264,9 +266,37 @@ func (s *Service) readSource(ctx context.Context, in RegisterInput) (domain.Trac
 		found.Values = append(found.Values, ReadLine{Name: string(m), Value: v, Line: line})
 	}
 	if len(missing) > 0 {
-		return domain.Tracker{}, nil, found, domain.Refuse("source_incomplete",
+		return source{}, domain.Refuse("source_incomplete",
 			fmt.Sprintf("the %q section in %s has no label row for %s", found.Heading, found.File, strings.Join(missing, ", ")),
 			"add the rows to its table, or pass --label <meaning>=<label>")
 	}
-	return tracker, labels, found, nil
+	return source{read: read, labels: labels, found: found}, nil
+}
+
+// resolveTracker takes the tracker from --tracker, else the Services
+// table's tracker row, else the tracker line, and puts it first among the
+// values read.
+func (s *Service) resolveTracker(in RegisterInput, src *source, repo domain.Repo, forgeService string) (domain.Tracker, error) {
+	var tracker domain.Tracker
+	var err error
+	line := 0
+	switch read := src.read; {
+	case in.Tracker != "":
+		tracker, err = domain.ParseTracker(in.Tracker)
+	case read.TrackerRow.Line > 0:
+		tracker, err = domain.TrackerFrom(read, repo, forgeService)
+		line = read.TrackerRow.Line
+	case read.TrackerLine > 0:
+		tracker, err = domain.ParseTracker(read.Tracker)
+		line = read.TrackerLine
+	default:
+		return domain.Tracker{}, domain.Refuse("source_incomplete",
+			fmt.Sprintf("the %q section in %s names no tracker", src.found.Heading, src.found.File),
+			"add the Services table set-up-unattendish writes, with a tracker row, or pass --tracker")
+	}
+	if err != nil {
+		return domain.Tracker{}, err
+	}
+	src.found.Values = append([]ReadLine{{Name: "tracker", Value: tracker.String(), Line: line}}, src.found.Values...)
+	return tracker, nil
 }

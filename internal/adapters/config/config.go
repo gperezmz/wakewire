@@ -42,6 +42,13 @@ type SourceTemplate struct {
 		InProgress string `toml:"in_progress"`
 		NeedsInput string `toml:"needs_input"`
 	}
+	Services struct {
+		Role    string
+		Service string
+		Scope   string
+		Tracker string
+		Forge   string
+	}
 }
 
 // File is config.toml with every default filled in.
@@ -70,6 +77,11 @@ func Defaults() File {
 	f.Source.Labels.Ready = "ready"
 	f.Source.Labels.InProgress = "in progress"
 	f.Source.Labels.NeedsInput = "needs input"
+	f.Source.Services.Role = "Role"
+	f.Source.Services.Service = "Service"
+	f.Source.Services.Scope = "Scope"
+	f.Source.Services.Tracker = "tracker"
+	f.Source.Services.Forge = "forge"
 	return f
 }
 

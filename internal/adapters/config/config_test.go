@@ -55,16 +55,19 @@ heading = "Where things live"
 [source.labels]
 in_progress = "doing"
 
+[source.services]
+role = "Kind"
+
 [poll]
 interval = "45s"
 `))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if f.Source.Heading != "Where things live" || f.Source.Labels.InProgress != "doing" || f.Poll.Interval != "45s" {
+	if f.Source.Heading != "Where things live" || f.Source.Labels.InProgress != "doing" || f.Source.Services.Role != "Kind" || f.Poll.Interval != "45s" {
 		t.Fatalf("overrides lost: %+v", f)
 	}
-	if f.Source.Labels.NeedsInput != "needs input" || f.Source.Tracker != "Tracker:" || f.Echo.Marker == "" {
+	if f.Source.Labels.NeedsInput != "needs input" || f.Source.Tracker != "Tracker:" || f.Source.Services.Scope != "Scope" || f.Echo.Marker == "" {
 		t.Fatalf("defaults lost: %+v", f)
 	}
 }

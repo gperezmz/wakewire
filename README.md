@@ -114,13 +114,21 @@ but none is needed.
 
 ## Register a session
 
-The repository says where its specs live and which labels mean what, in a
-`Forge and tracker` section of its `AGENTS.md`:
+The repository says where its specs live and which labels mean what, in the
+`Forge and tracker` section that unattendish's `set-up-unattendish` writes
+into its `AGENTS.md`:
 
 ```markdown
 ## Forge and tracker
 
-Tracker: github-issues
+### Services
+
+| Role | Service | Scope | Tool |
+| --- | --- | --- | --- |
+| tracker | GitHub | `acme/shop` | `gh` |
+| forge | GitHub | `acme/shop` | `gh` |
+
+### Labels
 
 | Meaning | Label |
 | --- | --- |
@@ -130,8 +138,10 @@ Tracker: github-issues
 | needs input | `needs-input` |
 ```
 
-The tracker is `github-issues`, `gitlab-issues` or
-`jira:<site>/<PROJECT KEY>`. Then, from a Claude Code session in the
+The tracker is the forge's own issues (`GitHub` or `GitLab`, with the
+repository as its scope) or `Jira`, with `<site>/<PROJECT KEY>` as its scope;
+[the source template](docs/reference/configuration.md#the-source-template)
+says what else it reads. Then, from a Claude Code session in the
 repository, the agent runs:
 
 ```sh

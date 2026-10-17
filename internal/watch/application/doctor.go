@@ -1,12 +1,32 @@
 package application
 
-import "context"
+import (
+	"context"
+
+	"github.com/gperezmz/wakewire/internal/watch/domain"
+)
 
 // SourceCheck reads the repository's source section as register would,
-// and answers what it found or why it cannot.
+// tracker included, and answers what it found or why it cannot.
 func (s *Service) SourceCheck(ctx context.Context, dir string) (SourceFound, error) {
-	_, _, found, err := s.readSource(ctx, RegisterInput{Dir: dir})
-	return found, err
+	in := RegisterInput{Dir: dir}
+	src, err := s.readSource(ctx, in)
+	if err != nil {
+		return SourceFound{}, err
+	}
+	repo, err := s.selectRepo(ctx, Selector{Dir: dir})
+	if err != nil {
+		return src.found, err
+	}
+	forge, err := s.accounts.ForForge(ctx, repo)
+	if err != nil {
+		return src.found, err
+	}
+	if err := domain.CheckForge(src.read, repo, forge.Service); err != nil {
+		return src.found, err
+	}
+	_, err = s.resolveTracker(in, &src, repo, forge.Service)
+	return src.found, err
 }
 
 // AdapterOf answers the adapter a session loaded, if any.

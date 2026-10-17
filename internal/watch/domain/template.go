@@ -14,6 +14,14 @@ type Template struct {
 	TableKey   string
 	TableValue string
 	Keys       map[Meaning]string // the table key for each meaning
+	Services   ServicesTable
+}
+
+// ServicesTable names the columns and roles of the table that says which
+// service holds the specs and which the pull requests.
+type ServicesTable struct {
+	Role, Service, Scope string // column headers
+	Tracker, Forge       string // the Role of each row
 }
 
 // DefaultTemplate reads the section set-up-unattendish writes.
@@ -28,6 +36,7 @@ func DefaultTemplate() Template {
 			MeaningSpec: "spec", MeaningReady: "ready",
 			MeaningInProgress: "in progress", MeaningNeedsInput: "needs input",
 		},
+		Services: ServicesTable{Role: "Role", Service: "Service", Scope: "Scope", Tracker: "tracker", Forge: "forge"},
 	}
 }
 
@@ -41,6 +50,15 @@ type SourceRead struct {
 	TrackerLine int
 	Labels      Labels
 	LabelLines  map[Meaning]int
+	TrackerRow  ServiceRow // from the Services table
+	ForgeRow    ServiceRow
+}
+
+// ServiceRow is one row of the Services table; a Line of 0 means none.
+type ServiceRow struct {
+	Service string
+	Scope   string
+	Line    int
 }
 
 var headingLine = regexp.MustCompile(`^(#{1,6})\s+(.*?)\s*#*\s*$`)
@@ -53,6 +71,7 @@ func ReadSource(t Template, file, text string) (SourceRead, bool) {
 	level := 0
 	inFence := false
 	var keyCol, valCol = -1, -1
+	var roleCol, serviceCol, scopeCol = -1, -1, -1
 	for i, raw := range lines {
 		line := strings.TrimSpace(raw)
 		if strings.HasPrefix(line, "```") || strings.HasPrefix(line, "~~~") {
@@ -91,24 +110,40 @@ func ReadSource(t Template, file, text string) (SourceRead, bool) {
 		}
 		if !strings.HasPrefix(line, "|") {
 			keyCol, valCol = -1, -1
+			roleCol, serviceCol, scopeCol = -1, -1, -1
 			continue
 		}
 		cells := tableCells(line)
-		if keyCol < 0 {
-			for j, c := range cells {
-				switch {
-				case strings.EqualFold(c, t.TableKey):
-					keyCol = j
-				case strings.EqualFold(c, t.TableValue):
-					valCol = j
-				}
-			}
+		if keyCol < 0 && roleCol < 0 {
+			keyCol, valCol = column(cells, t.TableKey), column(cells, t.TableValue)
 			if keyCol < 0 || valCol < 0 {
 				keyCol, valCol = -1, -1
 			}
+			if t.Services.Role != "" {
+				roleCol, serviceCol, scopeCol = column(cells, t.Services.Role), column(cells, t.Services.Service), column(cells, t.Services.Scope)
+				if roleCol < 0 || serviceCol < 0 || scopeCol < 0 {
+					roleCol, serviceCol, scopeCol = -1, -1, -1
+				}
+			}
 			continue
 		}
-		if isSeparator(cells) || keyCol >= len(cells) || valCol >= len(cells) {
+		if isSeparator(cells) {
+			continue
+		}
+		if roleCol >= 0 {
+			if max(roleCol, serviceCol, scopeCol) >= len(cells) {
+				continue
+			}
+			row := ServiceRow{Service: strings.Trim(cells[serviceCol], "`* "), Scope: strings.Trim(cells[scopeCol], "` "), Line: i + 1}
+			switch role := normalizeLine(cells[roleCol]); {
+			case strings.EqualFold(role, t.Services.Tracker) && r.TrackerRow.Line == 0:
+				r.TrackerRow = row
+			case strings.EqualFold(role, t.Services.Forge) && r.ForgeRow.Line == 0:
+				r.ForgeRow = row
+			}
+			continue
+		}
+		if keyCol >= len(cells) || valCol >= len(cells) {
 			continue
 		}
 		key, val := cells[keyCol], strings.Trim(cells[valCol], "` ")
@@ -119,6 +154,16 @@ func ReadSource(t Template, file, text string) (SourceRead, bool) {
 		}
 	}
 	return r, level > 0
+}
+
+// column is the index of the header cell named name, or -1.
+func column(cells []string, name string) int {
+	for j, c := range cells {
+		if strings.EqualFold(c, name) {
+			return j
+		}
+	}
+	return -1
 }
 
 func tableCells(line string) []string {

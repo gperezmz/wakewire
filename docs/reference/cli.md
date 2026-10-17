@@ -43,7 +43,7 @@ examples.
 | `internal` | 1 | An error no rule above names: a bug in wakewire; the hint says to report it with the command and its output |
 | `no_session` | 3 | No harness session was found: `CLAUDE_CODE_SESSION_ID` is unset and no `--session` was given |
 | `no_source` | 3 | No file in the source template's `files` has its section |
-| `source_incomplete` | 3 | The section lacks the tracker line or a label row; the message names which |
+| `source_incomplete` | 3 | The section names no tracker, lacks a label row, or names a tracker or forge that is not the repository's; the message names which |
 | `no_account` | 3 | No account covers the repository's host and owner, or the tracker's host |
 | `no_stored_token` | 3 | An account says `token = "stored"` and `credentials.toml` has no entry for it |
 | `config_invalid` | 3 | `config.toml` or `credentials.toml` does not parse, or two accounts share a name or a host and owner |
@@ -77,7 +77,7 @@ wakewire register [--harness <claude-code>] [--session <id>] [--repo <host/path>
 | `--harness` | detected: `claude-code` where `CLAUDE_CODE_SESSION_ID` is set | Which adapter wakes the session |
 | `--session` | `$CLAUDE_CODE_SESSION_ID` | The session to register |
 | `--repo` | the `origin` remote, as `<host>/<path>` | The repository to watch |
-| `--tracker` | the source template's tracker line | `github-issues`, `gitlab-issues` or `jira:<site>/<project key>` |
+| `--tracker` | the source template's tracker row, else its tracker line | `github-issues`, `gitlab-issues` or `jira:<site>/<project key>` |
 | `--label` | the source template's table | One label, as `spec=type::spec`; repeatable; meanings are `spec`, `ready`, `in-progress`, `needs-input` |
 | `--marker` | `[echo] marker` in `config.toml` | The line that ends every comment the agents write; see [the marker](configuration.md#the-marker) |
 | `--take-over` | off | Take the watch from a live holder |
@@ -89,18 +89,18 @@ parent process. It prints what it read and from which file and line, with
 ```text
 $ wakewire register --dry-run
 read AGENTS.md, section "Forge and tracker" (line 5)
-  tracker      github-issues  (line 7)
-  spec         type::spec     (line 11)
-  ready        ready-for-dev  (line 12)
-  in-progress  in-progress    (line 13)
-  needs-input  needs-input    (line 14)
+  tracker      github-issues  (line 11)
+  spec         type::spec     (line 18)
+  ready        ready-for-dev  (line 19)
+  in-progress  in-progress    (line 20)
+  needs-input  needs-input    (line 21)
 forge   github.com/gperezmz/wakewire-sandbox as gperezmz (account personal)
 tracker github-issues
 would register claude-code:3f1c2a9e-7b4d-4e2a-9c1f-5a8b6d0e2f41 (pid 3681747)
 adapter: not loaded. Nothing in this session will poll until the wakewire mod is installed and enabled.
 ```
 
-Where the tracker is Jira, the tracker line reads
+Where the tracker is Jira, the `tracker` line of the output reads
 `tracker <site>/<KEY> as <display name> (account <name>)`.
 
 Under `--json` it prints `{"outcome": "registered" | "refreshed" | "taken-over", "dryRun": true|false, "watch", "identity", "tracker", "forge", "trackerAs", "holder", "pid", "watched": true|false, "notWatched": [{code, text}], "adapter": "loaded" | "not-loaded", "paused": null | "<since>", "source": {file, heading, headingLine, values}, "replaced"}`;

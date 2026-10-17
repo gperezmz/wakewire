@@ -130,6 +130,8 @@ func Settings(cfg config.File) (application.Settings, error) {
 				domain.MeaningSpec: s.Labels.Spec, domain.MeaningReady: s.Labels.Ready,
 				domain.MeaningInProgress: s.Labels.InProgress, domain.MeaningNeedsInput: s.Labels.NeedsInput,
 			},
+			Services: domain.ServicesTable{Role: s.Services.Role, Service: s.Services.Service, Scope: s.Services.Scope,
+				Tracker: s.Services.Tracker, Forge: s.Services.Forge},
 		},
 	}, nil
 }

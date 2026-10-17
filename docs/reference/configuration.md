@@ -118,7 +118,14 @@ built in, reads the `Forge and tracker` section that unattendish's
 [source]
 files   = ["AGENTS.md", "CLAUDE.md"]   # the first holding the section wins
 heading = "Forge and tracker"
-tracker = "Tracker:"                   # the line naming the tracker
+tracker = "Tracker:"                   # a line naming the tracker, where no Services table does
+
+[source.services]                      # the table naming the tracker and the forge
+role    = "Role"
+service = "Service"
+scope   = "Scope"
+tracker = "tracker"                    # the Role of each row
+forge   = "forge"
 
 [source.table]
 key   = "Meaning"
@@ -136,7 +143,14 @@ What the default reads:
 ```markdown
 ## Forge and tracker
 
-Tracker: jira:acme.atlassian.net/PROJ
+### Services
+
+| Role | Service | Scope | Tool |
+| --- | --- | --- | --- |
+| tracker | Jira | `acme.atlassian.net/PROJ` | its MCP server |
+| forge | GitHub | `acme/shop` | `gh` |
+
+### Labels
 
 | Meaning | Label |
 | --- | --- |
@@ -147,17 +161,21 @@ Tracker: jira:acme.atlassian.net/PROJ
 ```
 
 - The section is found by its heading, at any level, matched without regard
-  to case. The tracker line and the table must sit inside it.
-- The tracker line's value is `github-issues`, `gitlab-issues` or
-  `jira:<site>/<project key>`.
-- Table keys match without regard to case; backticks around values are
-  stripped.
+  to case. Its tables sit inside it, subtitles under it included, up to the
+  next heading of its level or above.
+- The tracker row gives the tracker: Service `GitHub` or `GitLab` reads that
+  forge's issues, and only where Scope is the repository watched; `Jira`
+  reads the project its Scope names as `<site>/<PROJECT KEY>`. Any other
+  service is refused, naming the row.
+- The forge row, where there is one, has to name the repository watched and
+  its forge; `none` is refused, since wakewire watches a forge.
+- A section with no Services table can name the tracker on a line,
+  `Tracker: github-issues`, `gitlab-issues` or `jira:<site>/<project key>`.
+  The tracker row wins over the line, and `--tracker` over both.
+- Headers, roles and table keys match without regard to case; backticks
+  around values are stripped.
 - A configuration overrides only the keys it sets. Flags on `register`
   override the template.
-
-The `Tracker:` line is new to `set-up-unattendish`, which today names the
-tracker only in prose; it has to start writing the line for the default to
-read it.
 
 ## Fixed in v1
 
