@@ -162,6 +162,30 @@ func TestMergeIsOneChangeNotAlsoClosed(t *testing.T) {
 	}
 }
 
+func TestMergeSeenBeforeItsFieldsIsReportedOnce(t *testing.T) {
+	acts := []Activity{
+		{ID: "m", Kind: KindMerged, By: "alice", At: at(5)},
+		{ID: "cl", Kind: KindClosed, By: "alice", At: at(5)},
+	}
+	for _, state := range []string{"closed", "open"} {
+		t.Run("first read "+state, func(t *testing.T) {
+			prev := Diff(rules, nil, Observation{Item: pr(), At: at(0)}, time.Time{}).Next
+			lagging := pr()
+			lagging.State = state
+			d := Diff(rules, &prev, Observation{Item: lagging, At: at(6), Activities: acts}, time.Time{})
+			if kinds(d.Changes) != "merged" || d.Changes[0].By != "alice" || d.Changes[0].At != at(5) {
+				t.Fatalf("first read: %s %+v", kinds(d.Changes), d.Changes)
+			}
+			caught := pr()
+			caught.State, caught.MergedAt = "closed", "2026-10-16T09:05:00Z"
+			d = Diff(rules, &d.Next, Observation{Item: caught, At: at(8), Activities: acts}, time.Time{})
+			if len(d.Changes) != 0 {
+				t.Fatalf("fields caught up: %s %+v", kinds(d.Changes), d.Changes)
+			}
+		})
+	}
+}
+
 func TestPushWakesOnlyForSomeoneElsesCommits(t *testing.T) {
 	prev := Diff(rules, nil, Observation{Item: pr(), At: at(0)}, time.Time{}).Next
 	now := pr()

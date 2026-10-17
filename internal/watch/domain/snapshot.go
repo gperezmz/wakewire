@@ -211,8 +211,13 @@ func (d *differ) run() {
 		d.add(Change{Kind: KindLabelRemoved, Label: l, By: by, At: at})
 	}
 
-	merged := before.MergedAt == "" && now.MergedAt != ""
+	// A service's fields can lag its timeline: a pull request read as still
+	// open, or closed with no merge time, beside the event that merged it.
+	// The event is the merge, and the fields catching up later are not
+	// another one.
+	merged := before.MergedAt == "" && (now.MergedAt != "" || d.has(KindMerged))
 	switch {
+	case d.recorded(KindMerged):
 	case merged:
 		by, at := d.claim(func(a Activity) bool { return a.Kind == KindMerged })
 		d.claim(func(a Activity) bool { return a.Kind == KindClosed })
@@ -256,6 +261,17 @@ func (d *differ) run() {
 	if before.Head != "" && now.Head != "" && before.Head != now.Head {
 		d.add(Change{Kind: KindPushed, Head: now.Head, Commits: commits, At: d.obs.At})
 	}
+}
+
+// has says whether a fresh activity of kind is in the observation.
+func (d *differ) has(k Kind) bool {
+	return slices.ContainsFunc(d.obs.Activities, func(a Activity) bool { return d.fresh(a) && a.Kind == k })
+}
+
+// recorded says whether an activity of kind in the observation was
+// already recorded by an earlier read.
+func (d *differ) recorded(k Kind) bool {
+	return slices.ContainsFunc(d.obs.Activities, func(a Activity) bool { return a.Kind == k && slices.Contains(d.prev.Seen, a.ID) })
 }
 
 // consumeAll marks every fresh activity of kind as accounted for.
