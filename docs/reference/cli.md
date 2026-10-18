@@ -653,13 +653,13 @@ prints `outcome` (`removed` or `would remove`) and a count each of `changes`,
 
 ```text
 $ wakewire version
-version: v2.0.0
+version: v2.0.1
 commit: <the commit the release was built from>
 protocol: 2
 ```
 
 A build from source between releases names the commit in its version, as
-`v2.0.1-0.<date>-<commit>`, and ends `+dirty` where the tree had changes.
+`v2.0.2-0.<date>-<commit>`, and ends `+dirty` where the tree had changes.
 
 ## Commands for adapters
 
