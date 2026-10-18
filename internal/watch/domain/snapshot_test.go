@@ -79,11 +79,12 @@ func TestCommentsAreNewOnceAndEchoesAreIgnored(t *testing.T) {
 	acts := []Activity{
 		{ID: "c1", Kind: KindComment, By: "bob", At: at(1), Body: "please also XLSX"},
 		{ID: "c2", Kind: KindComment, By: "jdoe", At: at(1), Body: "on it\n\n<kbd>🤖 unattendish agent</kbd>"},
+		{ID: "c3", Kind: KindComment, By: "jdoe", At: at(1), Body: strings.Repeat("verdict\n", BodyLimit) + "\n---\n<kbd>🤖 unattendish agent</kbd>\n"},
 	}
 	now := spec()
-	now.Comments = 2
+	now.Comments = 3
 	d := Diff(rules, &prev, Observation{Item: now, At: at(2), Activities: acts}, time.Time{})
-	if kinds(d.Changes) != "comment,comment(ignored)" || *d.Changes[0].Body != "please also XLSX" {
+	if kinds(d.Changes) != "comment,comment(ignored),comment(ignored)" || *d.Changes[0].Body != "please also XLSX" {
 		t.Fatalf("%s", kinds(d.Changes))
 	}
 	again := Diff(rules, &d.Next, Observation{Item: now, At: at(3), Activities: acts}, time.Time{})

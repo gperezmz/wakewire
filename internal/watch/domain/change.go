@@ -63,10 +63,15 @@ type Change struct {
 	// Not part of the batch format: the ledger's own columns.
 	Status Status `json:"-"`
 	Reason string `json:"-"`
+
+	// whole is the body before WithBody cut it, so the echo check still
+	// sees a long comment's closing line.
+	whole string
 }
 
 // WithBody sets body, cut at BodyLimit characters.
 func (c Change) WithBody(body string) Change {
+	c.whole = body
 	r := []rune(body)
 	cut := len(r) > BodyLimit
 	if cut {

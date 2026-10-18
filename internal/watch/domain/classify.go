@@ -9,7 +9,7 @@ func Classify(c Change, kind ItemKind, r Rules) (Status, string) {
 	case KindProblem, KindClosed, KindReopened, KindMerged:
 		return StatusPending, ""
 	case KindComment, KindInlineComment, KindReview:
-		if c.Body != nil && EndsWithMarker(*c.Body, r.Marker) {
+		if c.Body != nil && EndsWithMarker(c.whole, r.Marker) {
 			return StatusIgnored, "echo: the comment ends with the marker"
 		}
 		return StatusPending, ""
