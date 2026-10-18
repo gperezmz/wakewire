@@ -1,0 +1,1 @@
+{"protocol":2,"holds":true,"watch":"github.com/o/x","status":{"watch":"github.com/o/x","polledAt":"2026-01-02T03:04:05Z","pausedSince":null,"held":1,"pending":2,"problems":[{"code":"token_refused","text":"GitHub refused the token (401)"}],"lastChangeAt":"2026-01-02T03:05:35Z"}}

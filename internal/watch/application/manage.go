@@ -29,15 +29,21 @@ func (s *Service) Pause(ctx context.Context, sel Selector, d time.Duration, dryR
 		}
 		now := s.clock.Now()
 		res.Watch = w.Repo.String()
-		if w.PausedSince != nil {
-			res.Already = true
-		} else {
+		// A pause already on keeps its end unless --for names a new one, so a
+		// second bare pause changes nothing.
+		switch {
+		case w.PausedSince == nil:
 			w.PausedSince = &now
-		}
-		w.PausedUntil = nil
-		if d > 0 {
+			w.PausedUntil = nil
+			if d > 0 {
+				until := now.Add(d)
+				w.PausedUntil = &until
+			}
+		case d > 0:
 			until := now.Add(d)
 			w.PausedUntil = &until
+		default:
+			res.Already = true
 		}
 		res.Paused, res.PausedSince, res.Until = true, w.PausedSince, w.PausedUntil
 		if dryRun {
@@ -102,6 +108,7 @@ type IntervalResult struct {
 	Watch    string `json:"watch"`
 	Interval string `json:"interval"`
 	Default  bool   `json:"default"`
+	Already  bool   `json:"already,omitempty"`
 }
 
 // SetInterval sets how often a watch is polled; 0 returns it to the
@@ -113,9 +120,10 @@ func (s *Service) SetInterval(ctx context.Context, sel Selector, d time.Duration
 		if err != nil {
 			return err
 		}
+		already := w.Interval == d
 		w.Interval = d
-		res = IntervalResult{Watch: w.Repo.String(), Interval: s.interval(*w).String(), Default: d == 0}
-		if dryRun {
+		res = IntervalResult{Watch: w.Repo.String(), Interval: s.interval(*w).String(), Default: d == 0, Already: already}
+		if dryRun || already {
 			return nil
 		}
 		return tx.SaveWatch(w)

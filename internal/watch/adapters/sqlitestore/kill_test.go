@@ -79,7 +79,7 @@ func TestKillHelper(t *testing.T) {
 		answered.Store(true)
 		return application.PollOutput{Observations: []domain.Observation{{Item: spec("ready"), At: clock.Now()}}, At: clock.Now()}, nil
 	}}
-	_, err = service(pausingStore{store, answered}, src, clock).Next(context.Background(), "s1", 100, domain.ReaderTool)
+	_, err = service(pausingStore{store, answered}, src, clock).Next(context.Background(), "s1", 100)
 	t.Fatalf("the poll finished: %v", err)
 }
 
@@ -100,7 +100,7 @@ func TestKilledMidPollLosesNothing(t *testing.T) {
 			src.Script = append(src.Script, func(application.PollInput) (application.PollOutput, error) {
 				return application.PollOutput{Observations: []domain.Observation{{Item: spec(), At: start}}, At: start}, nil
 			})
-			if _, err := svc.Next(context.Background(), "s1", 100, domain.ReaderTool); err != nil {
+			if _, err := svc.Next(context.Background(), "s1", 100); err != nil {
 				t.Fatal(err)
 			}
 			_ = store.Close()
@@ -152,7 +152,7 @@ func TestKilledMidPollLosesNothing(t *testing.T) {
 			src.Script = append(src.Script, func(application.PollInput) (application.PollOutput, error) {
 				return application.PollOutput{Observations: []domain.Observation{{Item: spec("ready"), At: clock.Now()}}, At: clock.Now()}, nil
 			})
-			n, err := svc.Next(context.Background(), "s1", 100, domain.ReaderTool)
+			n, err := svc.Next(context.Background(), "s1", 100)
 			if err != nil || n.Batch == nil || !strings.Contains(n.Batch.Wake, `label "ready" added`) {
 				t.Fatalf("the change was lost: %+v %v", n, err)
 			}

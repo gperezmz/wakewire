@@ -123,7 +123,7 @@ func (s *Service) pick(ctx context.Context, tx Tx, sel Selector) (*Watch, error)
 			}
 		}
 	}
-	return nil, domain.Invalid(fmt.Sprintf("%d identities watch %s", len(found), repo),
+	return nil, domain.Refuse("ambiguous_watch", fmt.Sprintf("%d identities watch %s", len(found), repo),
 		"pass --identity <login>; `wakewire status` lists them")
 }
 

@@ -50,6 +50,11 @@ type Offer struct {
 // Hello records that an adapter is loaded for a session.
 func (s *Service) Hello(ctx context.Context, session string, proc, protocol int) (HelloResult, error) {
 	res := HelloResult{Protocol: domain.Protocol}
+	if protocol != 0 && protocol != domain.Protocol {
+		return res, domain.Refuse("protocol_mismatch",
+			fmt.Sprintf("needs update: the binary speaks protocol %d, the adapter %d", domain.Protocol, protocol),
+			"install the binary and the mod from the same release")
+	}
 	start, _, err := s.processes.StartOf(proc)
 	if err != nil {
 		return res, err
@@ -123,7 +128,7 @@ func (s *Service) held(tx Tx, session string) (*Watch, *Registration, error) {
 
 // Next is the tick: it records the adapter as heard from, polls if due
 // within the poll budget, and offers the pending batch if any.
-func (s *Service) Next(ctx context.Context, session string, proc int, reader domain.Reader) (NextResult, error) {
+func (s *Service) Next(ctx context.Context, session string, proc int) (NextResult, error) {
 	res := NextResult{State: "idle"}
 	start, _, err := s.processes.StartOf(proc)
 	if err != nil {
@@ -170,7 +175,7 @@ func (s *Service) Next(ctx context.Context, session string, proc int, reader dom
 		return res, err
 	}
 	if !w.PolledAt.IsZero() && now.Sub(w.PolledAt) < s.interval(*w) {
-		return s.offer(ctx, w.ID, res, reader)
+		return s.offer(ctx, w.ID, res)
 	}
 	// The lease is this binary's own, not the session's: a slow tick and
 	// the next one share the session's process but are two binaries.
@@ -198,7 +203,7 @@ func (s *Service) Next(ctx context.Context, session string, proc int, reader dom
 		}
 		res.Polled = true
 	}
-	return s.offer(ctx, w.ID, res, reader)
+	return s.offer(ctx, w.ID, res)
 }
 
 // leaseFree says whether a lease can be taken: its expiry passed or its
@@ -212,7 +217,7 @@ func (s *Service) leaseFree(l Lease) bool {
 }
 
 // offer builds or re-offers the watch's batch, unless it is paused.
-func (s *Service) offer(ctx context.Context, watchID int64, res NextResult, reader domain.Reader) (NextResult, error) {
+func (s *Service) offer(ctx context.Context, watchID int64, res NextResult) (NextResult, error) {
 	err := s.store.Tx(ctx, func(tx Tx) error {
 		w, err := tx.Watch(watchID)
 		if err != nil || w == nil {
@@ -258,7 +263,7 @@ func (s *Service) offer(ctx context.Context, watchID int64, res NextResult, read
 		for i, c := range pending {
 			changes[i] = c.Change
 		}
-		res.Batch = &Offer{ID: b.ID, Wake: domain.Wake(b.ID, changes, reader), Count: len(changes)}
+		res.Batch = &Offer{ID: b.ID, Wake: domain.Wake(b.ID, changes), Count: len(changes)}
 		return nil
 	})
 	return res, err
@@ -346,7 +351,7 @@ func (s *Service) Ack(ctx context.Context, batch int64) (AckResult, error) {
 			return err
 		}
 		if b == nil {
-			return domain.Invalid(fmt.Sprintf("no batch %d", batch), "`wakewire ledger` shows the batches")
+			return domain.Refuse("no_such_batch", fmt.Sprintf("no batch %d", batch), "`wakewire ledger` shows the batches")
 		}
 		if b.AckedAt != nil {
 			res.Already = true

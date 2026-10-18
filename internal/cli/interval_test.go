@@ -5,7 +5,9 @@ import (
 	"time"
 )
 
-func TestIntervalTakesDaysAndRefusesWhatIsTooShort(t *testing.T) {
+// A duration takes days as well as Go's units, and interval refuses one
+// shorter than 30s, or none at all, as an invalid value.
+func TestDurationsTakeDaysAndIntervalRefusesWhatIsTooShort(t *testing.T) {
 	for in, want := range map[string]time.Duration{"7d": 7 * 24 * time.Hour, "90s": 90 * time.Second, "default": 0} {
 		w := newFakeWorld()
 		if code, out, _ := w.run(t, "interval", in, "--json"); code != 0 {
@@ -22,11 +24,8 @@ func TestIntervalTakesDaysAndRefusesWhatIsTooShort(t *testing.T) {
 			t.Errorf("%s: exit %d\n%s", in, code, out)
 		}
 	}
-}
-
-func TestDurationFlagsTakeDays(t *testing.T) {
 	w := newFakeWorld()
 	if code, out, _ := w.run(t, "pause", "--for", "2d", "--json"); code != 0 || w.watch.pausedFor[0] != 48*time.Hour {
-		t.Fatalf("exit %d %v\n%s", code, w.watch.pausedFor, out)
+		t.Fatalf("pause --for 2d: exit %d %v\n%s", code, w.watch.pausedFor, out)
 	}
 }

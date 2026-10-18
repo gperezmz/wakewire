@@ -8,8 +8,8 @@ someone answered elsewhere. It is shaped as a command-line binary that knows
 the services and keeps the state, plus a small adapter inside each harness
 that keeps time and delivers the wake, so that nothing runs in the
 background, nothing found is ever lost, and a new harness costs only an
-adapter. Its first user is unattendish's run-fleet, in Claude Code; bb comes
-later.
+adapter. Its first user is unattendish's run-fleet, in Claude Code, the one
+harness with an adapter.
 
 ```mermaid
 flowchart LR
@@ -18,6 +18,7 @@ flowchart LR
   Adapter["Adapter in the harness<br/>(Claude Code mod)"] -- "tick: adapter next" --> Binary
   Adapter -- "wake" --> Session["Agent session"]
   Session -- "wakewire register" --> Binary
+  Session -- "wakewire changes" --> Binary
 ```
 
 The design rests on [how wakewire works](explanation/how-wakewire-works.md)
@@ -25,7 +26,8 @@ and the [design decisions](explanation/design-decisions.md), which also list
 what only running it will prove. The words are in the
 [glossary](../GLOSSARY.md).
 
-Every page describes v1 as built.
+Every page describes wakewire as it is now. The design decisions are the one
+record of what was chosen over what, and why.
 
 ## Map
 

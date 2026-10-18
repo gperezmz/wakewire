@@ -18,7 +18,6 @@ const (
 	DormantAfter    = 3 // intervals without the adapter heard from
 	KeepFor         = 30 * 24 * time.Hour
 	MaxWakeLines    = 20
-	BodyLimit       = 4000
 	UnreachableAt   = 3 // polls in a row
 )
 

@@ -301,3 +301,19 @@ func TestJQLQuoting(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+// Jira failing on its side is not the account's fault: a 5xx on the search is
+// unreachable, which waits and tries again, while any other refusal still
+// says the account cannot see the project.
+func TestASearchAnsweringServerErrorIsUnreachableAndOtherRefusalsAreNot(t *testing.T) {
+	for status, want := range map[int]string{500: "unreachable", 502: "unreachable", 503: "unreachable", 599: "unreachable",
+		401: "token_refused", 403: "token_refused", 404: "token_refused"} {
+		src, _ := newSource(t, map[string]func(map[string]any) (int, string){
+			"POST /rest/api/3/search/jql": func(map[string]any) (int, string) { return status, `{}` }})
+		_, err := src.Poll(context.Background(), application.PollInput{Rules: rules, FirstPoll: true})
+		var coded interface{ Code() string }
+		if !errors.As(err, &coded) || coded.Code() != want || strings.Contains(err.Error(), "s3cr3t") {
+			t.Errorf("a %d on the search: %v, want %s", status, err, want)
+		}
+	}
+}

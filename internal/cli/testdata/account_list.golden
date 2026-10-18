@@ -1,0 +1,1 @@
+{"accounts":[{"name":"work","host":"github.com","service":"github","owners":["A","B"],"user":"me","token":"gh:me"},{"name":"jira","host":"s.atlassian.net","service":"jira","owners":[],"email":"a@b.c","token":"stored"}]}

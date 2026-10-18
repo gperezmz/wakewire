@@ -1,7 +1,9 @@
 package application_test
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/gperezmz/wakewire/internal/watch/application"
@@ -60,5 +62,54 @@ func TestDoctorReadsTheTrackerAsRegisterDoes(t *testing.T) {
 	found, err := servicesSvc(h, fmt.Sprintf(servicesTable, "GitHub", "o/x", "o/x")).SourceCheck(h.ctx, "")
 	if err != nil || len(found.Values) != 5 || found.Values[0] != (application.ReadLine{Name: "tracker", Value: "github-issues", Line: 7}) {
 		t.Fatalf("%+v %v", found, err)
+	}
+}
+
+// A tracker that does not parse is the file's fault when the file gave it,
+// and the caller's when --tracker did: the first names the file to correct
+// (source_incomplete), the second is an invalid value.
+func TestATrackerThatDoesNotParseBlamesWhereItCameFrom(t *testing.T) {
+	h := newHarness(t)
+	fromLine := strings.Replace(agents, "Tracker: github-issues", "Tracker: bogus-tracker", 1)
+	_, err := servicesSvc(h, fromLine).Register(h.ctx, application.RegisterInput{Session: "s", Process: 100, DryRun: true})
+	if code(err) != "source_incomplete" || !strings.Contains(err.Error(), "AGENTS.md, line") || !strings.Contains(err.Error(), "bogus-tracker") {
+		t.Errorf("a tracker line: %v", err)
+	}
+	fromRow := fmt.Sprintf(servicesTable, "Jira", "not-a-site-and-key", "o/x")
+	if _, err = servicesSvc(h, fromRow).Register(h.ctx, application.RegisterInput{Session: "s", Process: 100, DryRun: true}); code(err) != "source_incomplete" {
+		t.Errorf("a tracker row: %v", err)
+	}
+	_, err = servicesSvc(h, agents).Register(h.ctx, application.RegisterInput{Session: "s", Process: 100, Tracker: "bogus-tracker", DryRun: true})
+	if code(err) != "invalid_value" {
+		t.Errorf("--tracker: %v", err)
+	}
+}
+
+// The refusals of a source that is missing say what to type, as commands: the
+// no_source one a whole register line to fill in, the tracker one the flag.
+func TestMissingSourceRefusalsNameACommandToRun(t *testing.T) {
+	h := newHarness(t)
+	repo, _ := domain.ParseRepo("github.com/o/x")
+	hintOf := func(files string) (string, string) {
+		svc := application.New(h.store, &fakes.Sources{Source: h.source}, &fakes.Accounts{Forge: application.AccountIdentity{Service: "GitHub", Identity: "g"}},
+			&fakes.Repos{Repo: repo, Files: map[string]string{"AGENTS.md": files}}, h.procs, h.clock, application.Settings{Template: domain.DefaultTemplate()})
+		_, err := svc.Register(h.ctx, application.RegisterInput{Session: "s", Process: 100})
+		var c interface {
+			Code() string
+			Hint() string
+		}
+		if !errors.As(err, &c) {
+			t.Fatalf("%q: %v", files, err)
+		}
+		return c.Code(), c.Hint()
+	}
+	code, hint := hintOf("")
+	if code != "no_source" || !strings.Contains(hint, "AGENTS.md") ||
+		!strings.Contains(hint, "`wakewire register --tracker <tracker> --label spec=<label> --label ready=<label> --label in-progress=<label> --label needs-input=<label>`") {
+		t.Errorf("no_source: %q %q", code, hint)
+	}
+	code, hint = hintOf("## Forge and tracker\n\n| Meaning | Label |\n|---|---|\n| spec | spec |\n| ready | ready |\n| in progress | in-progress |\n| needs input | needs-input |\n")
+	if code != "source_incomplete" || !strings.Contains(hint, "`wakewire register --tracker <tracker>`") || !strings.Contains(hint, "AGENTS.md") {
+		t.Errorf("no tracker: %q %q", code, hint)
 	}
 }

@@ -23,7 +23,7 @@ func tickWithLabelAdded(t *testing.T, crashAt int) (first, last int, h *harness)
 	if crashAt > 0 {
 		h.store.FailCommitNumber(first - 1 + crashAt)
 	}
-	_, _ = h.svc.Next(h.ctx, "s1", 100, domain.ReaderTool) // a crash returns an error
+	_, _ = h.svc.Next(h.ctx, "s1", 100) // a crash returns an error
 	return first, h.store.Commits(), h
 }
 
@@ -43,7 +43,7 @@ func TestWhereverATickCrashesTheChangeIsFoundOnce(t *testing.T) {
 		for range 3 {
 			h.clock.Advance(3 * time.Minute)
 			h.observe(h.clock.Now(), domain.Observation{Item: issue("ready"), At: h.clock.Now()}) // the service still shows it
-			if n, err := h.svc.Next(h.ctx, "s1", 100, domain.ReaderTool); err != nil {
+			if n, err := h.svc.Next(h.ctx, "s1", 100); err != nil {
 				t.Fatalf("commit %d crashed: the tick after it failed too: %v", k, err)
 			} else if n.Batch != nil {
 				wakes = append(wakes, n.Batch.Wake)

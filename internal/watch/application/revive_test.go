@@ -37,7 +37,7 @@ func TestARegistrationEndedForAnotherWatchDoesNotComeBack(t *testing.T) {
 	// the first registration is the one it finds for its id.
 	h.procs.Kill(100)
 	h.procs.Start(150, "s150")
-	hello, err := h.svc.Hello(h.ctx, "s1", 150, 1)
+	hello, err := h.svc.Hello(h.ctx, "s1", 150, domain.Protocol)
 	if err != nil || hello.Holds {
 		t.Fatalf("a registration ended on purpose came back: %+v %v", hello, err)
 	}
@@ -55,7 +55,7 @@ func TestOnlyASessionOrProcessThatWentAwayComesBack(t *testing.T) {
 		}
 		h.procs.Kill(100)
 		h.procs.Start(150, "s150")
-		hello, err := h.svc.Hello(h.ctx, "s1", 150, 1)
+		hello, err := h.svc.Hello(h.ctx, "s1", 150, domain.Protocol)
 		if err != nil || hello.Holds != back {
 			t.Errorf("ended %q: holds %v, want %v (%v)", reason, hello.Holds, back, err)
 		}
@@ -73,11 +73,11 @@ func TestASessionWhoseProcessWasKilledComesBackButNotWhileItStillRuns(t *testing
 		return st[0].Holder.PID
 	}
 	h.procs.Start(150, "s150")
-	if _, err := h.svc.Hello(h.ctx, "s1", 150, 1); err != nil || holder() != 100 {
+	if _, err := h.svc.Hello(h.ctx, "s1", 150, domain.Protocol); err != nil || holder() != 100 {
 		t.Fatalf("the registering process still runs, yet the registration moved to pid %d (%v)", holder(), err)
 	}
 	h.procs.Kill(100) // kill -9: no ended report
-	if _, err := h.svc.Hello(h.ctx, "s1", 150, 1); err != nil || holder() != 150 {
+	if _, err := h.svc.Hello(h.ctx, "s1", 150, domain.Protocol); err != nil || holder() != 150 {
 		t.Fatalf("a session whose process was killed did not come back: pid %d (%v)", holder(), err)
 	}
 }

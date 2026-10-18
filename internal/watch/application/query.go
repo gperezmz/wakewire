@@ -59,6 +59,24 @@ type ProblemView struct {
 // one transaction and probes the accounts after it commits, so no write
 // lock is held across a request.
 func (s *Service) Status(ctx context.Context, sel *Selector) ([]WatchStatus, error) {
+	out, err := s.LocalStatus(ctx, sel)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		for j := range out[i].Sources {
+			src := &out[i].Sources[j]
+			if info, err := s.accounts.Describe(ctx, src.Account); err == nil {
+				src.Info = info
+			}
+		}
+	}
+	return out, nil
+}
+
+// LocalStatus answers what Status does from state.db alone: it asks no
+// service about any account, so each source's Info stays empty.
+func (s *Service) LocalStatus(ctx context.Context, sel *Selector) ([]WatchStatus, error) {
 	var out []WatchStatus
 	err := s.store.Tx(ctx, func(tx Tx) error {
 		var watches []Watch
@@ -86,14 +104,6 @@ func (s *Service) Status(ctx context.Context, sel *Selector) ([]WatchStatus, err
 	})
 	if err != nil {
 		return nil, err
-	}
-	for i := range out {
-		for j := range out[i].Sources {
-			src := &out[i].Sources[j]
-			if info, err := s.accounts.Describe(ctx, src.Account); err == nil {
-				src.Info = info
-			}
-		}
 	}
 	return out, nil
 }
@@ -234,7 +244,7 @@ func (s *Service) Changes(ctx context.Context, batch int64) (BatchView, error) {
 			return err
 		}
 		if b == nil {
-			return domain.Invalid(fmt.Sprintf("no batch %d", batch), "the wake names its batch; `wakewire ledger` shows the batches")
+			return domain.Refuse("no_such_batch", fmt.Sprintf("no batch %d", batch), "the wake names its batch; `wakewire ledger` shows the batches")
 		}
 		w, err := tx.Watch(b.WatchID)
 		if err != nil {

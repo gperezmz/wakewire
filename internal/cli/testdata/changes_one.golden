@@ -1,0 +1,1 @@
+{"protocol":2,"batch":193,"n":2,"change":{"item":"PR #41","url":"https://github.com/o/x/pull/41","kind":"review-comment","by":"alice","at":"2026-01-02T03:04:05Z","body":"I think this is **ready**.","path":"main.go","line":12,"hunk":"@@ -1 +1 @@"}}

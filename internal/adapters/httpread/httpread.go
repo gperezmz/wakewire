@@ -134,7 +134,7 @@ func (c *Client) Do(ctx context.Context, service string, req *http.Request) (*Re
 				"check `host` of the account in config.toml, then `wakewire doctor`")
 		}
 		if errors.Is(err, ErrWrite) {
-			return nil, NewError("invalid_value", err.Error(), "this is a bug in wakewire: report it")
+			return nil, NewError("internal", err.Error(), "this is a bug in wakewire: report it with the command and its output")
 		}
 		return nil, NewError("unreachable", msg, "check the network, then `wakewire doctor`")
 	}
@@ -150,7 +150,7 @@ func (c *Client) Do(ctx context.Context, service string, req *http.Request) (*Re
 		return r, &Error{
 			code:    "token_refused",
 			message: fmt.Sprintf("%s refused the token (%d)", service, resp.StatusCode),
-			hint:    "`wakewire doctor` names the account; replace its token with `wakewire account add`",
+			hint:    "replace the account's token: `wakewire account add <name> --host <host> --token stored`, with the new token on stdin; `wakewire account list` names the account",
 			Status:  resp.StatusCode,
 		}
 	case resp.StatusCode == http.StatusTooManyRequests || rateLimited(resp):

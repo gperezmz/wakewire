@@ -8,35 +8,11 @@ import (
 	"unicode"
 )
 
-// Reader is how the session the wake goes to reads a batch.
-type Reader string
-
-const (
-	// ReaderTool: the harness's adapter serves batches as a tool of its own.
-	ReaderTool Reader = "tool"
-	// ReaderCLI: the agent runs `wakewire changes`.
-	ReaderCLI Reader = "cli"
-)
-
-// ParseReader reads an adapter's --reader.
-func ParseReader(s string) (Reader, error) {
-	switch Reader(s) {
-	case ReaderTool, ReaderCLI:
-		return Reader(s), nil
-	case "":
-		return ReaderCLI, nil
-	}
-	return "", Invalid(fmt.Sprintf("reader %q is neither tool nor cli", s), "pass --reader tool or --reader cli")
-}
-
-// ToolName is the Claude Code mod's tool that serves a batch.
-const ToolName = "mcp__wakewire__changes"
-
 // Wake writes the message that tells a session what changed. It carries
 // facts only: the item, the kind, the login, never a title or anything a
 // person wrote; see the wake contract. Its first and last lines are
 // wakewire's own fixed words.
-func Wake(batch int64, changes []Change, reader Reader) string {
+func Wake(batch int64, changes []Change) string {
 	if len(changes) == 0 {
 		return ""
 	}
@@ -75,11 +51,7 @@ func Wake(batch int64, changes []Change, reader Reader) string {
 	for _, l := range lines {
 		b.WriteString(stripCount(l) + "\n")
 	}
-	how := ToolName
-	if reader == ReaderCLI {
-		how = fmt.Sprintf("`wakewire changes %d`", batch)
-	}
-	fmt.Fprintf(&b, "Read batch %d with %s before acting on it. If none of it needs you, a one-line reply is enough.", batch, how)
+	fmt.Fprintf(&b, "Read batch %d with `wakewire changes %d` before acting on it. If none of it needs you, a one-line reply is enough.", batch, batch)
 	return b.String()
 }
 

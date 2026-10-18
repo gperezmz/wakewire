@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/internal/watch/application"
 )
 
 // Every dry-run flag reaches the use case, and the service is opened as one
@@ -75,31 +75,30 @@ func TestRegisterTakesTheSessionAndProcessFromTheEnvironment(t *testing.T) {
 	}
 }
 
-// What the use cases refuse with becomes the exit code cli.md lists.
-func TestRefusalsExitAsTheTableSays(t *testing.T) {
-	for _, c := range []struct {
-		args []string
-		err  error
-		code int
-		name string
-	}{
-		{[]string{"register"}, domain.Refuse("held", "s1 holds the watch", "pass --take-over"), exitRefused, "held"},
-		{[]string{"register"}, domain.Refuse("no_session", "no harness session was found", "run it from a session"), exitNotSetUp, "no_session"},
-		{[]string{"pause"}, domain.Refuse("not_registered", "no watch for github.com/o/x", "register"), exitRefused, "not_registered"},
-		{[]string{"resume"}, domain.Refuse("not_registered", "no watch", "register"), exitRefused, "not_registered"},
-		{[]string{"status"}, domain.Refuse("token_refused", "refused", "replace it"), exitService, "token_refused"},
-		{[]string{"register"}, domain.Refuse("source_incomplete", "no tracker line", "add it"), exitNotSetUp, "source_incomplete"},
-		{[]string{"interval", "1m"}, domain.Invalid("bad", "fix"), exitUsage, "invalid_value"},
-	} {
+// register's --json names the accounts it reads as in camelCase, like
+// every other key, and always says whether it was a dry run.
+func TestRegisterJSONNamesItsAccountsInCamelCaseAndAlwaysSaysDryRun(t *testing.T) {
+	for _, dry := range []bool{false, true} {
 		w := newFakeWorld()
-		w.watch.err, w.watch.statusErr = c.err, c.err
-		code, out, _ := w.run(t, append(c.args, "--json")...)
-		if code != c.code || errorCode(t, out) != c.name {
-			t.Errorf("%v: exit %d, code %q\n%s", c.args, code, errorCode(t, out), out)
+		w.env["CLAUDE_CODE_SESSION_ID"] = "s1"
+		w.watch.registerRes = application.RegisterResult{Outcome: "registered", DryRun: dry,
+			Forge:     application.AccountIdentity{Account: "personal", Service: "GitHub", Identity: "jdoe", Display: "J Doe"},
+			TrackerAs: application.AccountIdentity{Account: "jira", Service: "Jira", Identity: "5b10", Display: "J Doe"},
 		}
-		e := object(t, out)["error"].(map[string]any)
-		if e["message"] == "" || e["hint"] == "" {
-			t.Errorf("%v: the error lacks its message or hint: %v", c.args, e)
+		code, out, _ := w.run(t, "register", "--json")
+		if code != 0 {
+			t.Fatalf("exit %d\n%s", code, out)
+		}
+		got := object(t, out)
+		if v, present := got["dryRun"]; !present || v != dry {
+			t.Errorf("dryRun %v (present %v), want %v:\n%s", v, present, dry, out)
+		}
+		forge := got["forge"].(map[string]any)
+		if forge["account"] != "personal" || forge["service"] != "GitHub" || forge["identity"] != "jdoe" || forge["display"] != "J Doe" {
+			t.Errorf("forge %v", forge)
+		}
+		if as := got["trackerAs"].(map[string]any); as["account"] != "jira" {
+			t.Errorf("trackerAs %v", as)
 		}
 	}
 }
@@ -111,15 +110,11 @@ func TestAdapterNextReachesTheUseCaseWithTheSessionsProcess(t *testing.T) {
 	if code, out, _ := w.run(t, "adapter", "next", "--session", "s1", "--json"); code != 0 {
 		t.Fatalf("exit %d\n%s", code, out)
 	}
-	if code, _, _ := w.run(t, "adapter", "next", "--session", "s2", "--pid", "99", "--reader", "tool", "--json"); code != 0 {
+	if code, _, _ := w.run(t, "adapter", "next", "--session", "s2", "--pid", "99", "--json"); code != 0 {
 		t.Fatal(code)
 	}
 	want := []nextCall{{"s1", 4242}, {"s2", 99}}
 	if !slices.Equal(w.watch.nextCalls, want) {
 		t.Fatalf("%+v", w.watch.nextCalls)
-	}
-	code, out, _ := w.run(t, "adapter", "next", "--json")
-	if code != exitUsage || errorCode(t, out) != "invalid_value" {
-		t.Fatalf("a missing --session: exit %d\n%s", code, out)
 	}
 }

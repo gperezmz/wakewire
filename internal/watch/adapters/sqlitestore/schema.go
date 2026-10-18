@@ -1,7 +1,7 @@
 package sqlitestore
 
 // schemaVersion is meta's schema_version once migrate has run.
-const schemaVersion = 3
+const schemaVersion = 4
 
 // migrations[i] takes the schema from version i to i+1.
 var migrations = []string{`
@@ -126,4 +126,8 @@ INSERT INTO meta(key, value) SELECT 'batch_id_max', CAST(max(m) AS TEXT) FROM (
   UNION ALL SELECT coalesce(max(batch_id), 0) FROM changes
   UNION ALL SELECT coalesce(max(batch_id), 0) FROM batch_changes
 );`,
+	// 4: a body is stored whole, so a change carries "truncated" only where
+	// v1.0.3 cut one at 4000 characters. Its "truncated": false on every other
+	// comment said what absence says, and goes.
+	`UPDATE changes SET data = json_remove(data, '$.truncated') WHERE json_type(data, '$.truncated') = 'false';`,
 }

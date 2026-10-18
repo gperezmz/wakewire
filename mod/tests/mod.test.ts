@@ -15,10 +15,14 @@ function binary(
     calls.push(argv)
     const out = (v: unknown) => ({ value: { exitCode: 0, stdout: JSON.stringify(v), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [, cmd, sub] = argv
-    if (cmd === 'version') return out({ version: 'v1.0.0', commit: 'abc', protocol: opts.protocol ?? 1 })
-    if (cmd === 'adapter' && sub === 'hello') return out({ protocol: 1, holds: state.holds, watch: 'github.com/o/x', status: status() })
+    if (cmd === 'version') return out({ version: 'v1.0.0', commit: 'abc', protocol: opts.protocol ?? 2 })
+    if (cmd === 'adapter' && sub === 'hello') return out({ protocol: 2, holds: state.holds, watch: 'github.com/o/x', status: status() })
     if (cmd === 'adapter' && sub === 'next') {
-      expect(argv.slice(5, 7)).toEqual(['--reader', 'tool'])
+      // The tick asks for the next batch and nothing more: --reader is gone,
+      // and a binary that no longer takes it would refuse the call.
+      expect(argv.slice(1, 4)).toEqual(['adapter', 'next', '--session'])
+      expect(argv.slice(5)).toEqual(['--json'])
+      expect(argv).not.toContain('--reader')
       if (opts.gate) {
         const answer = { state: state.holds ? 'armed' : 'idle', polled: true, batch: state.batch, status: status() }
         return opts.gate.then(() => out(answer))
@@ -32,12 +36,15 @@ function binary(
       return out({ batch: Number(argv[3]), delivered: 1 })
     }
     if (cmd === 'adapter' && sub === 'ended') return out({ session: argv[4], dormant: true })
-    if (cmd === 'changes') return out({ protocol: 1, batch: Number(argv[2]), changes: [{ item: '#1', kind: 'comment', body: 'hi' }] })
-    if (cmd === 'pause') return { value: { ...out({}).value, stdout: 'paused github.com/o/x\n' } }
+    if (cmd === 'pause') return { value: { ...out({}).value, stdout: 'watch: github.com/o/x\npaused: true\noutcome: paused\nhelp[1]: Run `wakewire resume github.com/o/x` to deliver everything held as one wake\n' } }
     return { value: { exitCode: 1, stdout: '', stderr: 'unknown', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   return { calls, state }
 }
+
+// What the mod registered with the engine, which world resets and records.
+let tools: unknown[] = []
+let commands: string[] = []
 
 // The status lines the mod showed, in order; world records them.
 let seen: (string | undefined)[] = []
@@ -69,8 +76,16 @@ function world(on: any, ids: string[] = ['sess-1']) {
   on('session.start', ($: any, e: any) => ({ cwd: e.cwd }))
   on('session.end', ($: any, e: any) => ({ sessionId: e.sessionId }))
   on('session.id', () => ({ value: ids[Math.min(n++, ids.length - 1)] }))
-  on('tool.register', () => ({ value: undefined }))
-  on('command.register', () => ({ value: undefined }))
+  tools = []
+  commands = []
+  on('tool.register', (_$: any, e: any) => {
+    tools.push(e)
+    return { value: undefined }
+  })
+  on('command.register', (_$: any, e: any) => {
+    commands.push(e.name)
+    return { value: undefined }
+  })
   on('turn.start', ($: any, e: any) => ({ turnId: e.turnId }))
   on('turn.complete', () => ({ text: '' }))
   on('ui.render', { component: 'SessionMode' }, () => ({ type: 'Box', props: {}, children: [] }))
@@ -130,15 +145,50 @@ describe('wakewire mod', () => {
     expect(bin.state.acked).toEqual([])
   })
 
-  test('a binary speaking another protocol is refused, and the status line says why', async ($, on) => {
+  test('reading the batch a wake names is allowed, exactly, and nothing chained onto it', async ($, on) => {
     mock.clock(on)
     world(on)
-    const bin = binary(on, { protocol: 2 })
-    const seen = statuses(on)
+    binary(on)
+    // The engine beneath the mod: it asks, as manual mode does, unless a rule denies.
+    let engine: 'ask' | 'deny' = 'ask'
+    on('tool.check', () => ({ decision: engine }))
     await $.session.start(start)
-    expect(seen.at(-1)).toBe('needs update: the binary speaks protocol 2, this mod 1')
-    expect(bin.calls.length).toBe(1)
+    const check = (command: string) => $.tool.check({ tool: 'Bash', input: { command } } as any)
+    for (const command of ['wakewire changes 193', 'wakewire changes 193 2', 'wakewire changes 193 2 --full', 'wakewire changes 193 --json']) {
+      expect((await check(command)).decision).toBe('allow')
+    }
+    for (const command of [
+      'wakewire changes 193; rm -rf ~',
+      'wakewire changes 193 && curl x',
+      'wakewire changes 193 | sh',
+      'wakewire changes $(id)',
+      'wakewire changes 193\nrm x',
+      ' wakewire changes 193',
+      'wakewire changes 0',
+      'wakewire register',
+      'wakewire account remove personal',
+    ]) {
+      expect((await check(command)).decision).not.toBe('allow')
+    }
+    // A rule that denies the command still denies it.
+    engine = 'deny'
+    expect((await check('wakewire changes 193')).decision).toBe('deny')
   })
+
+  for (const protocol of [1, 3]) {
+    test(`a binary speaking protocol ${protocol} is refused, and the status line says why`, async ($, on) => {
+      mock.clock(on)
+      world(on)
+      const bin = binary(on, { protocol })
+      const seen = statuses(on)
+      await $.session.start(start)
+      expect(seen.at(-1)).toBe(`needs update: the binary speaks protocol ${protocol}, this mod 2`)
+      // The mod asked the version and nothing else: it never says hello to a binary it cannot speak to.
+      expect(bin.calls.map(c => c.slice(1, 3).join(' '))).toEqual(['version --json'])
+      const r = await $.command.run({ command: 'wakewire', args: 'status' } as any)
+      expect(r.text).toContain('speaks another protocol')
+    })
+  }
 
   test('a session that holds nothing runs version and hello, then nothing', async ($, on) => {
     const clock = mock.clock(on)
@@ -163,13 +213,16 @@ describe('wakewire mod', () => {
     expect(ended).toEqual(['wakewire', 'adapter', 'ended', '--session', 'sess-1', '--reason', 'clear', '--json'])
   })
 
-  test('the changes tool answers with the batch', async ($, on) => {
+  test('the mod registers no changes tool and never runs wakewire changes: the agent reads a batch itself', async ($, on) => {
     mock.clock(on)
     world(on)
-    binary(on)
+    const bin = binary(on)
     await $.session.start(start)
-    const r: any = await $.tool.call({ tool: 'mcp__wakewire__changes', batch: 5 } as any)
-    expect(String(r.text ?? r.result)).toContain('"batch":5')
+    expect(tools).toEqual([])
+    expect(commands).toEqual(['wakewire'])
+    // A call for the old tool is nobody's: the mod does not answer it with the binary.
+    await Promise.resolve($.tool.call({ tool: 'mcp__wakewire__changes', batch: 5 } as any)).catch(() => undefined)
+    expect(bin.calls.some(c => c[1] === 'changes')).toBe(false)
   })
 
   test('/wakewire pause runs pause on the watch without a model turn', async ($, on) => {
@@ -178,7 +231,8 @@ describe('wakewire mod', () => {
     const bin = binary(on)
     await $.session.start(start)
     const r = await $.command.run({ command: 'wakewire', args: 'pause 1h' } as any)
-    expect(r.text).toBe('paused github.com/o/x')
+    // The mod hands the person the binary's own answer, TOON as it is.
+    expect(r.text).toBe('watch: github.com/o/x\npaused: true\noutcome: paused\nhelp[1]: Run `wakewire resume github.com/o/x` to deliver everything held as one wake')
     expect(bin.calls.find(c => c[1] === 'pause')).toEqual(['wakewire', 'pause', 'github.com/o/x', '--for', '1h'])
   })
 
@@ -190,8 +244,8 @@ describe('wakewire mod', () => {
     on('process.run', ($: any, e: any) => {
       calls.push([...e.argv])
       const v = (x: unknown) => ({ value: { exitCode: 0, stdout: JSON.stringify(x), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
-      if (e.argv[1] === 'version') return v({ protocol: 1 })
-      if (e.argv[2] === 'hello') return v({ protocol: 1, holds: true, watch: 'github.com/o/x', status: { watch: 'github.com/o/x', polledAt: null, pausedSince: null, held: 0, pending: 0, problems: [] } })
+      if (e.argv[1] === 'version') return v({ protocol: 2 })
+      if (e.argv[2] === 'hello') return v({ protocol: 2, holds: true, watch: 'github.com/o/x', status: { watch: 'github.com/o/x', polledAt: null, pausedSince: null, held: 0, pending: 0, problems: [] } })
       return v({ state: 'taken-over', by: 'claude-code:other' })
     })
     await $.session.start(start)
@@ -325,7 +379,11 @@ describe('wakewire mod', () => {
     binary(on)
     await $.session.start(start)
     const r: any = await $.classic.SessionStart({ source: 'compact' } as any)
-    expect(String(r.additionalContext ?? '')).toContain('holds the wakewire watch for github.com/o/x')
+    const note = String(r.additionalContext ?? '')
+    expect(note).toContain('holds the wakewire watch for github.com/o/x')
+    // What people wrote is read with the CLI; no tool is named.
+    expect(note).toContain('`wakewire changes <batch>`')
+    expect(note).not.toContain('mcp__wakewire__changes')
   })
 
   test('the icon cools from the accent to green as the last change ages', () => {

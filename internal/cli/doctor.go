@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
-	ucli "github.com/urfave/cli/v3"
+	"github.com/toon-format/toon-go"
 
 	accountapp "github.com/gperezmz/wakewire/internal/account/application"
 	"github.com/gperezmz/wakewire/internal/watch/domain"
@@ -39,59 +40,81 @@ func (c *checks) fail(name string, err error) {
 	c.list = append(c.list, ch)
 }
 
+// passed says whether no check failed; a warning or a skip passes.
+func (c *checks) passed() bool {
+	for _, ch := range c.list {
+		if !ch.OK && ch.Code != "warning" {
+			return false
+		}
+	}
+	return true
+}
+
 func (c *checks) warn(name, detail, fix string) {
 	c.list = append(c.list, Check{Name: name, Detail: detail, Fix: fix, Code: "warning"})
 }
 
-func doctorCommand(deps Deps, s streams) *ucli.Command {
-	return &ucli.Command{
-		Name:  "doctor",
-		Usage: "check the configuration, the accounts, this repository and the mod, and name each fix",
-		Description: `Checks, in order, and names the fix for each failure: the configuration
+func doctorCommand(deps Deps, s streams) *command {
+	return &command{
+		name:  "doctor",
+		usage: "check the configuration, the accounts, this repository and the mod, and name each fix",
+		desc: `Checks, in order, and names the fix for each failure: the configuration
 parses; every account's token resolves, belongs to its identity and can read
 what it covers; this repository's source section parses; the binary and this
 session's mod speak the same protocol; no stored token is unused; no rate-limit
 budget is nearly spent. The first command to run when anything looks wrong.
 
-Under --json it prints {"ok": …, "checks": [{name, ok, detail, code, fix}]}.
-
-Examples:
-  wakewire doctor
-  wakewire doctor --json
-
-Exit codes: 0 every check passed or only warned; 3 something is not set up;
-4 a service failed.
-Related: wakewire status, wakewire paths, wakewire account list.`,
-		Flags: []ucli.Flag{jsonFlag},
-		Action: func(ctx context.Context, cmd *ucli.Command) error {
+It prints ok, a checks table whose result is ok, warn, fail or skipped, and a
+fixes table for every check that did not pass. Under --json it prints
+{"ok": …, "checks": [{name, ok, skipped, detail, code, fix}]}.`,
+		examples: []string{
+			"wakewire doctor",
+			"wakewire doctor --json",
+		},
+		exits:   "0 every check passed or only warned; 1 a check failed; 2 usage.",
+		related: "wakewire status, wakewire paths, wakewire account list.",
+		action: func(ctx context.Context, cmd *call) error {
 			c := &checks{}
-			exit := runDoctor(ctx, deps, c)
-			ok := exit == 0
-			var b strings.Builder
-			for _, ch := range c.list {
-				mark := "ok  "
-				switch {
-				case ch.Skip:
-					mark = "--  "
-				case ch.Code == "warning":
-					mark = "warn"
-				case !ch.OK:
-					mark = "FAIL"
-				}
-				fmt.Fprintf(&b, "%s %s: %s\n", mark, ch.Name, ch.Detail)
-				if ch.Fix != "" && !ch.OK {
-					fmt.Fprintf(&b, "     fix: %s\n", ch.Fix)
-				}
-			}
-			if err := answer(s, cmd, map[string]any{"ok": ok, "checks": c.list}, b.String()); err != nil {
+			runDoctor(ctx, deps, c)
+			ok := c.passed()
+			if err := answer(s, cmd, map[string]any{"ok": ok, "checks": c.list}, doctorReply(c.list, ok)); err != nil {
 				return err
 			}
 			if !ok {
-				return &exitOnly{code: exit}
+				return &exitOnly{code: exitError}
 			}
 			return nil
 		},
 	}
+}
+
+func doctorReply(list []Check, ok bool) *reply {
+	rows := make([]toon.Object, len(list))
+	var fixes []toon.Object
+	for i, ch := range list {
+		result := "ok"
+		switch {
+		case ch.Skip:
+			result = "skipped"
+		case ch.Code == "warning":
+			result = "warn"
+		case !ch.OK:
+			result = "fail"
+		}
+		rows[i] = obj("name", ch.Name, "result", result, "detail", ch.Detail)
+		if !ch.OK && ch.Fix != "" {
+			code := ch.Code
+			if code == "" {
+				code = "none"
+			}
+			fixes = append(fixes, obj("name", ch.Name, "code", code, "fix", ch.Fix))
+		}
+	}
+	out := newReply().add("ok", ok).add("checks", rows)
+	if len(fixes) > 0 {
+		out.add("fixes", fixes)
+	}
+	return out
 }
 
 // exitOnly ends a command with an exit code after it printed its answer.
@@ -99,18 +122,7 @@ type exitOnly struct{ code int }
 
 func (e *exitOnly) Error() string { return fmt.Sprintf("exit %d", e.code) }
 
-func runDoctor(ctx context.Context, deps Deps, c *checks) int {
-	exit := 0
-	failed := func(err error) {
-		code := exitNotSetUp
-		var cd coded
-		if errors.As(err, &cd) && exitFor[cd.Code()] == exitService {
-			code = exitService
-		}
-		if exit == 0 {
-			exit = code
-		}
-	}
+func runDoctor(ctx context.Context, deps Deps, c *checks) {
 	acc, err := deps.Accounts()
 	var views []accountapp.AccountView
 	if err == nil {
@@ -118,8 +130,7 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 	}
 	if err != nil {
 		c.fail("configuration", err)
-		failed(err)
-		return exit
+		return
 	}
 	c.ok("configuration", fmt.Sprintf("%d account(s)", len(views)))
 	for _, v := range views {
@@ -134,13 +145,11 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 		}
 		if err != nil {
 			c.fail(name, err)
-			failed(err)
 			continue
 		}
 		p, err := acc.Check(ctx, cred, v.Owners)
 		if err != nil {
 			c.fail(name, err)
-			failed(err)
 			continue
 		}
 		detail := fmt.Sprintf("%s on %s as %s (%s)", v.Service, v.Host, p.Identity.Login, v.TokenSource)
@@ -153,11 +162,23 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 		c.ok(name, detail)
 	}
 
-	w, err := deps.Watch(ctx, false)
+	if unused, err := acc.UnusedStored(); err != nil {
+		c.fail("stored tokens", err)
+	} else if len(unused) > 0 {
+		c.warn("stored tokens", "credentials.toml holds tokens no account names: "+strings.Join(unused, ", "),
+			"Run `wakewire account remove "+unused[0]+"`")
+	} else {
+		c.ok("stored tokens", "every stored token belongs to an account")
+	}
+
+	// A check changes nothing, so state.db is opened dry.
+	w, err := deps.Watch(ctx, true)
 	if err != nil {
 		c.fail("state", err)
-		failed(err)
-		return exit
+		for _, name := range []string{"source", "mod", "watches", "budget"} {
+			c.skip(name, "not checked: state.db did not open")
+		}
+		return
 	}
 	defer func() { _ = w.Close() }()
 	if found, err := w.SourceCheck(ctx, deps.dir()); err != nil {
@@ -166,7 +187,6 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 			c.skip("source", "not in a git repository")
 		} else {
 			c.fail("source", err)
-			failed(err)
 		}
 	} else {
 		var vals []string
@@ -180,35 +200,27 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 		c.skip("mod", "not run from a Claude Code session")
 	} else if a, err := w.AdapterOf(ctx, sess); err != nil {
 		c.fail("mod", err)
-		failed(err)
 	} else if a == nil {
 		c.warn("mod", "no wakewire mod has said hello for this session", "install it: claude plugin install wakewire --marketplace gperezmz/wakewire")
 	} else if a.Protocol != domain.Protocol {
 		c.warn("mod", fmt.Sprintf("the mod speaks protocol %d, this binary %d", a.Protocol, domain.Protocol),
 			"install the binary and the mod from the same release")
 	} else {
-		c.ok("mod", fmt.Sprintf("protocol %d, heard %s", a.Protocol, a.HeardAt.Local().Format("15:04:05")))
+		c.ok("mod", fmt.Sprintf("protocol %d, heard %s", a.Protocol, ago(time.Now(), a.HeardAt)))
 	}
 
-	if unused, err := acc.UnusedStored(); err != nil {
-		c.fail("stored tokens", err)
-		failed(err)
-	} else if len(unused) > 0 {
-		c.warn("stored tokens", "credentials.toml holds tokens no account names: "+strings.Join(unused, ", "),
-			"wakewire account remove "+unused[0])
-	} else {
-		c.ok("stored tokens", "every stored token belongs to an account")
+	all, err := w.Status(ctx, nil)
+	if err != nil {
+		c.fail("watches", err)
+		c.skip("budget", "not checked: the watches did not load")
+		return
 	}
-
-	if all, err := w.Status(ctx, nil); err == nil {
+	{
 		clear := true
 		for _, st := range all {
 			for _, p := range st.Problems {
 				clear = false
 				c.list = append(c.list, Check{Name: "watch " + st.Watch, Detail: p.Text, Code: p.Code, Fix: p.Fix})
-				if exit == 0 {
-					exit = exitFor[p.Code]
-				}
 			}
 		}
 		if clear {
@@ -219,8 +231,8 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 			for _, src := range st.Sources {
 				if r := src.Rate; r != nil && domain.NearlySpent(r.Remaining, r.Limit) {
 					low = true
-					c.warn("budget", fmt.Sprintf("%s for %s has %d of %d requests left until %s", src.Service, st.Watch,
-						r.Remaining, r.Limit, r.ResetAt.Local().Format("15:04")), "lengthen the interval: wakewire interval 5m")
+					c.warn("budget", fmt.Sprintf("%s for %s has %d of %d requests left; it resets %s", src.Service, st.Watch,
+						r.Remaining, r.Limit, ahead(time.Now(), r.ResetAt)), "lengthen the interval: wakewire interval <duration>")
 				}
 			}
 		}
@@ -228,5 +240,4 @@ func runDoctor(ctx context.Context, deps Deps, c *checks) int {
 			c.ok("budget", "no rate limit is nearly spent")
 		}
 	}
-	return exit
 }

@@ -8,8 +8,8 @@ someone answered elsewhere. It is shaped as a command-line binary that knows
 the services and keeps the state, plus a small adapter inside each harness
 that keeps time and delivers the wake, so that nothing runs in the
 background, nothing found is ever lost, and a new harness costs only an
-adapter. Its first user is unattendish's run-fleet, in Claude Code; bb comes
-later.
+adapter. Its first user is unattendish's run-fleet, in Claude Code, the one
+harness with an adapter.
 
 ```mermaid
 flowchart LR
@@ -18,6 +18,7 @@ flowchart LR
   Adapter["Adapter in the harness<br/>(Claude Code mod)"] -- "tick: adapter next" --> Binary
   Adapter -- "wake" --> Session["Agent session"]
   Session -- "wakewire register" --> Binary
+  Session -- "wakewire changes" --> Binary
 ```
 
 How it works and why, every command and file, and the wake contract are in
@@ -154,11 +155,40 @@ session with a message such as:
 ```text
 [wakewire] New activity:
 - PR #41: review, changes requested, by alice
-Read batch 193 with mcp__wakewire__changes before acting on it. If none of it needs you, a one-line reply is enough.
+Read batch 193 with `wakewire changes 193` before acting on it. If none of it needs you, a one-line reply is enough.
 ```
 
 `wakewire status` shows every watch, `/wakewire pause` and `/wakewire resume`
 hold and release wakes, and `wakewire ledger` says why a wake came or did not.
+
+## Read the output
+
+Every command prints [TOON](https://toonformat.dev) on stdout, errors
+included, and `--json` prints one JSON object instead; `--help`, on any
+command, and `--version` print plain text. stderr carries only progress. Exit codes are
+three: 0 done, 1 refused (the error's `code` says why), 2 usage. Run alone,
+`wakewire` shows the binary, this repository's watch and the next steps, and
+asks no service:
+
+```text
+$ wakewire
+bin: ~/.local/bin/wakewire
+description: "Wakes an agent session when what it waits on changes on GitHub, GitLab or Jira"
+watch:
+  watch: github.com/wwuser/wakewire-sandbox
+  identity: wwuser
+  holder: dormant
+  pending: 2
+  problems: 0
+  polled: 32h ago
+  held: 0
+  paused: no
+watches: 2
+accounts: 1
+help[3]: Run `wakewire ledger` to see what changed and what was done with it,Run `wakewire status` for every watch,Run `wakewire doctor` when anything looks wrong
+```
+
+[The CLI reference](docs/reference/cli.md) has every command's output.
 
 ## Develop
 

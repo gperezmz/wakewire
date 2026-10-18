@@ -28,7 +28,7 @@ func ParseRepo(s string) (Repo, error) {
 	host, path, ok := strings.Cut(s, "/")
 	if !ok || host == "" || !strings.Contains(path, "/") || strings.Contains(host, ":") {
 		return Repo{}, Invalid(fmt.Sprintf("%q is not a repository as <host>/<owner>/<repo>", s),
-			"pass --repo github.com/<owner>/<repo>")
+			"name the repository as <host>/<owner>/<repo>")
 	}
 	return Repo{Host: strings.ToLower(host), Path: path}, nil
 }

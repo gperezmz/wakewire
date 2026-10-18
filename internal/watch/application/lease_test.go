@@ -28,7 +28,7 @@ func TestTwoTicksOfOneSessionDoNotPollTogether(t *testing.T) {
 	h.mustRegister("s1", 100)
 	first, second := h.binary(501, "b501"), h.binary(502, "b502")
 	h.observe(t0, domain.Observation{Item: issue(), At: t0})
-	if _, err := first.Next(h.ctx, "s1", 100, domain.ReaderTool); err != nil {
+	if _, err := first.Next(h.ctx, "s1", 100); err != nil {
 		t.Fatal(err)
 	}
 	h.clock.Advance(3 * time.Minute)
@@ -37,11 +37,11 @@ func TestTwoTicksOfOneSessionDoNotPollTogether(t *testing.T) {
 	h.observe(h.clock.Now(), domain.Observation{Item: issue("ready"), At: h.clock.Now()})
 	polling := h.source.PollCount()
 	done := make(chan application.NextResult)
-	go func() { r, _ := first.Next(h.ctx, "s1", 100, domain.ReaderTool); done <- r }()
+	go func() { r, _ := first.Next(h.ctx, "s1", 100); done <- r }()
 	for h.source.PollCount() == polling {
 		time.Sleep(time.Millisecond)
 	}
-	r, err := second.Next(h.ctx, "s1", 100, domain.ReaderTool)
+	r, err := second.Next(h.ctx, "s1", 100)
 	if err != nil || r.Polled || h.source.PollCount() != polling+1 {
 		t.Fatalf("a second tick of the same session polled too: %+v %v (%d polls)", r, err, h.source.PollCount()-polling)
 	}

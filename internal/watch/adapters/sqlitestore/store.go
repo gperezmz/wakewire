@@ -21,8 +21,12 @@ import (
 	"github.com/gperezmz/wakewire/internal/watch/domain"
 )
 
-// Store is state.db.
-type Store struct{ db *sql.DB }
+// Store is state.db. A dry store commits nothing: every transaction,
+// migrations included, is rolled back once it has answered.
+type Store struct {
+	db  *sql.DB
+	dry bool
+}
 
 // Open opens state.db at path, creating it with mode 600, and migrates it.
 func Open(ctx context.Context, path string) (*Store, error) {
@@ -32,6 +36,17 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	}
 	_ = f.Close()
 	s, err := open(ctx, "file:"+path+"?"+pragmas().Encode(), 0)
+	if err != nil {
+		return nil, fmt.Errorf("state.db at %s: %w", path, err)
+	}
+	return s, nil
+}
+
+// OpenDry opens the state.db at path, which must exist, as a dry store, for
+// a command that must change no state: it reads as a migrated state.db
+// would, and writes nothing to the file.
+func OpenDry(ctx context.Context, path string) (*Store, error) {
+	s, err := openStore(ctx, "file:"+path+"?"+pragmas().Encode(), 0, true)
 	if err != nil {
 		return nil, fmt.Errorf("state.db at %s: %w", path, err)
 	}
@@ -58,6 +73,10 @@ func pragmas() url.Values {
 }
 
 func open(ctx context.Context, dsn string, maxConns int) (*Store, error) {
+	return openStore(ctx, dsn, maxConns, false)
+}
+
+func openStore(ctx context.Context, dsn string, maxConns int, dry bool) (*Store, error) {
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
@@ -65,7 +84,7 @@ func open(ctx context.Context, dsn string, maxConns int) (*Store, error) {
 	if maxConns > 0 {
 		db.SetMaxOpenConns(maxConns)
 	}
-	s := &Store{db: db}
+	s := &Store{db: db, dry: dry}
 	if err := s.migrate(ctx); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -95,6 +114,9 @@ func (s *Store) Tx(ctx context.Context, fn func(application.Tx) error) error {
 	if err := fn(tx); err != nil {
 		return err
 	}
+	if s.dry {
+		return nil // rolled back by the deferred Rollback
+	}
 	return t.Commit()
 }
 
@@ -115,7 +137,8 @@ func (x *tx) ensureSchema() error {
 		v, _ = strconv.Atoi(s)
 	}
 	if v > schemaVersion {
-		return fmt.Errorf("schema version %d is newer than this binary's %d: update wakewire", v, schemaVersion)
+		return domain.Refuse("state_newer", fmt.Sprintf("state.db is at schema version %d, newer than this binary's %d", v, schemaVersion),
+			"install the wakewire release that wrote it, or a later one, as the README's install steps say")
 	}
 	for ; v < schemaVersion; v++ {
 		if _, err := x.t.Exec(migrations[v]); err != nil {

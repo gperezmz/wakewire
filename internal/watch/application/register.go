@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -248,7 +249,8 @@ func (s *Service) readSource(ctx context.Context, in RegisterInput) (source, err
 		if !ok {
 			return source{}, domain.Refuse("no_source",
 				fmt.Sprintf("no file of %s has a %q section", strings.Join(s.settings.Template.Files, ", "), s.settings.Template.Heading),
-				"add the section that set-up-unattendish writes to AGENTS.md, or pass --tracker and every --label")
+				fmt.Sprintf("add a %q section with a Services table and a Labels table to %s, or pass --tracker and every --label, as `wakewire register --tracker <tracker> --label spec=<label> --label ready=<label> --label in-progress=<label> --label needs-input=<label>`",
+					s.settings.Template.Heading, strings.Join(s.settings.Template.Files, " or ")))
 		}
 		found.File, found.Heading, found.HeadingLine = read.File, read.Heading, read.HeadingLine
 	}
@@ -292,7 +294,13 @@ func (s *Service) resolveTracker(in RegisterInput, src *source, repo domain.Repo
 	default:
 		return domain.Tracker{}, domain.Refuse("source_incomplete",
 			fmt.Sprintf("the %q section in %s names no tracker", src.found.Heading, src.found.File),
-			"add the Services table set-up-unattendish writes, with a tracker row, or pass --tracker")
+			fmt.Sprintf("add a tracker row to the Services table in %s, or pass it: `wakewire register --tracker <tracker>`", src.found.File))
+	}
+	if r, ok := errors.AsType[*domain.Refusal](err); ok && r.Code() == "invalid_value" && in.Tracker == "" {
+		// The tracker came from the file, so the file is what to correct.
+		return domain.Tracker{}, domain.Refuse("source_incomplete",
+			fmt.Sprintf("%s, line %d: %s", src.found.File, line, err.Error()),
+			"correct the tracker row in "+src.found.File+", or pass --tracker")
 	}
 	if err != nil {
 		return domain.Tracker{}, err

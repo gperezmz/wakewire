@@ -133,7 +133,7 @@ func (p *Prober) probeGitHub(ctx context.Context, c application.Credential) (app
 		return application.Probe{}, err
 	}
 	if resp.Status == http.StatusNotFound {
-		return application.Probe{}, httpread.NewError("token_refused", "GitHub does not know the token", "replace it with `wakewire account add`")
+		return application.Probe{}, httpread.NewError("token_refused", "GitHub does not know the token", replaceToken(c))
 	}
 	var u userDoc
 	if err := decode(c, resp, &u); err != nil {
@@ -156,7 +156,7 @@ func (p *Prober) probeGitLab(ctx context.Context, c application.Credential) (app
 		return application.Probe{}, err
 	}
 	if resp.Status == http.StatusNotFound {
-		return application.Probe{}, httpread.NewError("token_refused", serviceName(c)+" does not know the token", "replace it with `wakewire account add`")
+		return application.Probe{}, httpread.NewError("token_refused", serviceName(c)+" does not know the token", replaceToken(c))
 	}
 	var u userDoc
 	if err := decode(c, resp, &u); err != nil {
@@ -260,4 +260,10 @@ func (p *Prober) Owner(ctx context.Context, c application.Credential, owner stri
 		}
 	}
 	return nil
+}
+
+// replaceToken is the command that gives an account a new token: the
+// account and its host as they are, the token typed or piped in.
+func replaceToken(c application.Credential) string {
+	return fmt.Sprintf("replace its token: `wakewire account add %s --host %s --token stored`, with the new token on stdin", c.Account, c.Host)
 }

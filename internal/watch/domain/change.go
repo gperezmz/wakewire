@@ -37,7 +37,7 @@ type Commit struct {
 }
 
 // Change is one difference a poll found on one item. Its JSON is the
-// batch's change format, protocol 1.
+// batch's change format; see docs/reference/wake-contract.md.
 type Change struct {
 	Item      string    `json:"item"`
 	URL       string    `json:"url"`
@@ -45,7 +45,7 @@ type Change struct {
 	By        string    `json:"by,omitempty"`
 	At        time.Time `json:"at"`
 	Body      *string   `json:"body,omitempty"`
-	Truncated *bool     `json:"truncated,omitempty"`
+	Truncated *bool     `json:"truncated,omitempty"` // read only: true on a body stored cut, which no poll stores now
 	State     string    `json:"state,omitempty"`
 	Path      string    `json:"path,omitempty"`
 	Line      int       `json:"line,omitempty"`
@@ -63,20 +63,11 @@ type Change struct {
 	// Not part of the batch format: the ledger's own columns.
 	Status Status `json:"-"`
 	Reason string `json:"-"`
-
-	// whole is the body before WithBody cut it, so the echo check still
-	// sees a long comment's closing line.
-	whole string
 }
 
-// WithBody sets body, cut at BodyLimit characters.
+// WithBody sets body, whole: the services cap their own texts, and the
+// daily clean-up bounds how long one is kept.
 func (c Change) WithBody(body string) Change {
-	c.whole = body
-	r := []rune(body)
-	cut := len(r) > BodyLimit
-	if cut {
-		body = string(r[:BodyLimit])
-	}
-	c.Body, c.Truncated = &body, &cut
+	c.Body = &body
 	return c
 }

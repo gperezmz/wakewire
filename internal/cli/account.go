@@ -6,9 +6,8 @@ import (
 	"io"
 	"os"
 	"strings"
-	"text/tabwriter"
 
-	ucli "github.com/urfave/cli/v3"
+	"github.com/toon-format/toon-go"
 	"golang.org/x/term"
 
 	"github.com/gperezmz/wakewire/internal/account/application"
@@ -22,34 +21,33 @@ type AccountsAPI interface {
 	Remove(name string, dryRun bool) (application.RemoveResult, error)
 }
 
-var dryRunFlag = &ucli.BoolFlag{Name: "dry-run", Usage: "show what would change and change nothing"}
+var dryRunFlag = flagSpec{name: "dry-run", kind: boolFlag, usage: "show what would change and change nothing"}
 
-func accountCommand(accounts AccountsAPI, s streams) *ucli.Command {
-	return &ucli.Command{
-		Name:  "account",
-		Usage: "add, list, rename and remove the accounts wakewire reads as",
-		Description: `An account pairs a host, the owners it covers and a token source with an
+func accountCommand(accounts AccountsAPI, s streams) *command {
+	return &command{
+		name:  "account",
+		usage: "add, list, rename and remove the accounts wakewire reads as",
+		desc: `An account pairs a host, the owners it covers and a token source with an
 optional identity. A repository is read through the account whose host and
 owners match; a Jira site through the account whose host it is. Accounts live
-in config.toml; stored tokens live apart, in credentials.toml.
-
-Examples:
-  wakewire account list
-  wakewire account add work --host github.com --owner acme --token gh:me
-  wakewire account rename work job
-  wakewire account remove job
-
-Exit codes: 0 done or already so, 1 invalid value, 2 refused, 3 not set up, 4 a service failed.
-Related: wakewire doctor, wakewire paths.`,
-		Flags: []ucli.Flag{jsonFlag},
-		Action: func(_ context.Context, cmd *ucli.Command) error {
-			if cmd.Args().Present() {
-				return usageError(fmt.Sprintf("unknown account command %q", cmd.Args().First()),
-					"wakewire account --help lists add, list, rename and remove")
-			}
-			return ucli.ShowSubcommandHelp(cmd)
+in config.toml; stored tokens live apart, in credentials.toml. Run alone, it
+lists the accounts, as account list does.`,
+		examples: []string{
+			"wakewire account list",
+			"wakewire account add work --host github.com --owner acme --token gh:me",
+			"wakewire account rename work job",
+			"wakewire account remove job",
 		},
-		Commands: []*ucli.Command{
+		exits:   "0 done or already so; 1 refused, not set up or a service failed; 2 usage.",
+		related: "wakewire doctor, wakewire paths.",
+		action: func(_ context.Context, cmd *call) error {
+			views, err := accounts.List()
+			if err != nil {
+				return err
+			}
+			return answer(s, cmd, map[string]any{"accounts": views}, listReply(views, nil))
+		},
+		subs: []*command{
 			accountAdd(accounts, s),
 			accountList(accounts, s),
 			accountRename(accounts, s),
@@ -58,21 +56,12 @@ Related: wakewire doctor, wakewire paths.`,
 	}
 }
 
-func positional(cmd *ucli.Command, usage string, n int) ([]string, error) {
-	got := cmd.Args().Slice()
-	if len(got) != n {
-		return nil, usageError(fmt.Sprintf("%s takes %d argument(s), got %d", cmd.FullName(), n, len(got)),
-			"usage: wakewire "+usage)
-	}
-	return got, nil
-}
-
-func accountAdd(accounts AccountsAPI, s streams) *ucli.Command {
-	return &ucli.Command{
-		Name:      "add",
-		Usage:     "add an account after checking its token",
-		ArgsUsage: "<name>",
-		Description: `Adds an account to config.toml. It checks the token first: whose it is, that
+func accountAdd(accounts AccountsAPI, s streams) *command {
+	return &command{
+		name:  "add",
+		usage: "add an account after checking its token",
+		args:  []arg{{name: "name"}},
+		desc: `Adds an account to config.toml. It checks the token first: whose it is, that
 it can read every --owner and whether it can write; only then does it write
 config.toml and, for --token stored, credentials.toml.
 
@@ -86,40 +75,42 @@ existing account with --token stored and another token and the stored token is
 replaced; that is how to replace a refused one. A Jira Cloud site (a host
 ending .atlassian.net) takes --email and no --owner; any other host takes
 --owner at least once. --user sets the identity when it is not the token's
-owner: a login, or on Jira an account ID.
-
-Examples:
-  wakewire account add work --host github.com --owner acme --token gh:me
-  wakewire account add client --host gitlab.client.com --owner platform --token env:CLIENT_GITLAB_TOKEN
-  pass show jira | wakewire account add jira --host acme.atlassian.net --email me@acme.com
-  wakewire account add work --host github.com --owner acme --token gh:me --dry-run
-
-Exit codes: 0 added or already so, 1 invalid value, 2 the name or the host and
-owner is taken, 3 no token from the source, 4 the token was refused or the
-service did not answer.
-Related: wakewire account list, wakewire account remove, wakewire doctor.`,
-		Flags: []ucli.Flag{
-			&ucli.StringFlag{Name: "host", Usage: "github.com, a GitLab host or a Jira Cloud site"},
-			&ucli.StringSliceFlag{Name: "owner", Usage: "an organization, user or group the account reads; repeatable"},
-			&ucli.StringFlag{Name: "email", Usage: "the email a Jira API token belongs to"},
-			&ucli.StringFlag{Name: "user", Usage: "the identity when it is not the token's owner: a login, or a Jira account ID"},
-			&ucli.StringFlag{Name: "token", Value: "stored", Usage: "stored | env:<VAR> | gh:<login>"},
-			dryRunFlag, jsonFlag,
+owner: a login, or on Jira an account ID.`,
+		examples: []string{
+			"wakewire account add work --host github.com --owner acme --token gh:me",
+			"wakewire account add client --host gitlab.client.com --owner platform --token env:CLIENT_GITLAB_TOKEN",
+			"pass show jira | wakewire account add jira --host acme.atlassian.net --email me@acme.com",
+			"wakewire account add work --host github.com --owner acme --token gh:me --dry-run",
 		},
-		Action: func(ctx context.Context, cmd *ucli.Command) error {
-			a, err := positional(cmd, "account add <name> --host <host> [--owner <owner>]...", 1)
-			if err != nil {
-				return err
-			}
+		exits: `0 added or already so; 1 the name or the host and owner is taken,
+no token came from the source, or the service refused it or did not answer;
+2 usage or an invalid value.`,
+		related: "wakewire account list, wakewire account remove, wakewire doctor.",
+		flags: []flagSpec{
+			{name: "host", kind: stringFlag, value: "<host>", usage: "github.com, a GitLab host or a Jira Cloud site (required)"},
+			{name: "owner", kind: listFlag, value: "<owner>", usage: "an organization, user or group the account reads; repeatable"},
+			{name: "email", kind: stringFlag, value: "<email>", usage: "the email a Jira API token belongs to"},
+			{name: "user", kind: stringFlag, value: "<identity>", usage: "the identity when it is not the token's owner: a login, or a Jira account ID"},
+			{name: "token", kind: stringFlag, value: "<source>", def: "stored", usage: "stored | env:<VAR> | gh:<login>"},
+			dryRunFlag,
+		},
+		action: func(ctx context.Context, cmd *call) error {
+			a := cmd.args
 			if cmd.String("host") == "" {
-				return usageError("--host is required", "wakewire account add --help shows the flags")
+				return badUsage("--host is required", "wakewire account add <name> --host <host> [--owner <owner>]... [--token stored|env:<VAR>|gh:<login>]")
 			}
 			req := application.AddRequest{
-				Name: a[0], Host: cmd.String("host"), Owners: cmd.StringSlice("owner"),
+				Name: a[0], Host: cmd.String("host"), Owners: cmd.Strings("owner"),
 				Email: cmd.String("email"), User: cmd.String("user"),
 				TokenSource: cmd.String("token"), DryRun: cmd.Bool("dry-run"),
 			}
+			// Every flag is checked before the token is asked for, so a person
+			// never types a token for a request that is refused anyway.
+			if err := req.Check(); err != nil {
+				return err
+			}
 			if req.TokenSource == "stored" {
+				var err error
 				if req.Token, err = readToken(s, req.Name); err != nil {
 					return err
 				}
@@ -129,7 +120,7 @@ Related: wakewire account list, wakewire account remove, wakewire doctor.`,
 			if err != nil {
 				return err
 			}
-			return answer(s, cmd, res, addText(res))
+			return answer(s, cmd, res, addReply(res))
 		},
 	}
 }
@@ -161,37 +152,23 @@ func readToken(s streams, name string) (string, error) {
 	return raw, nil
 }
 
-func addText(r application.AddResult) string {
+func addReply(r application.AddResult) *reply {
 	a := r.Account
-	what := a.Host
+	outcome := "already as asked (no-op)"
+	if w, ok := map[string][2]string{application.OutcomeAdded: {"added", "would add"},
+		application.OutcomeStored:   {"stored the token", "would store the token"},
+		application.OutcomeReplaced: {"replaced the token", "would replace the token"}}[r.Outcome]; ok {
+		outcome = dryWord(r.DryRun, w[0], w[1])
+	}
+	out := newReply().add("account", a.Name).add("outcome", outcome).add("host", a.Host)
 	if len(a.Owners) > 0 {
-		what += " for " + strings.Join(a.Owners, ", ")
+		out.add("owners", a.Owners)
 	}
-	var head string
-	switch r.Outcome {
-	case application.OutcomeAdded:
-		head = verb(r.DryRun, "added", "would add") + " account " + a.Name
-	case application.OutcomeStored:
-		head = verb(r.DryRun, "stored", "would store") + " the token of account " + a.Name
-	case application.OutcomeReplaced:
-		head = verb(r.DryRun, "replaced", "would replace") + " the token of account " + a.Name
-	default:
-		head = "account " + a.Name + " is already as asked: nothing changed"
-	}
-	var b strings.Builder
-	fmt.Fprintf(&b, "%s (%s, token %s)\n", head, what, a.TokenSource)
+	out.add("token", a.TokenSource)
 	if r.Identity != nil {
-		fmt.Fprintf(&b, "  reads as   %s\n", identityText(*r.Identity))
-		fmt.Fprintf(&b, "  can write  %s\n", writeText(r.CanWrite))
+		out.add("readsAs", identityText(*r.Identity)).add("canWrite", writeText(r.CanWrite))
 	}
-	return b.String()
-}
-
-func verb(dry bool, did, would string) string {
-	if dry {
-		return would
-	}
-	return did
+	return out.hint("Run `wakewire doctor` to check every account", "Run `wakewire register` in a repository it covers to start a watch")
 }
 
 func identityText(id application.Identity) string {
@@ -205,138 +182,120 @@ func identityText(id application.Identity) string {
 func writeText(w *bool) string {
 	switch {
 	case w == nil:
-		return "unknown: the service does not say"
+		return "unknown"
 	case *w:
 		return "yes"
 	}
 	return "no"
 }
 
-func accountList(accounts AccountsAPI, s streams) *ucli.Command {
-	return &ucli.Command{
-		Name:  "list",
-		Usage: "list the accounts, without their tokens",
-		Description: `Lists every account in config.toml: its name, host, service, owners, identity
+func accountList(accounts AccountsAPI, s streams) *command {
+	return &command{
+		name:  "list",
+		usage: "list the accounts, without their tokens",
+		desc: `Lists every account in config.toml: its name, host, service, owners, identity
 override and where its token comes from. It never prints a token and never
-calls a service.
-
-Examples:
-  wakewire account list
-  wakewire account list --json
-
-Exit codes: 0, 3 when config.toml does not parse.
-Related: wakewire account add, wakewire doctor.`,
-		Flags: []ucli.Flag{jsonFlag},
-		Action: func(_ context.Context, cmd *ucli.Command) error {
-			if _, err := positional(cmd, "account list", 0); err != nil {
+calls a service.`,
+		examples: []string{
+			"wakewire account list",
+			"wakewire account list --json",
+		},
+		exits:   "0; 1 config.toml does not parse; 2 usage.",
+		related: "wakewire account add, wakewire doctor.",
+		flags:   []flagSpec{fieldsFlag(accountExtra)},
+		action: func(_ context.Context, cmd *call) error {
+			extra, err := pickFields(cmd, accountExtra)
+			if err != nil {
 				return err
 			}
 			views, err := accounts.List()
 			if err != nil {
 				return err
 			}
-			return answer(s, cmd, map[string]any{"accounts": views}, listText(views))
+			return answer(s, cmd, map[string]any{"accounts": views}, listReply(views, extra))
 		},
 	}
 }
 
-func listText(views []application.AccountView) string {
+// accountExtra are the account list's columns beyond name, host, service and token.
+var accountExtra = []string{"owners", "email", "user"}
+
+func listReply(views []application.AccountView, extra []string) *reply {
 	if len(views) == 0 {
-		return "no accounts; `wakewire account add --help` shows how to add one\n"
+		return newReply().add("accounts", "0 accounts in config.toml").
+			hint("Run `wakewire account add <name> --host <host> --owner <owner> --token env:<VAR>` to add one")
 	}
-	var b strings.Builder
-	w := tabwriter.NewWriter(&b, 0, 4, 2, ' ', 0)
-	// USER is the identity override; without one, the account reads as the
-	// token's owner. EMAIL is what a Jira token authenticates with.
-	_, _ = fmt.Fprintln(w, "NAME\tHOST\tSERVICE\tOWNERS\tTOKEN\tEMAIL\tUSER")
-	for _, v := range views {
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", v.Name, v.Host, v.Service, strings.Join(v.Owners, ","), v.TokenSource,
-			dash(v.Email), dash(v.User))
+	rows := make([]toon.Object, len(views))
+	for i, v := range views {
+		rows[i] = withColumns(obj("name", v.Name, "host", v.Host, "service", string(v.Service), "token", v.TokenSource),
+			extra, map[string]any{"owners": strings.Join(v.Owners, " "), "email": v.Email, "user": v.User})
 	}
-	_ = w.Flush()
-	return b.String()
+	return newReply().add("accounts", rows).
+		hint("Run `wakewire account list --fields owners,user` for what each covers and reads as", "Run `wakewire doctor` to check each token")
 }
 
-func accountRename(accounts AccountsAPI, s streams) *ucli.Command {
-	return &ucli.Command{
-		Name:      "rename",
-		Usage:     "rename an account in config.toml and credentials.toml together",
-		ArgsUsage: "<old> <new>",
-		Description: `Changes an account's name in config.toml and moves its stored token to the
+func accountRename(accounts AccountsAPI, s streams) *command {
+	return &command{
+		name:  "rename",
+		usage: "rename an account in config.toml and credentials.toml together",
+		args:  []arg{{name: "old"}, {name: "new"}},
+		desc: `Changes an account's name in config.toml and moves its stored token to the
 new name in credentials.toml. Comments and layout in config.toml stay. Run it
-again and nothing changes.
-
-Examples:
-  wakewire account rename work job
-  wakewire account rename work job --dry-run
-
-Exit codes: 0 renamed or already so, 1 the new name is not a name, 2 no such
-account or the new name is taken.
-Related: wakewire account list, wakewire account remove.`,
-		Flags: []ucli.Flag{dryRunFlag, jsonFlag},
-		Action: func(_ context.Context, cmd *ucli.Command) error {
-			a, err := positional(cmd, "account rename <old> <new>", 2)
-			if err != nil {
-				return err
-			}
+again and nothing changes.`,
+		examples: []string{
+			"wakewire account rename work job",
+			"wakewire account rename work job --dry-run",
+		},
+		exits: `0 renamed or already so; 1 no such account or the new name is
+taken; 2 usage or the new name is not a name.`,
+		related: "wakewire account list, wakewire account remove.",
+		flags:   []flagSpec{dryRunFlag},
+		action: func(_ context.Context, cmd *call) error {
+			a := cmd.args
 			res, err := accounts.Rename(a[0], a[1], cmd.Bool("dry-run"))
 			if err != nil {
 				return err
 			}
-			head := verb(res.DryRun, "renamed", "would rename") + fmt.Sprintf(" account %s to %s", res.From, res.To)
+			outcome := dryWord(res.DryRun, "renamed", "would rename")
 			if res.Outcome == application.OutcomeAlready {
-				head = fmt.Sprintf("account %s is already named %s: nothing changed", res.From, res.To)
+				outcome = "already so (no-op)"
 			}
-			return answer(s, cmd, res, head+"\n")
+			return answer(s, cmd, res, newReply().add("from", res.From).add("to", res.To).add("outcome", outcome))
 		},
 	}
 }
 
-func accountRemove(accounts AccountsAPI, s streams) *ucli.Command {
-	return &ucli.Command{
-		Name:      "remove",
-		Usage:     "remove an account and its stored token",
-		ArgsUsage: "<name>",
-		Description: `Deletes the account from config.toml and its token from credentials.toml. A
+func accountRemove(accounts AccountsAPI, s streams) *command {
+	return &command{
+		name:  "remove",
+		usage: "remove an account and its stored token",
+		args:  []arg{{name: "name"}},
+		desc: `Deletes the account from config.toml and its token from credentials.toml. A
 stored token that no account names, which wakewire doctor warns about, is
-deleted by the same command. Removing what is already gone changes nothing.
-
-Examples:
-  wakewire account remove job
-  wakewire account remove job --dry-run
-
-Exit codes: 0 removed or already gone, 3 config.toml does not parse.
-Related: wakewire account list, wakewire doctor.`,
-		Flags: []ucli.Flag{dryRunFlag, jsonFlag},
-		Action: func(_ context.Context, cmd *ucli.Command) error {
-			a, err := positional(cmd, "account remove <name>", 1)
-			if err != nil {
-				return err
-			}
+deleted by the same command. Removing what is already gone changes nothing.`,
+		examples: []string{
+			"wakewire account remove job",
+			"wakewire account remove job --dry-run",
+		},
+		exits:   "0 removed or already gone; 1 config.toml does not parse; 2 usage.",
+		related: "wakewire account list, wakewire doctor.",
+		flags:   []flagSpec{dryRunFlag},
+		action: func(_ context.Context, cmd *call) error {
+			a := cmd.args
 			res, err := accounts.Remove(a[0], cmd.Bool("dry-run"))
 			if err != nil {
 				return err
 			}
-			var head string
+			out := newReply().add("account", res.Name)
 			switch {
 			case res.Outcome == application.OutcomeAbsent:
-				head = fmt.Sprintf("no account or stored token named %s: nothing changed", res.Name)
+				out.add("outcome", "none by that name (no-op)")
 			case res.AccountRemoved:
-				head = verb(res.DryRun, "removed", "would remove") + " account " + res.Name
-				if res.TokenRemoved {
-					head += " and its stored token"
-				}
+				out.add("outcome", dryWord(res.DryRun, "removed", "would remove")).add("tokenRemoved", res.TokenRemoved)
 			default:
-				head = verb(res.DryRun, "removed", "would remove") + " the stored token " + res.Name + " (no account names it)"
+				out.add("outcome", dryWord(res.DryRun, "removed the unused stored token", "would remove the unused stored token"))
 			}
-			return answer(s, cmd, res, head+"\n")
+			return answer(s, cmd, res, out)
 		},
 	}
-}
-
-func dash(s string) string {
-	if s == "" {
-		return "-"
-	}
-	return s
 }

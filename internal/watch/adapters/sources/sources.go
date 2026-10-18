@@ -4,7 +4,6 @@ package sources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gperezmz/wakewire/internal/adapters/httpread"
 	"github.com/gperezmz/wakewire/internal/watch/adapters/accounts"
@@ -39,25 +38,25 @@ func (s Sources) For(_ context.Context, w application.Watch) ([]application.Boun
 		return nil, err
 	}
 	forgeRules := domain.Rules{Identity: w.Identity, Labels: w.Labels, Marker: w.Marker}
-	var forge application.Source
-	switch accounts.ServiceName(cred.Service) {
-	case "GitHub":
-		forge = &github.Source{HTTP: s.HTTP, Base: s.Endpoints.GitHub, Token: cred.Token, Repo: w.Repo, Name: cred.Account}
-	case "GitLab":
+	// ForRepo answers only an account that covers a repository, which is
+	// never a Jira one, so the forge is GitHub or GitLab.
+	var forge application.Source = &github.Source{HTTP: s.HTTP, Base: s.Endpoints.GitHub, Token: cred.Token, Repo: w.Repo, Name: cred.Account}
+	if accounts.ServiceName(cred.Service) == "GitLab" {
 		origin := "https://" + w.Repo.Host
 		if s.Endpoints.Origin != nil {
 			origin = s.Endpoints.Origin(w.Repo.Host)
 		}
 		forge = &gitlab.Source{HTTP: s.HTTP, Base: origin, Token: cred.Token, Repo: w.Repo, Name: cred.Account}
-	default:
-		return nil, domain.Invalid(fmt.Sprintf("%s has no source yet", accounts.ServiceName(cred.Service)), "see docs/reference/sources.md")
 	}
 	out := []application.BoundSource{{Name: application.SourceForge, Source: forge, Rules: forgeRules,
 		IncludeIssues: w.Tracker.Kind != domain.TrackerJira}}
 	if w.Tracker.Kind == domain.TrackerJira {
 		tc, err := s.Accounts.Service.ForSite(w.Tracker.Site)
 		if err != nil {
-			return nil, err
+			// The forge still polls: the tracker's half fails alone, as a
+			// problem on the tracker.
+			out = append(out, application.BoundSource{Name: application.SourceTracker, Source: unavailable{service: "Jira", err: err}})
+			return out, nil
 		}
 		base := "https://" + w.Tracker.Site
 		if s.Endpoints.Origin != nil {
@@ -69,4 +68,17 @@ func (s Sources) For(_ context.Context, w application.Watch) ([]application.Boun
 			Rules: domain.Rules{Identity: w.TrackerIdentity, Labels: w.Labels, Marker: w.Marker}})
 	}
 	return out, nil
+}
+
+// unavailable stands for a source whose account cannot be found: each poll
+// answers the reason, so the problem is the source's own.
+type unavailable struct {
+	service string
+	err     error
+}
+
+func (u unavailable) Service() string { return u.service }
+func (u unavailable) Account() string { return "" }
+func (u unavailable) Poll(context.Context, application.PollInput) (application.PollOutput, error) {
+	return application.PollOutput{}, u.err
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/gperezmz/wakewire/internal/account/domain"
@@ -53,7 +54,8 @@ func invalid(err error) error {
 	if v, ok := errors.AsType[*domain.Violation](err); ok {
 		field = v.Field
 	}
-	return NewError(CodeInvalidValue, err.Error(), fmt.Sprintf("correct %s; `wakewire account add --help` shows the form of each flag", flagFor[field]))
+	return NewError(CodeInvalidValue, err.Error(), fmt.Sprintf("correct %s, as in `wakewire account add <name> --host <host> --owner <owner>` "+
+		"or, for Jira, `wakewire account add <name> --host <site>.atlassian.net --email <email>`", flagFor[field]))
 }
 
 func (r AddRequest) account() (domain.Account, error) {
@@ -91,6 +93,13 @@ func containsFold(list []string, s string) bool {
 		}
 	}
 	return false
+}
+
+// Check refuses a request whose flags cannot make an account, before any
+// token is read or service asked.
+func (r AddRequest) Check() error {
+	_, err := r.account()
+	return err
 }
 
 // Add checks the token and only then writes the account to config.toml and,
@@ -271,10 +280,13 @@ func (s *Service) Remove(name string, dryRun bool) (RemoveResult, error) {
 		return RemoveResult{}, err
 	}
 	_, hasAccount := domain.Find(accounts, name)
-	_, hasToken, err := s.p.Vault.Token(name)
+	// An entry counts whether or not it holds a token, so an empty one that
+	// doctor reports as unused can be removed too.
+	names, err := s.p.Vault.Names()
 	if err != nil {
 		return RemoveResult{}, err
 	}
+	hasToken := slices.Contains(names, name)
 	res := RemoveResult{Outcome: OutcomeRemoved, DryRun: dryRun, Name: name, AccountRemoved: hasAccount, TokenRemoved: hasToken}
 	if !hasAccount && !hasToken {
 		res.Outcome = OutcomeAbsent

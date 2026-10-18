@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -74,18 +75,26 @@ func TestLabelChangesNameWhoMadeThemAndSkipAgentLabels(t *testing.T) {
 	}
 }
 
+// longVerdict is a comment far longer than any limit wakewire once cut at,
+// closed by the marker line an agent signs with.
+var longVerdict = strings.Repeat("verdict\n", 4000) + "\n---\n<kbd>🤖 unattendish agent</kbd>\n"
+
 func TestCommentsAreNewOnceAndEchoesAreIgnored(t *testing.T) {
 	prev := Diff(rules, nil, Observation{Item: spec(), At: at(0)}, time.Time{}).Next
 	acts := []Activity{
 		{ID: "c1", Kind: KindComment, By: "bob", At: at(1), Body: "please also XLSX"},
 		{ID: "c2", Kind: KindComment, By: "jdoe", At: at(1), Body: "on it\n\n<kbd>🤖 unattendish agent</kbd>"},
-		{ID: "c3", Kind: KindComment, By: "jdoe", At: at(1), Body: strings.Repeat("verdict\n", BodyLimit) + "\n---\n<kbd>🤖 unattendish agent</kbd>\n"},
+		{ID: "c3", Kind: KindComment, By: "jdoe", At: at(1), Body: longVerdict},
 	}
 	now := spec()
 	now.Comments = 3
 	d := Diff(rules, &prev, Observation{Item: now, At: at(2), Activities: acts}, time.Time{})
 	if kinds(d.Changes) != "comment,comment(ignored),comment(ignored)" || *d.Changes[0].Body != "please also XLSX" {
 		t.Fatalf("%s", kinds(d.Changes))
+	}
+	// The long echo is ignored by its closing marker, and its text is kept whole.
+	if got := d.Changes[2]; *got.Body != longVerdict || got.Truncated != nil || got.Reason != "echo: the comment ends with the marker" {
+		t.Fatalf("the long echo: %d chars stored, truncated %v, reason %q", len(*got.Body), got.Truncated, got.Reason)
 	}
 	again := Diff(rules, &d.Next, Observation{Item: now, At: at(3), Activities: acts}, time.Time{})
 	if len(again.Changes) != 0 {
@@ -218,10 +227,27 @@ func TestLabelAddedAndRemovedBetweenReadsIsStillReported(t *testing.T) {
 	}
 }
 
-func TestBodyIsCutAtTheLimit(t *testing.T) {
-	c := Change{}.WithBody(strings.Repeat("é", BodyLimit+5))
-	if len([]rune(*c.Body)) != BodyLimit || !*c.Truncated {
-		t.Fatal("not cut")
+// A text is stored whole, however long: the services cap their own, and
+// the reader cuts what it shows. Truncated is only ever read, from rows
+// stored when bodies were cut.
+func TestBodyIsStoredWhole(t *testing.T) {
+	long := strings.Repeat("é", 100_000)
+	c := Change{}.WithBody(long)
+	if *c.Body != long || c.Truncated != nil {
+		t.Fatalf("%d chars stored, truncated %v", len([]rune(*c.Body)), c.Truncated)
+	}
+	if got, err := json.Marshal(c); err != nil || strings.Contains(string(got), "truncated") {
+		t.Fatalf("a new body carries truncated: %s %v", got, err)
+	}
+}
+
+// The echo check reads the body as stored, so a long comment that merely
+// mentions the marker early is no echo; one that ends with it is, as
+// TestCommentsAreNewOnceAndEchoesAreIgnored pins.
+func TestALongCommentWithTheMarkerEarlyIsNoEcho(t *testing.T) {
+	early := Change{Kind: KindComment}.WithBody("<kbd>🤖 unattendish agent</kbd>\n" + strings.Repeat("more words\n", 4000))
+	if st, _ := Classify(early, ItemIssue, rules); st != StatusPending {
+		t.Errorf("a long comment with the marker early: %s", st)
 	}
 }
 

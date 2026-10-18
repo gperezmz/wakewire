@@ -218,3 +218,35 @@ func TestRemoveDeletesAnOrphanedStoredToken(t *testing.T) {
 		t.Fatalf("%+v %v", res, err)
 	}
 }
+
+// emptyAware is a vault as credentials.toml is: an entry holding an empty
+// token is listed in Names, but Token says there is no token.
+type emptyAware struct{ fakeVault }
+
+func (v emptyAware) Token(n string) (string, bool, error) {
+	t, ok := v.fakeVault[n]
+	return t, ok && t != "", nil
+}
+
+// An entry with an empty token is one doctor reports as unused, so remove
+// must be able to delete it, and says a stored token went.
+func TestRemoveDeletesAnEntryWhoseTokenIsEmpty(t *testing.T) {
+	r := newRig()
+	r.vault["ghost"] = ""
+	svc := NewService(Ports{Config: r.cfg, Vault: emptyAware{r.vault}, GH: r.gh, Prober: r.prober, Cache: r.cache,
+		Getenv: func(k string) string { return r.env[k] }})
+	if unused, _ := svc.UnusedStored(); len(unused) != 1 || unused[0] != "ghost" {
+		t.Fatalf("doctor does not see the entry: %v", unused)
+	}
+	res, err := svc.Remove("ghost", true)
+	if err != nil || res.Outcome != OutcomeRemoved || !res.TokenRemoved || !res.DryRun || len(r.vault) != 1 {
+		t.Fatalf("dry run: %+v %v", res, err)
+	}
+	res, err = svc.Remove("ghost", false)
+	if err != nil || res.Outcome != OutcomeRemoved || res.AccountRemoved || !res.TokenRemoved || len(r.vault) != 0 {
+		t.Fatalf("%+v %v", res, err)
+	}
+	if res, err = svc.Remove("ghost", false); err != nil || res.Outcome != OutcomeAbsent {
+		t.Fatalf("repeat: %+v %v", res, err)
+	}
+}

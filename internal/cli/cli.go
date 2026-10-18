@@ -9,42 +9,21 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"slices"
-
-	ucli "github.com/urfave/cli/v3"
 
 	"github.com/gperezmz/wakewire/internal/wiring"
 )
 
-// Exit codes, as docs/reference/cli.md lists them.
+// Exit codes, as docs/reference/cli.md lists them: the error code on stdout
+// says which refusal it was.
 const (
-	exitOK       = 0
-	exitUsage    = 1
-	exitRefused  = 2
-	exitNotSetUp = 3
-	exitService  = 4
+	exitOK    = 0
+	exitError = 1
+	exitUsage = 2
 )
 
-// exitFor maps an error code to its exit code.
-var exitFor = map[string]int{
-	"invalid_value":     exitUsage,
-	"internal":          exitUsage,
-	"no_session":        exitNotSetUp,
-	"no_source":         exitNotSetUp,
-	"source_incomplete": exitNotSetUp,
-	"no_account":        exitNotSetUp,
-	"no_stored_token":   exitNotSetUp,
-	"config_invalid":    exitNotSetUp,
-	"no_token":          exitNotSetUp,
-	"account_exists":    exitRefused,
-	"account_conflict":  exitRefused,
-	"no_such_account":   exitRefused,
-	"held":              exitRefused,
-	"not_registered":    exitRefused,
-	"token_refused":     exitService,
-	"unreachable":       exitService,
-	"rate_limited":      exitService,
-}
+// usageCodes are the error codes of a command line wakewire cannot run as
+// written; every other code is a refusal of a command it understood.
+var usageCodes = map[string]bool{"usage": true, "invalid_value": true}
 
 // coded is what every refusal from a use case carries: an error code from
 // the CLI's table and a hint naming the fix.
@@ -63,11 +42,18 @@ func (f *Failure) Error() string { return f.message }
 func (f *Failure) Code() string  { return f.code }
 func (f *Failure) Hint() string  { return f.hint }
 
+// usageError refuses a flag's or an argument's value.
 func usageError(message, hint string) *Failure {
 	return &Failure{code: "invalid_value", message: message, hint: hint}
 }
 
-// io holds the streams one run writes to.
+// badUsage refuses a command line's shape: an unknown command or flag, or a
+// missing or extra argument.
+func badUsage(message, hint string) *Failure {
+	return &Failure{code: "usage", message: message, hint: hint}
+}
+
+// streams are what one run reads from and writes to.
 type streams struct {
 	in       io.Reader
 	out, err io.Writer
@@ -82,15 +68,41 @@ func Run(ctx context.Context, args []string, build wiring.Build, stdin io.Reader
 // RunWith executes one command line with the given dependencies.
 func RunWith(ctx context.Context, args []string, deps Deps, stdin io.Reader, stdout, stderr io.Writer) int {
 	s := streams{in: stdin, out: stdout, err: stderr}
-	asJSON := slices.Contains(args[1:], "--json")
-	root := rootCommand(deps, s)
-	err := root.Run(ctx, args)
-	if err == nil {
+	if version, ok := fastVersion(args[1:], deps.Build); ok {
+		_, _ = fmt.Fprintln(stdout, version)
 		return exitOK
 	}
-	return report(s, asJSON, err)
+	c := parse(rootCommand(deps, s), args[1:])
+	switch {
+	case c.Bool("help"):
+		writeHelp(stdout, c.cmd)
+		return exitOK
+	case c.err != nil:
+		return report(s, c.Bool("json"), c.err)
+	}
+	if err := c.cmd.action(ctx, c); err != nil {
+		return report(s, c.Bool("json"), err)
+	}
+	return exitOK
 }
 
+// refuse refuses what the state forbids, under its own code: exit 1.
+func refuse(code, message, hint string) *Failure {
+	return &Failure{code: code, message: message, hint: hint}
+}
+
+// fastVersion answers -v, -V and --version, alone, with the bare version,
+// before any command is built.
+func fastVersion(args []string, build wiring.Build) (string, bool) {
+	if len(args) != 1 || (args[0] != "-v" && args[0] != "-V" && args[0] != "--version") {
+		return "", false
+	}
+	return build.Version, true
+}
+
+// report prints a refusal on stdout, as TOON or under --json as JSON, and
+// answers the exit code: 2 for a command line wakewire cannot run as
+// written, 1 for every other refusal.
 func report(s streams, asJSON bool, err error) int {
 	if only, ok := errors.AsType[*exitOnly](err); ok {
 		return only.code
@@ -100,8 +112,8 @@ func report(s streams, asJSON bool, err error) int {
 		c = &Failure{code: "internal", message: err.Error(),
 			hint: "this is a bug in wakewire: report it with the command and its output"}
 	}
-	code, ok := exitFor[c.Code()]
-	if !ok {
+	code := exitError
+	if usageCodes[c.Code()] {
 		code = exitUsage
 	}
 	if asJSON {
@@ -109,7 +121,7 @@ func report(s streams, asJSON bool, err error) int {
 			"code": c.Code(), "message": c.Error(), "hint": c.Hint(),
 		}})
 	} else {
-		_, _ = fmt.Fprintf(s.err, "wakewire: %s\n%s\n", c.Error(), c.Hint())
+		_, _ = io.WriteString(s.out, newReply().add("error", c.Error()).add("code", c.Code()).hint(c.Hint()).toon())
 	}
 	return code
 }
@@ -120,78 +132,43 @@ func writeJSON(w io.Writer, v any) {
 	_ = enc.Encode(v)
 }
 
-// answer prints a command's result: the value as one JSON object under
-// --json, else the text for a person.
-func answer(s streams, cmd *ucli.Command, v any, text string) error {
-	if cmd.Bool("json") {
-		writeJSON(s.out, v)
-		return nil
-	}
-	_, err := io.WriteString(s.out, text)
-	return err
-}
-
-var jsonFlag = &ucli.BoolFlag{Name: "json", Usage: "print exactly one JSON object on stdout"}
-
-func rootCommand(deps Deps, s streams) *ucli.Command {
-	root := &ucli.Command{
-		Name:      "wakewire",
-		Usage:     "wake an agent session when what it waits on changes on GitHub, GitLab or Jira",
-		Writer:    s.out,
-		ErrWriter: s.err,
-		Reader:    s.in,
-		// Errors are printed by report, in the shape cli.md fixes.
-		ExitErrHandler: func(context.Context, *ucli.Command, error) {},
-		HideVersion:    true,
-		Flags:          []ucli.Flag{jsonFlag},
-		Action: func(ctx context.Context, cmd *ucli.Command) error {
-			if cmd.Args().Present() {
-				return usageError(fmt.Sprintf("unknown command %q", cmd.Args().First()),
-					"wakewire --help lists the commands")
-			}
-			return ucli.ShowAppHelp(cmd)
-		},
-		Commands: append(watchCommands(deps, s),
+// rootCommand is the table of every command; its action, run alone, is the
+// home view.
+func rootCommand(deps Deps, s streams) *command {
+	return (&command{
+		name:  "wakewire",
+		usage: description,
+		desc: `Run alone, it shows this binary, the watch of the repository it runs in and the
+next steps. Every command prints TOON on stdout, errors included; --json prints
+one JSON object instead. Progress goes to stderr.`,
+		exits: `0 done, including "already so"; 1 refused, not set up or a service
+failed (the error's code says which); 2 usage: an unknown command or flag, a
+missing or extra argument, or an invalid value.`,
+		action: func(ctx context.Context, cmd *call) error { return homeView(ctx, deps, s, cmd) },
+		subs: append(watchCommands(deps, s),
 			lazyAccountCommand(deps, s),
 			doctorCommand(deps, s),
 			pathsCommand(deps, s),
 			versionCommand(deps.Build, s),
 			adapterCommand(deps, s),
 		),
-	}
-	quietUsage(root)
-	return root
+	}).link()
 }
 
-// quietUsage makes every command report a usage error through report rather
-// than print its help to stdout, which under --json must hold one object.
-func quietUsage(cmd *ucli.Command) {
-	cmd.OnUsageError = func(_ context.Context, c *ucli.Command, err error, _ bool) error {
-		return usageError(err.Error(), c.FullName()+" --help shows its flags")
-	}
-	for _, sub := range cmd.Commands {
-		quietUsage(sub)
-	}
-}
-
-func versionCommand(build wiring.Build, s streams) *ucli.Command {
-	return &ucli.Command{
-		Name:  "version",
-		Usage: "print the version, the commit and the wake-contract protocol",
-		Description: `Prints the release tag, the commit it was built from and the number of the
+func versionCommand(build wiring.Build, s streams) *command {
+	return &command{
+		name:  "version",
+		usage: "print the version, the commit and the wake-contract protocol",
+		desc: `Prints the release tag, the commit it was built from and the number of the
 wake contract this binary speaks. An adapter refuses a binary whose protocol
 differs from its own.
 
-Examples:
-  wakewire version
-  wakewire version --json
-
-Exit codes: 0.
-Related: wakewire doctor.`,
-		Flags: []ucli.Flag{jsonFlag},
-		Action: func(_ context.Context, cmd *ucli.Command) error {
-			text := fmt.Sprintf("wakewire %s (commit %s, protocol %d)\n", build.Version, build.Commit, build.Protocol)
-			return answer(s, cmd, build, text)
+-v, -V and --version print the bare version alone.`,
+		examples: []string{"wakewire version", "wakewire --version", "wakewire version --json"},
+		exits:    "0; 2 usage.",
+		related:  "wakewire doctor.",
+		action: func(_ context.Context, cmd *call) error {
+			return answer(s, cmd, build, newReply().add("version", build.Version).add("commit", build.Commit).add("protocol", build.Protocol))
 		},
 	}
 }

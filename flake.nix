@@ -19,7 +19,7 @@
           src = self;
           subPackages = [ "cmd/wakewire" ];
           # Changes whenever go.mod does; CI builds the flake, so a stale one fails there.
-          vendorHash = "sha256-+A+CEGE+xpfD3c8k2kjZSYZT89jS5szKNYyrOmZlyeA=";
+          vendorHash = "sha256-Bgp8JKzlhAlCP4MDj19GtZLec2HWefk9RUNIhdmYHG8=";
           env.CGO_ENABLED = 0;
           ldflags = [ "-s" "-w" "-X main.version=v${version}" "-X main.commit=${self.rev or "dirty"}" ];
           # The tests run in CI; some need git and a process table the sandbox lacks.

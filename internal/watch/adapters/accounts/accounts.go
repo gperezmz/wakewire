@@ -46,10 +46,6 @@ func (a Accounts) ForForge(ctx context.Context, repo domain.Repo) (application.A
 	if err != nil {
 		return application.AccountIdentity{}, err
 	}
-	if c.Service == account.Jira {
-		return application.AccountIdentity{}, domain.Invalid(fmt.Sprintf("%s is a Jira site, not a forge", repo.Host),
-			"pass --repo with a GitHub or GitLab repository")
-	}
 	return a.identify(ctx, c)
 }
 

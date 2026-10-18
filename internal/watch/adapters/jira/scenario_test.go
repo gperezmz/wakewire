@@ -87,7 +87,7 @@ func (s staticSources) For(_ context.Context, w application.Watch) ([]applicatio
 func (r *runner) poll() string {
 	r.t.Helper()
 	r.clock.Advance(31 * time.Second)
-	n, err := r.svc.Next(context.Background(), "s", 1, domain.ReaderTool)
+	n, err := r.svc.Next(context.Background(), "s", 1)
 	if err != nil {
 		r.t.Fatal(err)
 	}

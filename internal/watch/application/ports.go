@@ -54,10 +54,10 @@ type AccountInfo struct {
 
 // AccountIdentity is an account and the identity it reads as.
 type AccountIdentity struct {
-	Account  string
-	Service  string // "GitHub", "GitLab", "Jira"
-	Identity string // a login, or a Jira account ID
-	Display  string // how a person reads the identity
+	Account  string `json:"account"`
+	Service  string `json:"service"`  // "GitHub", "GitLab", "Jira"
+	Identity string `json:"identity"` // a login, or a Jira account ID
+	Display  string `json:"display"`  // how a person reads the identity
 }
 
 // SourceName tells a watch's two halves apart.

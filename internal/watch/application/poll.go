@@ -175,7 +175,13 @@ func (s *Service) recordFailure(ctx context.Context, w Watch, name SourceName, s
 			return err
 		}
 		state.WatchID, state.Source = w.ID, name
-		state.Failures++
+		// Failures counts unreachable polls in a row, so any other failure
+		// starts the count again.
+		if c.Code() == "unreachable" {
+			state.Failures++
+		} else {
+			state.Failures = 0
+		}
 		raise := true
 		switch c.Code() {
 		case "unreachable":

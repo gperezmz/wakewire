@@ -8,7 +8,7 @@ clock, and when no session holds a watch, nothing runs at all.
 ```mermaid
 flowchart LR
   subgraph Session["Claude Code session"]
-    Agent["Agent (run-fleet)"]
+    Agent["Agent"]
     Mod["wakewire mod<br/>(adapter)"]
   end
   subgraph Binary["wakewire binary (runs, then exits)"]
@@ -22,7 +22,7 @@ flowchart LR
   Agent -- "wakewire register" --> CLI
   Mod -- "every 30 s: wakewire adapter next" --> CLI
   Mod -- "$.prompt.submit(wake)" --> Agent
-  Agent -- "mcp__wakewire__changes" --> Mod
+  Agent -- "wakewire changes" --> CLI
   CLI --> Core
   Core --> State
   Core --> Sources
@@ -45,14 +45,16 @@ sequenceDiagram
   Bin->>DB: take the watch's lease
   Bin->>You: list the partition and PRs (read)
   Bin->>DB: diff against snapshots, store change, update snapshot (one transaction)
-  Bin-->>Mod: batch 193: "PR #41: review (changes requested) by alice"
+  Bin->>DB: release the lease
+  Bin-->>Mod: batch 193: "- PR #41: review, changes requested, by alice"
   Mod->>Agent: $.prompt.submit(wake)
-  Agent-->>Mod: (prompt queued or entered)
+  Note over Mod,Agent: the wake's turn starts
   Mod->>Bin: adapter ack 193
   Bin->>DB: mark batch 193 delivered
-  Agent->>Mod: mcp__wakewire__changes(193)
-  Mod->>Bin: changes 193
-  Bin-->>Agent: the batch, with what alice wrote, as tool output
+  Agent->>Bin: wakewire changes 193
+  Bin-->>Agent: the batch's changes, one row each, no text
+  Agent->>Bin: wakewire changes 193 1
+  Bin-->>Agent: the review, with what alice wrote, as command output
 ```
 
 ## Why the session is the clock
@@ -78,15 +80,16 @@ memory, and its delivery is tracked separately:
 | A change is | Until |
 |---|---|
 | **pending** | it goes out in a batch the adapter acknowledges |
-| **held** | the watch is resumed; then it is pending |
+| **held** | the watch is resumed, or its `pause --for` runs out; then it is pending |
 | **delivered** | pruned with the ledger after 30 days |
 | **ignored** | pruned with the ledger; the reason is kept with it |
 
 A batch the adapter never acknowledges, because the session quit between the
 wake and the acknowledgement, leaves its changes pending, so the next holder
-gets them again. **A change may be delivered twice and is never lost.** A
-repeat is harmless: the session reads the item and finds the change already
-handled.
+gets them again. **A change may be delivered twice and is never lost**,
+short of the watch itself being forgotten by `unregister` or pruned after 30
+days dormant. A repeat is harmless: the session reads the item and finds the
+change already handled.
 
 A process killed in the middle of a poll loses only the transaction it was
 in, which leaves no trace; the next poll diffs the same items again.
@@ -109,10 +112,10 @@ never from a flag someone has to clear:
 
 ```mermaid
 flowchart TD
-  A["Is the holder's process running,<br/>with the same start time?"] -- no --> F["Dormant: take over"]
-  A -- yes --> B["Did its adapter report<br/>the session ended?"]
-  B -- yes --> F
-  B -- no --> C["Is the registering process the same,<br/>under a newer session id? (/clear)"]
+  A["Did its adapter report<br/>the session ended?"] -- yes --> F["Dormant: take over"]
+  A -- no --> B["Is the holder's process running,<br/>with the same start time?"]
+  B -- no --> F
+  B -- yes --> C["Is the registering process the same,<br/>under a newer session id? (/clear)"]
   C -- yes --> F
   C -- no --> D["Heard from its adapter<br/>within 3 intervals?"]
   D -- yes --> H["Held: refuse, unless --take-over"]
@@ -132,25 +135,26 @@ item, by which login. It never carries anything a person wrote, not even a
 title, since anyone who can comment on the repository could otherwise write
 into the session in its user's voice. Its only other words are wakewire's
 own: a first line that says what it is, and a last line that asks for the
-batch to be read before anything is done about it.
+batch to be read before anything is done about it. A wake that reports only
+problems names `wakewire status` instead.
 
-What people wrote reaches the agent only when it asks for the batch, through
-the mod's own tool or `wakewire changes`. It then arrives as tool output,
-which the model weighs as material rather than obeys as instruction.
+What people wrote reaches the agent only when it runs
+`wakewire changes <batch> <n>` itself, in every harness:
+`wakewire changes <batch>` lists the batch's changes without their texts, and
+`<n>` shows one change with what its person wrote, each text cut at 1000
+characters unless `--full` is given. It then arrives as
+command output, which the model weighs as material rather than obeys as
+instruction.
 
 ## Built for more than one harness
 
 The binary never wakes anyone. It answers `adapter next` with what changed and
-leaves delivery to the adapter, and whether a registration is alive is
-answered per harness. That keeps the harness-specific part small:
-
-| Harness | Clock | Delivery | Alive while |
-|---|---|---|---|
-| `claude-code` | the mod's tick | `$.prompt.submit` | its process runs and its mod is heard from |
-| `bb` (later) | a bb plugin's timer | `bb thread tell` | its thread is not archived |
-
-A watch can move between harnesses by takeover, since the snapshots and
-changes belong to the watch, not to the session.
+leaves delivery to the adapter, and it works out whether a registration holds
+the same way for every harness. That keeps the harness-specific part small: a
+clock, a way to deliver, and a report when the session ends. For Claude Code
+these are the mod's 30-second tick, `$.prompt.submit` and `session.end`;
+`claude-code` is the only harness `register` accepts, and the
+[Claude Code mod](../reference/claude-code-mod.md) the only adapter.
 
 ## Why wakewire is not the fleet
 
@@ -159,5 +163,5 @@ an identity's work and wakes whoever holds the watch. What run-fleet adds
 (the manifest, a board of what waits on the operator) is a separate project,
 which can read wakewire through its documented outputs: `status --json`,
 `ledger --json` and the [wake contract](../reference/wake-contract.md). The
-mod publishes nothing for other mods in v1; the
+mod publishes nothing for other mods; the
 [design decisions](design-decisions.md#the-mod) say why.

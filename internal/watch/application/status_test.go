@@ -36,3 +36,34 @@ func TestStatusProbesAccountsOutsideTheStoreTransaction(t *testing.T) {
 		t.Fatalf("the probe's answer was not reported: %q", got)
 	}
 }
+
+// LocalStatus is what the home view prints, and the home view stays offline:
+// it reads state.db and never asks an account anything, which Status does.
+func TestLocalStatusNeverAsksAnAccountButStatusDoes(t *testing.T) {
+	h := newHarness(t)
+	h.mustRegister("s1", 100)
+	repo, _ := domain.ParseRepo("github.com/o/x")
+	var described int
+	svc := application.New(h.store, &fakes.Sources{Source: h.source}, &fakes.Accounts{
+		Forge:      application.AccountIdentity{Account: "gh", Service: "GitHub", Identity: "jdoe"},
+		OnDescribe: func(string) { described++ },
+	}, &fakes.Repos{Repo: repo}, h.procs, h.clock, application.Settings{Template: domain.DefaultTemplate()})
+
+	local, err := svc.LocalStatus(h.ctx, nil)
+	if err != nil || len(local) != 1 || len(local[0].Sources) == 0 {
+		t.Fatalf("%+v %v", local, err)
+	}
+	if described != 0 {
+		t.Fatalf("LocalStatus asked an account %d time(s)", described)
+	}
+	if got := local[0].Sources[0].Info.TokenSource; got != "" {
+		t.Fatalf("LocalStatus reported what only a probe knows: %q", got)
+	}
+
+	if _, err := svc.Status(h.ctx, nil); err != nil {
+		t.Fatal(err)
+	}
+	if described == 0 {
+		t.Fatal("Status did not ask the account")
+	}
+}

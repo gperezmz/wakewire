@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"encoding/json"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -26,7 +25,7 @@ const (
 type world struct {
 	t     *testing.T
 	paths home.Paths
-	api   AccountsAPI
+	deps  Deps
 	hits  *[]string
 }
 
@@ -76,14 +75,16 @@ func newWorld(t *testing.T) *world {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &world{t: t, paths: paths, api: api, hits: &hits}
+	deps := newFakeWorld().deps()
+	deps.Accounts = func() (DoctorAccounts, error) { return api, nil }
+	return &world{t: t, paths: paths, deps: deps, hits: &hits}
 }
 
 // run runs a command and fails the test when the token shows up in anything
 // it printed.
 func (w *world) run(stdin string, args ...string) (int, string, string) {
 	w.t.Helper()
-	code, out, errOut := runAccount(w.api, stdin, args...)
+	code, out, errOut := runDeps(w.deps, stdin, append([]string{"account"}, args...)...)
 	for _, tok := range []string{goodToken, refusedToken, ghToken} {
 		if strings.Contains(out, tok) || strings.Contains(errOut, tok) {
 			w.t.Fatalf("a token was printed by %v:\nstdout: %s\nstderr: %s", args, out, errOut)
@@ -112,21 +113,12 @@ func (w *world) leaks(tokens ...string) []string {
 	return found
 }
 
-func decodeObject(t *testing.T, out string) map[string]any {
-	t.Helper()
-	var got map[string]any
-	if err := json.Unmarshal([]byte(out), &got); err != nil {
-		t.Fatalf("stdout is not one JSON object: %q", out)
-	}
-	return got
-}
-
 func TestAccountLifecycleNeverPrintsOrLeaksAToken(t *testing.T) {
 	w := newWorld(t)
 
 	// add, with the token on stdin
 	code, out, _ := w.run(goodToken+"\n", "add", "work", "--host", "github.com", "--owner", "ACME", "--json")
-	got := decodeObject(t, out)
+	got := object(t, out)
 	if code != 0 || got["outcome"] != "added" || got["canWrite"] != true || got["identity"].(map[string]any)["login"] != "octo" {
 		t.Fatalf("exit %d: %v", code, got)
 	}
@@ -145,7 +137,7 @@ func TestAccountLifecycleNeverPrintsOrLeaksAToken(t *testing.T) {
 	// the same again changes nothing and asks no service
 	before := len(*w.hits)
 	code, out, _ = w.run(goodToken+"\n", "add", "work", "--host", "github.com", "--owner", "ACME", "--json")
-	if got := decodeObject(t, out); code != 0 || got["outcome"] != "already" || len(*w.hits) != before {
+	if got := object(t, out); code != 0 || got["outcome"] != "already" || len(*w.hits) != before {
 		t.Fatalf("repeat: exit %d %v, %d new requests", code, got, len(*w.hits)-before)
 	}
 
@@ -154,14 +146,17 @@ func TestAccountLifecycleNeverPrintsOrLeaksAToken(t *testing.T) {
 	if code != 0 || strings.Contains(out, "token\":\""+goodToken) {
 		t.Fatalf("list: exit %d %s", code, out)
 	}
-	if accounts := decodeObject(t, out)["accounts"].([]any); len(accounts) != 1 {
+	if accounts := object(t, out)["accounts"].([]any); len(accounts) != 1 {
 		t.Fatalf("list: %s", out)
 	}
 
 	// a gh source resolves through the gh command
 	code, out, errOut := w.run("", "add", "viagh", "--host", "github.com", "--owner", "octo", "--token", "gh:octo")
-	if code != 0 || !strings.Contains(out, "added account viagh") {
+	if code != 0 || !strings.Contains(out, "account: viagh\noutcome: added") || !strings.Contains(out, `token: "gh:octo"`) {
 		t.Fatalf("gh add: exit %d %s %s", code, out, errOut)
+	}
+	if !strings.Contains(errOut, "checking the token against github.com") {
+		t.Fatalf("progress belongs on stderr: %q", errOut)
 	}
 
 	// rename and remove, dry runs first
@@ -177,10 +172,10 @@ func TestAccountLifecycleNeverPrintsOrLeaksAToken(t *testing.T) {
 	if creds, _ := os.ReadFile(w.paths.Credentials); !strings.Contains(string(creds), "[job]") || strings.Contains(string(creds), "[work]") {
 		t.Fatalf("credentials.toml after rename:\n%s", creds)
 	}
-	if code, out, _ = w.run("", "remove", "job"); code != 0 || !strings.Contains(out, "and its stored token") {
+	if code, out, _ = w.run("", "remove", "job"); code != 0 || !strings.Contains(out, "account: job\noutcome: removed\ntokenRemoved: true") {
 		t.Fatalf("remove: %d %s", code, out)
 	}
-	if code, out, _ = w.run("", "remove", "job"); code != 0 || !strings.Contains(out, "nothing changed") {
+	if code, out, _ = w.run("", "remove", "job"); code != 0 || !strings.Contains(out, "account: job\noutcome: none by that name (no-op)") {
 		t.Fatalf("second remove: %d %s", code, out)
 	}
 	if creds, _ := os.ReadFile(w.paths.Credentials); strings.Contains(string(creds), goodToken) {
@@ -200,9 +195,9 @@ func TestAccountLifecycleNeverPrintsOrLeaksAToken(t *testing.T) {
 func TestARefusedTokenIsReportedWithoutTheTokenAndWritesNothing(t *testing.T) {
 	w := newWorld(t)
 	code, out, errOut := w.run(refusedToken+"\n", "add", "work", "--host", "github.com", "--owner", "ACME", "--json")
-	got := decodeObject(t, out)
+	got := object(t, out)
 	e, _ := got["error"].(map[string]any)
-	if code != 4 || e["code"] != "token_refused" || e["hint"] == "" {
+	if code != exitError || e["code"] != "token_refused" || e["hint"] == "" {
 		t.Fatalf("exit %d: %s %s", code, out, errOut)
 	}
 	for _, p := range []string{w.paths.Config, w.paths.Credentials} {
@@ -210,9 +205,10 @@ func TestARefusedTokenIsReportedWithoutTheTokenAndWritesNothing(t *testing.T) {
 			t.Fatalf("%s was written for a refused token", p)
 		}
 	}
-	// and without --json, on stderr
+	// and without --json, as TOON on stdout; stderr holds only the progress
 	code, out, errOut = w.run(refusedToken+"\n", "add", "work", "--host", "github.com", "--owner", "ACME")
-	if code != 4 || out != "" || !strings.Contains(errOut, "refused") {
+	if code != exitError || !strings.Contains(out, "code: token_refused") || !strings.Contains(out, "error: GitHub refused the token") ||
+		errOut != "checking the token against github.com\n" {
 		t.Fatalf("exit %d stdout %q stderr %q", code, out, errOut)
 	}
 	if files := w.leaks(refusedToken); len(files) != 0 {
@@ -223,8 +219,8 @@ func TestARefusedTokenIsReportedWithoutTheTokenAndWritesNothing(t *testing.T) {
 func TestAnOwnerTheTokenCannotReadIsRefusedBeforeAnythingIsWritten(t *testing.T) {
 	w := newWorld(t)
 	code, out, _ := w.run(goodToken+"\n", "add", "work", "--host", "github.com", "--owner", "ghost", "--json")
-	e, _ := decodeObject(t, out)["error"].(map[string]any)
-	if code != 1 || e["code"] != "invalid_value" {
+	e, _ := object(t, out)["error"].(map[string]any)
+	if code != exitUsage || e["code"] != "invalid_value" {
 		t.Fatalf("exit %d: %s", code, out)
 	}
 	if _, err := os.Stat(w.paths.Config); err == nil {
@@ -238,8 +234,32 @@ func TestAddingOverAnotherAccountIsRefused(t *testing.T) {
 		t.Fatal(errOut)
 	}
 	code, out, _ := w.run("", "add", "two", "--host", "github.com", "--owner", "acme", "--token", "gh:octo", "--json")
-	e, _ := decodeObject(t, out)["error"].(map[string]any)
-	if code != 2 || e["code"] != "account_conflict" {
+	e, _ := object(t, out)["error"].(map[string]any)
+	if code != exitError || e["code"] != "account_conflict" {
 		t.Fatalf("exit %d: %s", code, out)
+	}
+}
+
+// A credentials.toml entry with an empty token is listed by doctor as unused;
+// `account remove` takes it out and says a stored token was removed.
+func TestRemoveTakesOutAStoredEntryWithAnEmptyToken(t *testing.T) {
+	w := newWorld(t)
+	if err := os.MkdirAll(w.paths.Home, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(w.paths.Credentials, []byte("[ghost]\ntoken = \"\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	code, out, _ := w.run("", "remove", "ghost", "--json")
+	got := object(t, out)
+	if code != 0 || got["outcome"] != "removed" || got["tokenRemoved"] != true {
+		t.Fatalf("exit %d: %s", code, out)
+	}
+	if data, _ := os.ReadFile(w.paths.Credentials); strings.Contains(string(data), "ghost") {
+		t.Fatalf("the entry is still stored:\n%s", data)
+	}
+	code, out, _ = w.run("", "remove", "ghost")
+	if code != 0 || !strings.Contains(out, "outcome: none by that name (no-op)") {
+		t.Fatalf("repeat: exit %d %s", code, out)
 	}
 }

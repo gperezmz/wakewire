@@ -33,6 +33,15 @@ _Avoid_: Code host, SCM
 The service holding the specs: the forge's own issues, or a Jira project.
 _Avoid_: Issue tracker, backlog
 
+**Spec**:
+An item on the tracker carrying the spec label, which a watch follows when
+it is in the identity's partition.
+
+**Item**:
+One thing a watch follows: a spec, or a pull request (a merge request on
+GitLab), named by the service's own reference, such as `#12`, `PR #41`, `!41`
+or `PROJ-12`.
+
 **Source template**:
 The setting that says where in a repository wakewire reads a watch's tracker
 and labels, by file, section and table columns, so a team's own layout is read
@@ -40,9 +49,10 @@ without a per-repository file.
 _Avoid_: Parser, project config
 
 **Account**:
-One entry in the configuration that pairs a host, the owners it covers and a
-token source with an optional identity override. A watch reads each service
-through the account that matches the repository's host and owner.
+One named entry in the configuration that pairs a host, the owners it covers
+(on Jira, a site and an email) and a token source with an optional identity
+override, `user`. A watch reads each service through the account that matches
+the repository's host and owner, or the Jira site.
 _Avoid_: Credential, login, profile
 
 ### Noticing
@@ -60,21 +70,23 @@ _Avoid_: Heartbeat (a tick carries one, but is not one)
 
 **Snapshot**:
 What wakewire last saw of one watched item: its state, labels, assignees,
-title, description, head commit, and the ids of the comments, reviews and
-events already recorded. A poll diffs against it.
+title, description, head commit, the ids of the comments, reviews and events
+already recorded, and any edit held until the text holds still. A poll diffs
+against it.
 _Avoid_: Cursor, checkpoint, since-timestamp
 
 **Change**:
 One difference a poll found on one item, such as a label added or a comment
-written, with who made it and when. Every change is stored the moment it is
+written, with who made it (for a push, its commits' authors) and when. Every
+change is stored the moment it is
 found, whether it will wake anyone or is ignored, and the stored changes are
 the ledger.
 _Avoid_: Event (for wakewire's own record), notification, update
 
 **Echo**:
-A change the watched session's own side made, which must never wake it: a
-comment ending with the marker, or any change to the in-progress or
-needs-input label.
+A change the holder's own side made, which must never wake it: a comment,
+inline comment or review ending with the marker, or any change to the
+in-progress or needs-input label.
 _Avoid_: Self-event, own action
 
 **Marker**:
@@ -84,9 +96,9 @@ run-fleet's comment templates.
 _Avoid_: Signature, footer, suffix
 
 **Ledger**:
-Every change wakewire has stored, with what it did with each: delivered in a
-wake, ignored with the reason, or held while paused. It is how anyone answers
-why a wake came or did not.
+Every change wakewire has stored, with what it did with each: pending,
+delivered in a batch, ignored with the reason, or held while paused, until it
+ages out after 30 days. It is how anyone answers why a wake came or did not.
 _Avoid_: Log, history, audit trail
 
 **Problem**:
@@ -98,17 +110,22 @@ _Avoid_: Error (for this), alert
 ### Waking
 
 **Wake**:
-The message that tells a session what changed: one line per change, facts
-only, never anything a person wrote. It names the batch that holds the rest.
+The message that tells a session what changed: one line per item and kind,
+at most 20, facts only, never anything a person wrote. Its last line names
+the batch that holds the rest and `wakewire changes <batch>`; a wake of
+problems alone names `wakewire status` instead.
 _Avoid_: Notification, ping, nudge
 
 **Batch**:
-The changes one wake reports, under one id. A batch stays undelivered until
-the adapter acknowledges it; an unacknowledged batch is offered again.
+The changes one wake reports, under one id, each numbered from 1 and read
+with `wakewire changes <batch> [<n>]`. A batch stays undelivered until the
+adapter acknowledges it, which the mod does when the wake's turn starts; an
+unacknowledged batch is offered again.
 _Avoid_: Bundle, payload, digest
 
 **Harness**:
-The program the agent session runs in: Claude Code now, bb later.
+The program the agent session runs in. Claude Code is the one with an
+adapter.
 _Avoid_: Host, runtime, client
 
 **Adapter**:
@@ -135,8 +152,8 @@ holder at a time.
 _Avoid_: Owner, manager (in wakewire's own code and docs)
 
 **Dormant**:
-Said of a registration whose session ended, whose process is gone, or whose
-adapter has not been heard from for three intervals. A dormant registration
+Said of a registration whose session ended or was cleared, whose process is
+gone, or whose adapter has not been heard from for three intervals. A dormant registration
 keeps its watch's snapshots and undelivered changes, and any session of the
 same identity may take the watch over.
 _Avoid_: Stale, dead, expired
@@ -147,14 +164,15 @@ A new session registering for a watch whose registration is dormant, or with
 _Avoid_: Steal, handover
 
 **Lease**:
-A short claim, with an expiry, that one process is polling a watch now, so a
-second process does not poll it at the same time. A lease whose process is
+A short hold, with an expiry, saying that one binary's process is polling a
+watch now, so a second process does not poll it at the same time. A lease whose process is
 gone or whose expiry passed is free.
 _Avoid_: Lock (for this), mutex
 
 **Pause**:
 A watch's state in which polls still run and store changes but no wake is
-delivered; resuming delivers everything held as one wake.
+delivered; resuming, or the end of `--for`, makes everything held pending,
+and the next tick delivers it as one wake.
 _Avoid_: Mute, snooze, suspend
 
 ## Flagged ambiguities
@@ -165,3 +183,10 @@ _Avoid_: Mute, snooze, suspend
   they speak of run-fleet itself.
 - "Event" is what the services' APIs call their timeline entries. What
   wakewire records from them is a change.
+- "Held" names three things: a change's status while its watch is paused, a
+  holder's state while its registration holds (`holder: held`, and the
+  refusal `held`), and an edit kept back until its text holds still. The
+  output says which by where it stands: `held` as a count is the paused
+  changes.
+- "Footer" in the mod's docs is the prompt footer where the `↯` label sits,
+  not the marker.

@@ -3,9 +3,11 @@ package wiring
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gperezmz/wakewire/internal/adapters/config"
@@ -53,7 +55,8 @@ func (w *Watch) Close() error { return w.Store.Close() }
 func NewWatch(ctx context.Context, paths home.Paths, getenv func(string) string, o WatchOptions) (*Watch, error) {
 	if !o.DryRun {
 		if err := paths.Ensure(); err != nil {
-			return nil, err
+			return nil, domain.Refuse("home_unwritable", fmt.Sprintf("cannot make %s: %v", paths.Home, err),
+				"make the folder writable, or set WAKEWIRE_HOME to one that is; `wakewire paths` shows where it is")
 		}
 	}
 	cfg, err := config.Load(paths.Config)
@@ -70,7 +73,7 @@ func NewWatch(ctx context.Context, paths home.Paths, getenv func(string) string,
 	}
 	store, err := openState(ctx, paths, o.DryRun)
 	if err != nil {
-		return nil, err
+		return nil, unreadableState(paths.State, err)
 	}
 	var clock application.Clock = systemClock{}
 	if o.Clock != nil {
@@ -99,15 +102,28 @@ func NewWatch(ctx context.Context, paths home.Paths, getenv func(string) string,
 	return &Watch{Service: svc, Store: store, Settings: settings}, nil
 }
 
-// openState opens state.db. A dry run over a home with no state.db opens an
-// empty one in memory instead of creating the file.
-func openState(ctx context.Context, paths home.Paths, dryRun bool) (*sqlitestore.Store, error) {
-	if dryRun {
-		if _, err := os.Stat(paths.State); errors.Is(err, fs.ErrNotExist) {
-			return sqlitestore.OpenMemory(ctx)
-		}
+// unreadableState names a state.db that does not open as what it is: the
+// user's file to fix or move aside, not a bug in wakewire. A refusal the
+// store raised itself, such as state_newer, keeps its own code.
+func unreadableState(path string, err error) error {
+	if _, ok := errors.AsType[*domain.Refusal](err); ok {
+		return err
 	}
-	return sqlitestore.Open(ctx, paths.State)
+	return domain.Refuse("state_unreadable", fmt.Sprintf("%s does not open: %s", path, strings.TrimPrefix(err.Error(), "state.db at "+path+": ")),
+		"move it aside to start with an empty state, or restore it from a backup; `wakewire paths` shows where it is")
+}
+
+// openState opens state.db. A dry run writes nothing: over a home with no
+// state.db it opens an empty one in memory, and over one that exists it
+// opens it dry, so not even a migration is kept.
+func openState(ctx context.Context, paths home.Paths, dryRun bool) (*sqlitestore.Store, error) {
+	if !dryRun {
+		return sqlitestore.Open(ctx, paths.State)
+	}
+	if _, err := os.Stat(paths.State); errors.Is(err, fs.ErrNotExist) {
+		return sqlitestore.OpenMemory(ctx)
+	}
+	return sqlitestore.OpenDry(ctx, paths.State)
 }
 
 // Settings maps the configuration's values onto the watch context's.

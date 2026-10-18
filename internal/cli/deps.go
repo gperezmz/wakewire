@@ -8,7 +8,6 @@ import (
 	accountapp "github.com/gperezmz/wakewire/internal/account/application"
 	"github.com/gperezmz/wakewire/internal/adapters/home"
 	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
 	"github.com/gperezmz/wakewire/internal/wiring"
 )
 
@@ -19,12 +18,13 @@ type WatchAPI interface {
 	Pause(ctx context.Context, sel application.Selector, d time.Duration, dryRun bool) (application.PauseResult, error)
 	Resume(ctx context.Context, sel application.Selector, dryRun bool) (application.PauseResult, error)
 	Status(ctx context.Context, sel *application.Selector) ([]application.WatchStatus, error)
+	LocalStatus(ctx context.Context, sel *application.Selector) ([]application.WatchStatus, error)
 	Ledger(ctx context.Context, sel application.Selector, since time.Duration, item string) (application.LedgerResult, error)
 	Changes(ctx context.Context, batch int64) (application.BatchView, error)
 	SetInterval(ctx context.Context, sel application.Selector, d time.Duration, dryRun bool) (application.IntervalResult, error)
 	Prune(ctx context.Context, dryRun bool) (application.PruneCounts, error)
 	Hello(ctx context.Context, session string, proc, protocol int) (application.HelloResult, error)
-	Next(ctx context.Context, session string, proc int, reader domain.Reader) (application.NextResult, error)
+	Next(ctx context.Context, session string, proc int) (application.NextResult, error)
 	Ack(ctx context.Context, batch int64) (application.AckResult, error)
 	Ended(ctx context.Context, session, reason string) (application.EndedResult, error)
 	SourceCheck(ctx context.Context, dir string) (application.SourceFound, error)
@@ -48,7 +48,10 @@ type Deps struct {
 	Getenv func(string) string
 	Getwd  func() (string, error)
 	PPID   func() int
-	Paths  func() (home.Paths, error)
+	// Executable and UserHome name the running binary in the home view.
+	Executable func() (string, error)
+	UserHome   func() (string, error)
+	Paths      func() (home.Paths, error)
 	// Watch opens the watch service; a dry run asks for one that creates nothing.
 	Watch    func(ctx context.Context, dryRun bool) (WatchAPI, error)
 	Accounts func() (DoctorAccounts, error)
@@ -64,11 +67,13 @@ func DefaultDeps(build wiring.Build) Deps {
 		return p, nil
 	}
 	return Deps{
-		Build:  build,
-		Getenv: os.Getenv,
-		Getwd:  os.Getwd,
-		PPID:   os.Getppid,
-		Paths:  paths,
+		Build:      build,
+		Getenv:     os.Getenv,
+		Getwd:      os.Getwd,
+		PPID:       os.Getppid,
+		Executable: os.Executable,
+		UserHome:   os.UserHomeDir,
+		Paths:      paths,
 		Watch: func(ctx context.Context, dryRun bool) (WatchAPI, error) {
 			p, err := paths()
 			if err != nil {

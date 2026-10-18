@@ -197,3 +197,27 @@ func TestDefaultEndpoints(t *testing.T) {
 		t.Fatalf("%+v", ep)
 	}
 }
+
+// A token the service does not know (it answers 404 for the user) is told
+// to be replaced by a command that can be run as it stands: the account's own
+// name and host, the token on stdin, never a placeholder.
+func TestATokenTheServiceDoesNotKnowHasAHintNamingTheAccountAndItsHost(t *testing.T) {
+	for _, kind := range []application.ServiceKind{application.GitHub, application.GitLab} {
+		p, _ := serve(t, map[string]http.HandlerFunc{"/user": http.NotFound})
+		_, err := p.Probe(context.Background(), cred(kind))
+		var coded interface {
+			Code() string
+			Hint() string
+		}
+		if !errors.As(err, &coded) || coded.Code() != "token_refused" {
+			t.Fatalf("%s: %v", kind, err)
+		}
+		const want = "`wakewire account add acct --host h.example.com --token stored`"
+		if !strings.Contains(coded.Hint(), want) || strings.Contains(coded.Hint(), "<") {
+			t.Errorf("%s: the hint %q lacks %s or holds a placeholder", kind, coded.Hint(), want)
+		}
+		if strings.Contains(err.Error()+coded.Hint(), secret) {
+			t.Errorf("%s: the token is in the error", kind)
+		}
+	}
+}

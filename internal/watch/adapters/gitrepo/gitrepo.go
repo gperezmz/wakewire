@@ -49,7 +49,7 @@ func (r Repos) Root(ctx context.Context, dir string) (string, error) {
 func (r Repos) Origin(ctx context.Context, dir string) (domain.Repo, error) {
 	raw, err := r.run(ctx, dir, or(r.Git, "git"), "remote", "get-url", "origin")
 	if err != nil || raw == "" {
-		return domain.Repo{}, domain.Invalid(fmt.Sprintf("%s has no origin remote", dir),
+		return domain.Repo{}, domain.Refuse("no_origin", fmt.Sprintf("%s has no origin remote", dir),
 			"run it from a clone with an origin, or name the repository as <host>/<owner>/<repo>")
 	}
 	host, path, ssh, err := ParseRemote(raw)
@@ -61,7 +61,12 @@ func (r Repos) Origin(ctx context.Context, dir string) (domain.Repo, error) {
 			host = real
 		}
 	}
-	return domain.ParseRepo(host + "/" + path)
+	repo, err := domain.ParseRepo(host + "/" + path)
+	if err != nil {
+		return domain.Repo{}, domain.Refuse("not_a_forge", fmt.Sprintf("the origin remote %q is not a forge URL", raw),
+			"name the repository as <host>/<owner>/<repo>")
+	}
+	return repo, nil
 }
 
 // sshHost asks ssh which host an alias in ~/.ssh/config names.
@@ -82,7 +87,7 @@ func (r Repos) sshHost(ctx context.Context, alias string) string {
 // `ssh://git@host[:port]/o/r.git`, or `https://host/o/r.git`. ssh says
 // whether host may be an ssh alias.
 func ParseRemote(raw string) (host, path string, ssh bool, err error) {
-	bad := domain.Invalid(fmt.Sprintf("the origin remote %q is not a forge URL", raw), "name the repository as <host>/<owner>/<repo>")
+	bad := domain.Refuse("not_a_forge", fmt.Sprintf("the origin remote %q is not a forge URL", raw), "name the repository as <host>/<owner>/<repo>")
 	if strings.Contains(raw, "://") {
 		u, perr := url.Parse(raw)
 		if perr != nil || u.Hostname() == "" {

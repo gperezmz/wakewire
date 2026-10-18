@@ -42,6 +42,15 @@ func TestAWriteNeverLeavesTheProcess(t *testing.T) {
 	if err == nil || hit {
 		t.Fatalf("err %v, server hit %v", err, hit)
 	}
+	// A refused write is a bug in wakewire, not a value the person gave: its
+	// code is internal, so the CLI exits 1 and asks for a report.
+	var e *Error
+	if !errors.As(err, &e) || e.Code() != "internal" {
+		t.Fatalf("a refused write is %v", err)
+	}
+	if !strings.Contains(e.Hint(), "bug in wakewire") {
+		t.Fatalf("hint %q", e.Hint())
+	}
 }
 
 func TestRefusedTokenIsCodedAndNamesNoToken(t *testing.T) {
@@ -55,6 +64,11 @@ func TestRefusedTokenIsCodedAndNamesNoToken(t *testing.T) {
 	var e *Error
 	if !errors.As(err, &e) || e.Code() != "token_refused" {
 		t.Fatalf("got %v", err)
+	}
+	// httpread does not know the account, so its hint is a command with the
+	// two values left for the reader, and `account list` as the way to find them.
+	if !strings.Contains(e.Hint(), "`wakewire account add <name> --host <host> --token stored`") || !strings.Contains(e.Hint(), "`wakewire account list`") {
+		t.Fatalf("hint %q", e.Hint())
 	}
 	if strings.Contains(e.Error()+e.Hint(), "sekrit") {
 		t.Fatal("the error carries the token")
