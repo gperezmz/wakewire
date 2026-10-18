@@ -10,7 +10,7 @@ import (
 	"github.com/toon-format/toon-go"
 	"golang.org/x/term"
 
-	"github.com/gperezmz/wakewire/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/account/application"
 )
 
 // AccountsAPI is what the account commands call; *application.Service is it.

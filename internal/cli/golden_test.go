@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	accountapp "github.com/gperezmz/wakewire/internal/account/application"
-	"github.com/gperezmz/wakewire/internal/adapters/home"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	accountapp "github.com/gperezmz/wakewire/v2/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden files in testdata from what the commands print")

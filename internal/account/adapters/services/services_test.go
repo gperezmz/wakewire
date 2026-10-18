@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/account/application"
-	"github.com/gperezmz/wakewire/internal/adapters/httpread"
+	"github.com/gperezmz/wakewire/v2/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/httpread"
 )
 
 const secret = "tok-SECRET-123"

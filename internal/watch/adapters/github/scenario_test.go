@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/adapters/contract"
-	"github.com/gperezmz/wakewire/internal/adapters/httpread"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/application/fakes"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/contract"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/httpread"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application/fakes"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // The scenario is a run of polls against gperezmz/wakewire-sandbox, with

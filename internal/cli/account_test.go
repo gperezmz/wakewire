@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/account/application"
 )
 
 func yes() *bool { b := true; return &b }

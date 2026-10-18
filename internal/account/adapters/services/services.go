@@ -12,8 +12,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/gperezmz/wakewire/internal/account/application"
-	"github.com/gperezmz/wakewire/internal/adapters/httpread"
+	"github.com/gperezmz/wakewire/v2/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/httpread"
 )
 
 // Endpoints say where each service is, so that tests can point them at a

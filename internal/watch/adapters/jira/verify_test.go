@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/adapters/contract"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/contract"
 )
 
 // The provider side: the recorded requests sent to Jira now, failing where

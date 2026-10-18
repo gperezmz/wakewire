@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // Settings are the configuration's values the watch context reads.

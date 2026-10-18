@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/adapters/contract"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/contract"
 )
 
 // Records the scenario against the real sandbox (the KAN project of

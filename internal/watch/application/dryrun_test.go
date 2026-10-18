@@ -3,7 +3,7 @@ package application_test
 import (
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
 )
 
 // --dry-run changes nothing: not even the daily clean-up a register would

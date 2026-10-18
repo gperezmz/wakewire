@@ -3,7 +3,7 @@ package application
 import (
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // Watch is what wakewire keeps an eye on for one identity in one repository.

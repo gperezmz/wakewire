@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/adapters/httpread"
-	"github.com/gperezmz/wakewire/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/httpread"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
 )
 
 type client struct {

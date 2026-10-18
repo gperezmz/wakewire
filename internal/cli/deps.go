@@ -5,10 +5,10 @@ import (
 	"os"
 	"time"
 
-	accountapp "github.com/gperezmz/wakewire/internal/account/application"
-	"github.com/gperezmz/wakewire/internal/adapters/home"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/wiring"
+	accountapp "github.com/gperezmz/wakewire/v2/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/wiring"
 )
 
 // WatchAPI is what the watch commands call; *wiring.Watch is it.

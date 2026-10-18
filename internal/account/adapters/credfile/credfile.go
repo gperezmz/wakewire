@@ -11,9 +11,9 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/gperezmz/wakewire/internal/account/application"
-	"github.com/gperezmz/wakewire/internal/adapters/atomicfile"
-	"github.com/gperezmz/wakewire/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/atomicfile"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
 )
 
 const header = "# Written by `wakewire account`; edit it with that command, and never share or commit it.\n"

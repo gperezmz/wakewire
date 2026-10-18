@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/watch/adapters/sqlitestore"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/application/fakes"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/sqlitestore"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application/fakes"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // These tests kill a real process with SIGKILL in the middle of a poll,

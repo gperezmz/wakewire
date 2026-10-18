@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
 )
 
 // twoWatches is a held watch with a problem and a watch nobody holds.

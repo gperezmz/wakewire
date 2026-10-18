@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gperezmz/wakewire/internal/account/domain"
+	"github.com/gperezmz/wakewire/v2/internal/account/domain"
 )
 
 // ServiceKind is the service an account's host is: "github", "gitlab" or "jira".

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 var t0 = time.Date(2026, 10, 16, 9, 0, 0, 0, time.UTC)

@@ -9,8 +9,8 @@ import (
 
 	"github.com/toon-format/toon-go"
 
-	accountapp "github.com/gperezmz/wakewire/internal/account/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	accountapp "github.com/gperezmz/wakewire/v2/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // Check is one thing doctor looked at.

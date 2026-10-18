@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
 )
 
 // rerun gives back the command line as typed, less the flags named and their

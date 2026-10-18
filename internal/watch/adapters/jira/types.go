@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // person is a user as Jira names one. People are told apart by accountId.

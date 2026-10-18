@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/account/domain"
-	"github.com/gperezmz/wakewire/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/account/domain"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
 )
 
 func TestAddThenReadBackThenRenameThenRemove(t *testing.T) {

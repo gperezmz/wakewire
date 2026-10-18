@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // A refusal is an answer, and answers go to stdout: stderr stays empty, as

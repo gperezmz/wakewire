@@ -9,7 +9,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/gperezmz/wakewire/internal/adapters/atomicfile"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/atomicfile"
 )
 
 // The edits below change config.toml as text, so the comments and layout

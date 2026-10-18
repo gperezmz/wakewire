@@ -67,7 +67,7 @@ release's version beside its own commit.
 Or with Go 1.27.2 or later:
 
 ```sh
-go install github.com/gperezmz/wakewire/cmd/wakewire@latest
+go install github.com/gperezmz/wakewire/v2/cmd/wakewire@latest
 ```
 
 ### The Claude Code mod

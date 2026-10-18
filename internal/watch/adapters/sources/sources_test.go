@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/adapters/home"
-	"github.com/gperezmz/wakewire/internal/adapters/httpread"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/accounts"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/sources"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
-	"github.com/gperezmz/wakewire/internal/wiring"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/httpread"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/accounts"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/sources"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/wiring"
 )
 
 const config = `

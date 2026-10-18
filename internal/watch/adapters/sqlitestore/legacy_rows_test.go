@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/application/fakes"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application/fakes"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // Rows written by v1.0.3 carry "truncated" in their JSON, true on a body cut

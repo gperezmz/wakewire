@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/application/fakes"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application/fakes"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 const servicesTable = "## Forge and tracker\n\n### Services\n\n| Role | Service | Scope | Tool |\n| --- | --- | --- | --- |\n| tracker | %s | `%s` | `gh` |\n| forge | GitHub | `%s` | `gh` |\n\n### Labels\n\n| Meaning | Label |\n| --- | --- |\n| spec | `spec` |\n| ready | `ready` |\n| in progress | `in-progress` |\n| needs input | `needs-input` |\n"

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
 )
 
 func newVault(t *testing.T) (*Vault, home.Paths) {

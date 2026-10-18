@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
 )
 
 // pause, resume and interval say what they did, or under --dry-run what they

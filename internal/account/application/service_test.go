@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/account/domain"
+	"github.com/gperezmz/wakewire/v2/internal/account/domain"
 )
 
 type fakeConfig struct {

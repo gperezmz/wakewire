@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	accountapp "github.com/gperezmz/wakewire/internal/account/application"
-	"github.com/gperezmz/wakewire/internal/adapters/home"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
-	"github.com/gperezmz/wakewire/internal/wiring"
+	accountapp "github.com/gperezmz/wakewire/v2/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/wiring"
 )
 
 // fakeWatch is a WatchAPI that records what the commands ask of it and

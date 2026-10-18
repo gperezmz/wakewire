@@ -34,9 +34,9 @@ linters:
       rules:
         watch-domain:
           files: ["**/internal/watch/domain/**"]
-          allow: ["$gostd", "github.com/gperezmz/wakewire/internal/watch/domain"]
+          allow: ["$gostd", "github.com/gperezmz/wakewire/v2/internal/watch/domain"]
           deny:
-            - pkg: "github.com/gperezmz/wakewire/internal"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal"
               desc: a domain imports nothing of wakewire's but itself
             - pkg: "github.com/"
               desc: a domain names no vendor package
@@ -64,7 +64,7 @@ linters:
               desc: a domain does not reach outside the process
         watch-application:
           files: ["**/internal/watch/application/**"]
-          allow: ["$gostd", "github.com/gperezmz/wakewire/internal/watch/domain", "github.com/gperezmz/wakewire/internal/watch/application"]
+          allow: ["$gostd", "github.com/gperezmz/wakewire/v2/internal/watch/domain", "github.com/gperezmz/wakewire/v2/internal/watch/application"]
           # The allow list is the contract for the module and for vendors: a deny
           # on github.com/ would also refuse the context's own domain.
           deny:
@@ -93,19 +93,19 @@ linters:
         watch-adapters:
           files: ["**/internal/watch/adapters/**"]
           deny:
-            - pkg: "github.com/gperezmz/wakewire/internal/account/domain"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal/account/domain"
               desc: the account context's domain is its own; cross through its application
-            - pkg: "github.com/gperezmz/wakewire/internal/account/adapters"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal/account/adapters"
               desc: an adapter does not import another context's adapters, the transport or the root
-            - pkg: "github.com/gperezmz/wakewire/internal/cli"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal/cli"
               desc: an adapter does not import another context's adapters, the transport or the root
-            - pkg: "github.com/gperezmz/wakewire/internal/wiring"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal/wiring"
               desc: an adapter does not import another context's adapters, the transport or the root
         account-domain:
           files: ["**/internal/account/domain/**"]
-          allow: ["$gostd", "github.com/gperezmz/wakewire/internal/account/domain"]
+          allow: ["$gostd", "github.com/gperezmz/wakewire/v2/internal/account/domain"]
           deny:
-            - pkg: "github.com/gperezmz/wakewire/internal"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal"
               desc: a domain imports nothing of wakewire's but itself
             - pkg: "github.com/"
               desc: a domain names no vendor package
@@ -135,7 +135,7 @@ linters:
           files: ["**/internal/account/application/**"]
           # The allow list is the contract for the module and for vendors: a deny
           # on github.com/ would also refuse the context's own domain.
-          allow: ["$gostd", "github.com/gperezmz/wakewire/internal/account/domain", "github.com/gperezmz/wakewire/internal/account/application"]
+          allow: ["$gostd", "github.com/gperezmz/wakewire/v2/internal/account/domain", "github.com/gperezmz/wakewire/v2/internal/account/application"]
           deny:
             - pkg: "golang.org/x/"
               desc: application names no vendor package
@@ -162,20 +162,20 @@ linters:
         account-adapters:
           files: ["**/internal/account/adapters/**"]
           deny:
-            - pkg: "github.com/gperezmz/wakewire/internal/watch/domain"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal/watch/domain"
               desc: the watch context's domain is its own; cross through its application
-            - pkg: "github.com/gperezmz/wakewire/internal/watch/adapters"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal/watch/adapters"
               desc: an adapter does not import another context's adapters, the transport or the root
-            - pkg: "github.com/gperezmz/wakewire/internal/cli"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal/cli"
               desc: an adapter does not import another context's adapters, the transport or the root
-            - pkg: "github.com/gperezmz/wakewire/internal/wiring"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal/wiring"
               desc: an adapter does not import another context's adapters, the transport or the root
         transport:
           files: ["**/internal/cli/**"]
           deny:
-            - pkg: "github.com/gperezmz/wakewire/internal/watch/adapters"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal/watch/adapters"
               desc: the transport mounts what the composition root built
-            - pkg: "github.com/gperezmz/wakewire/internal/account/adapters"
+            - pkg: "github.com/gperezmz/wakewire/v2/internal/account/adapters"
               desc: the transport mounts what the composition root built
 
   exclusions:

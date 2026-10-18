@@ -5,13 +5,13 @@ package sources
 import (
 	"context"
 
-	"github.com/gperezmz/wakewire/internal/adapters/httpread"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/accounts"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/github"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/gitlab"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/jira"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/httpread"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/accounts"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/github"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/gitlab"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/jira"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // Endpoints are the services' roots, replaced in tests.

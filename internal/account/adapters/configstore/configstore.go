@@ -3,9 +3,9 @@
 package configstore
 
 import (
-	"github.com/gperezmz/wakewire/internal/account/domain"
-	"github.com/gperezmz/wakewire/internal/adapters/config"
-	"github.com/gperezmz/wakewire/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/account/domain"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/config"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
 )
 
 // Store reads and edits the accounts of one config.toml.

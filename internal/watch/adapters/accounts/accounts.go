@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	account "github.com/gperezmz/wakewire/internal/account/application"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	account "github.com/gperezmz/wakewire/v2/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // Accounts answers the watch context from the account service.

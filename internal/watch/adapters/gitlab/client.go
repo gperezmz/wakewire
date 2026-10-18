@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/adapters/httpread"
-	"github.com/gperezmz/wakewire/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/httpread"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
 )
 
 // apiRoot is where GitLab serves its REST API, under the instance's origin.

@@ -4,14 +4,14 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gperezmz/wakewire/internal/account/adapters/configstore"
-	"github.com/gperezmz/wakewire/internal/account/adapters/credfile"
-	"github.com/gperezmz/wakewire/internal/account/adapters/ghcli"
-	"github.com/gperezmz/wakewire/internal/account/adapters/idcache"
-	"github.com/gperezmz/wakewire/internal/account/adapters/services"
-	"github.com/gperezmz/wakewire/internal/account/application"
-	"github.com/gperezmz/wakewire/internal/adapters/home"
-	"github.com/gperezmz/wakewire/internal/adapters/httpread"
+	"github.com/gperezmz/wakewire/v2/internal/account/adapters/configstore"
+	"github.com/gperezmz/wakewire/v2/internal/account/adapters/credfile"
+	"github.com/gperezmz/wakewire/v2/internal/account/adapters/ghcli"
+	"github.com/gperezmz/wakewire/v2/internal/account/adapters/idcache"
+	"github.com/gperezmz/wakewire/v2/internal/account/adapters/services"
+	"github.com/gperezmz/wakewire/v2/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/httpread"
 )
 
 // AccountOptions are the seams a test replaces; the zero value is the real world.

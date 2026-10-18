@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/gperezmz/wakewire/internal/account/domain"
+	"github.com/gperezmz/wakewire/v2/internal/account/domain"
 )
 
 // What a command found and did. Under DryRun, the outcome is what it would do.

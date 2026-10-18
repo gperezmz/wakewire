@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // poll reads each of the watch's sources and records what it found. Each

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/watch/adapters/sqlitestore"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/application/storetest"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/sqlitestore"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application/storetest"
 )
 
 func open(t *testing.T) application.Store {

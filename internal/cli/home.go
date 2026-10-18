@@ -8,7 +8,7 @@ import (
 
 	"github.com/toon-format/toon-go"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
 )
 
 const description = "Wakes an agent session when what it waits on changes on GitHub, GitLab or Jira"

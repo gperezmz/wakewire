@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	accountapp "github.com/gperezmz/wakewire/internal/account/application"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	accountapp "github.com/gperezmz/wakewire/v2/internal/account/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 func TestHomeViewWithNoWatchSaysSoAndHintsAtRegister(t *testing.T) {

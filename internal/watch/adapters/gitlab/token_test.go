@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/adapters/home"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
-	"github.com/gperezmz/wakewire/internal/wiring"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/wiring"
 )
 
 // realSandbox is the real project the record and contract tests use, named

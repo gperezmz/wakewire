@@ -17,8 +17,8 @@ import (
 
 	_ "modernc.org/sqlite" // the database/sql driver "sqlite"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // Store is state.db. A dry store commits nothing: every transaction,

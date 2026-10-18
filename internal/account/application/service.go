@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gperezmz/wakewire/internal/account/domain"
+	"github.com/gperezmz/wakewire/v2/internal/account/domain"
 )
 
 // Service answers which account reads what, with which token, and as whom.

@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
 )
 
 // Every dry-run flag reaches the use case, and the service is opened as one

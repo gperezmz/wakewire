@@ -10,16 +10,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/adapters/config"
-	"github.com/gperezmz/wakewire/internal/adapters/home"
-	"github.com/gperezmz/wakewire/internal/adapters/httpread"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/accounts"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/gitrepo"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/proc"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/sources"
-	"github.com/gperezmz/wakewire/internal/watch/adapters/sqlitestore"
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/config"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/httpread"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/accounts"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/gitrepo"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/proc"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/sources"
+	"github.com/gperezmz/wakewire/v2/internal/watch/adapters/sqlitestore"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // WatchOptions are the seams a test replaces; the zero value is the real world.

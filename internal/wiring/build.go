@@ -5,7 +5,7 @@ package wiring
 import (
 	"runtime/debug"
 
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // Build is what `wakewire version` reports.

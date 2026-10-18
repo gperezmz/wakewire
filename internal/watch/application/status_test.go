@@ -3,9 +3,9 @@ package application_test
 import (
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/watch/application"
-	"github.com/gperezmz/wakewire/internal/watch/application/fakes"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application"
+	"github.com/gperezmz/wakewire/v2/internal/watch/application/fakes"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // status probes the accounts over the network: it must not do so inside a

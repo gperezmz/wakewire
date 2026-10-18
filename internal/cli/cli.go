@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/gperezmz/wakewire/internal/wiring"
+	"github.com/gperezmz/wakewire/v2/internal/wiring"
 )
 
 // Exit codes, as docs/reference/cli.md lists them: the error code on stdout

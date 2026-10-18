@@ -6,8 +6,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/gperezmz/wakewire/internal/cli"
-	"github.com/gperezmz/wakewire/internal/wiring"
+	"github.com/gperezmz/wakewire/v2/internal/cli"
+	"github.com/gperezmz/wakewire/v2/internal/wiring"
 )
 
 // Set by the release build through -ldflags.

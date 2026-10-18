@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gperezmz/wakewire/internal/adapters/home"
-	"github.com/gperezmz/wakewire/internal/wiring"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/wiring"
 )
 
 // Made-up tokens: none is real.

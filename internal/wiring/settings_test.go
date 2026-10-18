@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/adapters/config"
-	"github.com/gperezmz/wakewire/internal/watch/domain"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/config"
+	"github.com/gperezmz/wakewire/v2/internal/watch/domain"
 )
 
 // Each label meaning is read from its own row of the source template: a

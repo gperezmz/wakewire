@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gperezmz/wakewire/internal/adapters/home"
-	"github.com/gperezmz/wakewire/internal/wiring"
+	"github.com/gperezmz/wakewire/v2/internal/adapters/home"
+	"github.com/gperezmz/wakewire/v2/internal/wiring"
 )
 
 // The real sandbox: the KAN project of the Jira Cloud site that
