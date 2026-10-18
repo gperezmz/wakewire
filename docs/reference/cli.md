@@ -649,15 +649,17 @@ wakewire version [--json]               # version, commit and protocol number
 `paths` prints `home`, `config`, `credentials`, `state` and `cache`. `prune`
 prints `outcome` (`removed` or `would remove`) and a count each of `changes`,
 `batches`, `problems`, `registrations` and `watches`. `version` prints
-`version`, `commit` and `protocol`; a build from source between releases
-names the commit in its version:
+`version`, `commit` and `protocol`. A release prints its tag:
 
 ```text
 $ wakewire version
-version: v1.0.4-0.20261018030113-4e027028b6b7+dirty
-commit: 4e027028b6b73b9cb2f410bd2d0a5723eebc11f4
+version: v2.0.0
+commit: <the commit the release was built from>
 protocol: 2
 ```
+
+A build from source between releases names the commit in its version, as
+`v2.0.1-0.<date>-<commit>`, and ends `+dirty` where the tree had changes.
 
 ## Commands for adapters
 
